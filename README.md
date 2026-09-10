@@ -200,7 +200,119 @@ export VOCOMNI_NNUNET_CKPT=/root/autodl-tmp/Downstream_2/VoComni_nnunet.pt
 指标复现不依赖该权重（checkpoint 已包含全部网络参数），它只在重训时使用；做从头训练
 消融时设置 `VOCOMNI_NNUNET_CKPT=""` 即可（等价于旧的 `phaser_scratch`）。
 
-## 5. 目录结构
+## 5. 预测测试集（完整命令）
+
+预测对象：`Dataset102_LiTS/imagesTs` 的 27 例；协议与第 1 节一致：**无 TTA**。
+架构环境变量必须与训练一致，否则 checkpoint 里的 `pfcr_modules.*` / `small_head.*`
+会被当作 unexpected keys 跳过，预测结果就不是训练模型。
+
+```bash
+# --- 路径与环境 ---
+export nnUNet_raw=/root/autodl-tmp/nnUNet_data/nnUNet_raw
+export nnUNet_preprocessed=/root/autodl-tmp/nnUNet_data/nnUNet_preprocessed
+export nnUNet_results=/root/autodl-tmp/nnUNet_data/nnUNet_results_retrain
+export PYTHONPATH=/root/autodl-tmp/Downstream_2/nnUNet
+export CUDA_VISIBLE_DEVICES=0
+
+# --- 与训练一致的架构开关 ---
+export PHASER_PFCR=1
+export PHASER_PFCR_USE_PRIOR=1
+export PHASER_SMALL_HEAD=1
+export PHASER_PC_SCALES=3
+export PHASER_PC_MAX_VOXELS=1048576
+export PHASER_PCSF=0
+export PHASER_LWFD=0
+export PHASER_ACG=0
+export PHASER_T_RAF=none
+export PHASER_LA_ACG=0
+export VOCOMNI_NNUNET_CKPT=""        # 推理只用 checkpoint，跳过预训练加载
+
+/root/autodl-tmp/envs/mamba/bin/nnUNetv2_predict \
+  -i /root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset102_LiTS/imagesTs \
+  -o /root/autodl-tmp/nnUNet_data/nnUNet_results_retrain/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/test_predictions_100ep_no_tta_clean \
+  -d Dataset102_LiTS \
+  -c 3d_fullres \
+  -tr nnUNetTrainer_phaser \
+  -p nnUNetPlans \
+  -f 0 \
+  -chk checkpoint_best.pth \
+  --disable_tta \
+  -device cuda -npp 1 -nps 1
+```
+
+`-chk` 可选值（重训运行的 `fold_0/` 目录）：
+
+| checkpoint | 含义 |
+|---|---|
+| `checkpoint_best.pth` | EMA pseudo Dice 最佳（与 Copy2 的选择口径一致） |
+| `checkpoint_best_tumor_dice.pth` | tumor pseudo Dice 最佳 |
+| `checkpoint_latest.pth` | 最后保存的 epoch |
+
+预测 27 例约 40–60 分钟。完成后算 24 例指标（`--no-check` 只输出数值，不与 Copy2 预期比对）：
+
+```bash
+/root/autodl-tmp/envs/mamba/bin/python /root/autodl-tmp/Downstream_2/reproduce_metrics.py \
+  --pred-dir /root/autodl-tmp/nnUNet_data/nnUNet_results_retrain/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/test_predictions_100ep_no_tta_clean \
+  --no-check
+```
+
+若要复现第 1 节的 4 个指标（Copy2），去掉 `--pred-dir` 和 `--no-check` 即可（默认读取
+`test_predictions_100ep_no_tta_clean` 并逐项 PASS/FAIL 比对）：
+
+```bash
+/root/autodl-tmp/envs/mamba/bin/python /root/autodl-tmp/Downstream_2/reproduce_metrics.py
+```
+
+## 6. 结果（本次重训 vs Copy2）
+
+三组权重在同一协议下的 24 例全卷指标（逐病例均值 ± 总体标准差，ddof=0，无 TTA）：
+
+| 权重 | 选择依据 | Liver Dice | Liver IoU | Tumor Dice | Tumor IoU |
+|---|---|---:|---:|---:|---:|
+| Copy2（9/5 运行，epoch 48） | best EMA 0.8213 | 0.951908 ± 0.027051 | 0.909411 ± 0.045781 | 0.702935 ± 0.152399 | 0.560872 ± 0.162564 |
+| 重训 `checkpoint_best.pth` | best EMA 0.8563 | 0.951957 ± 0.029525 | 0.909749 ± 0.050822 | **0.746671 ± 0.110168** | **0.607231 ± 0.131280** |
+| 重训 `checkpoint_best_tumor_dice.pth` | best tumor pseudo Dice 0.8864 | **0.953924 ± 0.026661** | **0.913091 ± 0.046497** | 0.657817 ± 0.178278 | 0.514364 ± 0.183784 |
+
+预测目录：
+
+| 权重 | 预测目录 |
+|---|---|
+| Copy2 | `nnUNet_results/Dataset102_LiTS/.../fold_0/test_predictions_100ep_no_tta_clean/` |
+| 重训 EMA-best | `nnUNet_results_retrain/Dataset102_LiTS/.../fold_0/test_predictions_100ep_no_tta_clean/` |
+| 重训 best_tumor | `nnUNet_results_retrain/Dataset102_LiTS/.../fold_0/test_predictions_100ep_tta_clean/` |
+
+（目录名 `..._tta_clean` 只是命名沿用；该次推理约 65 s/例，与 no-TTA 那次一致，实际未开 TTA。）
+
+### 6.1 结论
+
+1. **重训 EMA-best 优于 Copy2**：Tumor Dice +0.0437（0.7029 → 0.7467），配对 t-test
+   p=0.0112，改善 17/24 例；肿瘤 Dice 标准差从 0.152 降到 0.110；肝脏指标基本持平。
+2. **best_tumor_dice 明显更差**：Tumor Dice 0.6578，低于 Copy2 和 EMA-best（vs EMA-best
+   p=0.0058，仅 8/24 例改善）。它的 patch 级 tumor pseudo Dice 最高（0.8864），全卷 case
+   Dice 却最低——再次说明 **patch 级 pseudo dice 不能用来选 checkpoint**。
+3. 模型选择应以全卷滑窗 case Dice 为准；本次三组中应使用重训的 `checkpoint_best.pth`。
+
+### 6.2 best_tumor 的典型崩塌病例（全卷 Tumor Dice）
+
+| 病例 | Copy2 | EMA-best | best_tumor |
+|---|---:|---:|---:|
+| LiTS_021 | 0.711 | 0.782 | **0.271** |
+| LiTS_075 | 0.753 | 0.839 | **0.466** |
+| LiTS_011 | 0.769 | 0.713 | **0.443** |
+| LiTS_118 | 0.855 | 0.894 | **0.686** |
+
+逐病例 CSV：
+
+```
+nnUNet_results_retrain/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/
+├── test_predictions_100ep_no_tta_clean/metrics_24cases_dice_iou.csv   # EMA-best
+└── test_predictions_100ep_tta_clean/metrics_24cases_dice_iou.csv      # best_tumor_dice
+```
+
+注意：以上为单 fold、单 seed、24 例内部测试集结果；重训到 ~epoch 101（Copy2 为 epoch 48），
+可作为内部对比，尚不足以作为论文级证据。
+
+## 7. 目录结构
 
 ```
 Downstream_2/
@@ -229,7 +341,7 @@ Downstream_2/
 复现用的 checkpoint、数据集与预测结果位于 `nnUNet_data`（外部路径，不随仓库移动）；
 VoComni 预训练骨干随仓库放在根目录（被 `.gitignore` 忽略，仅重训需要）。
 
-## 6. 已知坑（复现失败基本都出自这里）
+## 8. 已知坑（复现失败基本都出自这里）
 
 1. **checkpoint 选错**：必须用 `_old_arch_backup/checkpoint_best-Copy2.pth`；run 目录里的
    `checkpoint_best.pth` 已被后续 epoch 覆盖（0.86 EMA，但全卷指标不同）。
@@ -242,13 +354,14 @@ VoComni 预训练骨干随仓库放在根目录（被 `.gitignore` 忽略，仅�
    （空气 patch 也能预测 60% 前景），全卷 Dice 崩到 0.24/0.11。Copy2 用的是 `oversample=0.66`、
    无 tumor oversampling。
 5. **Pseudo dice ≠ 全卷 Dice**：训练日志的 `Pseudo dice` 是前景过采样的 patch 级指标，
-   不能作为病例级结果；本复现用的是完整 CT 的滑窗推理。
+   不能作为病例级结果；本复现用的是完整 CT 的滑窗推理。第 6.2 节 `best_tumor_dice`
+   的崩塌（pseudo 最高、全卷最低）是直接证据。
 6. **3 例剔除是 GT 决定的**：`LiTS_032/106/115` 的 label2（肿瘤）体素为 0，剔除后可避免
    分母为 0；其余 24 例全部保留，不做任何挑选。
 7. **GT 来源**：Dataset102 raw 里没有 `labelsTs`，测试集 GT 取自
    `nnUNet_raw/Dataset101_LiTS/labelsTr`（与 LiTS 官方标签一致）。
 
-## 7. 资产路径
+## 9. 资产路径
 
 | 资产 | 路径 |
 |---|---|
@@ -260,7 +373,7 @@ VoComni 预训练骨干随仓库放在根目录（被 `.gitignore` 忽略，仅�
 | 训练日志（配置出处） | `.../fold_0/training_log_2026_9_5_15_36_00.txt` |
 | 环境 | `/root/autodl-tmp/envs/mamba` |
 
-## 8. 清理与备份记录
+## 10. 清理与备份记录
 
 - 清理日期：2026-09-10
 - 本次删除：`monai/`、`U-TTT-main/`、`paper/`、`submission/`、`predictions_phaser_liver/`、

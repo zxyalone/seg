@@ -122,7 +122,7 @@ def dice_iou(pred: np.ndarray, gt: np.ndarray, label: int):
     return d, i
 
 
-def compute_metrics(pred_dir: Path, gt_dir: Path) -> dict:
+def compute_metrics(pred_dir: Path, gt_dir: Path, check_expected: bool = True) -> dict:
     preds = sorted(pred_dir.glob("*.nii.gz"))
     if len(preds) != 27:
         print(f"[WARN] 预测文件数 {len(preds)} != 27，继续计算现有文件")
@@ -158,6 +158,11 @@ def compute_metrics(pred_dir: Path, gt_dir: Path) -> dict:
         print(f"{case:10s} {d1:11.6f} {i1:10.6f} {d2:11.6f} {i2:10.6f}")
 
     print(f"\nN = {len(rows)} (per-case mean ± population std, ddof=0)")
+    if not check_expected:
+        for key in EXPECTED:
+            mu, sd = summary[key]
+            print(f"  {key:11s} {mu:.6f} ± {sd:.6f}")
+        return {"rows": rows, "summary": summary, "ok": True}
     ok = True
     for key, (mu_exp, sd_exp) in EXPECTED.items():
         mu, sd = summary[key]
@@ -172,6 +177,8 @@ def compute_metrics(pred_dir: Path, gt_dir: Path) -> dict:
 def main():
     ap = argparse.ArgumentParser(description="PhASER-3D 24-case metric reproduction")
     ap.add_argument("--predict", action="store_true", help="先重新生成预测（无 TTA）")
+    ap.add_argument("--no-check", action="store_true",
+                    help="只输出指标，不与 Copy2 预期值比对（用于评估新训练的模型）")
     ap.add_argument("--gpu", default="0")
     ap.add_argument("--ckpt", default=str(DEFAULT_CKPT))
     ap.add_argument("--pred-dir", default=str(DEFAULT_PRED_DIR))
@@ -184,7 +191,7 @@ def main():
     elif not pred_dir.is_dir():
         sys.exit(f"[ERROR] 预测目录不存在: {pred_dir}（加 --predict 重新生成）")
 
-    result = compute_metrics(pred_dir, Path(args.gt_dir))
+    result = compute_metrics(pred_dir, Path(args.gt_dir), check_expected=not args.no_check)
     sys.exit(0 if result["ok"] else 1)
 
 
