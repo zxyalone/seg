@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local tooling config (contains secrets — do NOT commit)
+opencode.json
+
+# Checkpoints / large artifacts
+*.pt
+
+# Jupyter / OS
+.ipynb_checkpoints/
+.DS_Store
+
+# Build artifacts
+*.egg-info/
