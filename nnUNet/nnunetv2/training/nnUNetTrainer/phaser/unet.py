@@ -83,10 +83,17 @@ class PhaserUNet(nn.Module):
         enable_la_acg: bool = False,
         enable_small_head: bool = False,
         num_classes: int = 3,
+        pc_spacing=None,
+        pc_noise_rel_kappa: float = 0.0,
     ):
         super().__init__()
         self.base_model = base_model
         self.dims = spatial_dims
+        # Physical voxel spacing (mm/axis, tensor-axis order) for the
+        # phase-congruency bank, plus the relative cap on its noise threshold.
+        # Both are forwarded to every PhaseCongruency instance.
+        self.pc_spacing = pc_spacing
+        self.pc_noise_rel_kappa = float(pc_noise_rel_kappa)
 
         # Encoder and decoder references
         self.encoder = base_model.encoder
@@ -153,6 +160,8 @@ class PhaserUNet(nn.Module):
                         feature_channels[i], dims=self.dims,
                         n_scales=pc_scales, pc_max_voxels=pc_max_voxels,
                         gate_sens_init=pcsf_gate_sens,
+                        spacing=self.pc_spacing,
+                        noise_rel_kappa=self.pc_noise_rel_kappa,
                     )
                     for i in range(n_skips)
                 ])
@@ -169,6 +178,8 @@ class PhaserUNet(nn.Module):
                 PhaseFrequencyCoherenceRouting(
                     feature_channels[i], dims=self.dims, n_scales=pc_scales,
                     pc_max_voxels=pc_max_voxels, use_prior=pfcr_use_prior,
+                    spacing=self.pc_spacing,
+                    noise_rel_kappa=self.pc_noise_rel_kappa,
                 )
                 for i in range(n_skips)
             ])
@@ -255,7 +266,15 @@ class PhaserUNet(nn.Module):
         compute_small = self.enable_small_head and (self.training or _prior_mode)
         if compute_small:
             small_logits = self.small_head(skips)
-            tumor_prior = torch.sigmoid(small_logits[:, 1:2])
+            # The small head is trained with a 2-class cross entropy, so the
+            # tumour probability is the softmax over its classes. Using
+            # sigmoid(logit) instead was wrong on two counts: it is not the
+            # relative class probability, and it was then squashed a second
+            # time inside PFCR (see PhaseFrequencyCoherenceRouting.forward).
+            # Net effect measured before the fix: the prior was pushed into
+            # (0.5, 0.73) and had no discriminative power at all (tumour 0.518
+            # vs background 0.536).
+            tumor_prior = torch.softmax(small_logits, dim=1)[:, 1:2]
         elif _prior_mode:
             small_logits = None
 

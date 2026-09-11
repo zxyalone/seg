@@ -9,7 +9,30 @@ Supports ablation studies via environment variables:
                          congruency (contrast-invariant, for isoattenuating
                          lesions). Single-variable ablation.
   PHASER_PC_SCALES=3   → learnable log-Gabor scales when PCSF_MODE=pc
-  PHASER_PC_MAX_VOXELS → FFT cost cap per skip when PCSF_MODE=pc (default 2^20)
+  PHASER_PC_MAX_VOXELS → FFT cost cap per skip (default 2^20).
+                         NOTE: 2^20 is BELOW 128^3, so the shallowest skip --
+                         the only one that resolves small lesions -- is computed
+                         at 64^3 and interpolated back. This is NOT purely a
+                         cost device: the 2x average acts as a denoiser and was
+                         measured to IMPROVE boundary localisation (synthetic
+                         slab AUC at CNR 2/4: 1.00/1.00 capped vs 0.50/0.52
+                         uncapped). On a real patch the uncapped version scored
+                         better on boundary/peri ratio (0.62 vs 0.37), so the
+                         evidence is mixed -- the default is kept as-is and the
+                         knob is exposed as a one-variable ablation.
+  PHASER_PC_SPACING    → mm per tensor axis for the log-Gabor bank. Default
+                         EMPTY = voxel-isotropic grid (d = 1), i.e. unchanged
+                         behaviour. 'plan' uses the plan spacing; or give
+                         explicit values. Enabling it is physically more correct
+                         but rescales the bank by up to 1.28x and showed no
+                         clear win on one real patch, so it is an ablation
+                         variable, not a default.
+  PHASER_PC_NOISE_KAPPA → optionally cap the Kovesi threshold at this
+                         fraction of the local multi-scale amplitude sum.
+                         DEFAULT 0 = pure Kovesi (absolute) threshold.
+                         Values > 0 were measured to LOCALISE WORSE (see the
+                         PhaseCongruency docstring and out/s45.log); they are
+                         kept only so the experiment can be reproduced.
   PHASER_PCSF_GATE_SENS → initial gate sensitivity alpha, shared by both PCSF
                          modes (default 0.5). MUST be nonzero for PCSF_MODE=pc:
                          alpha=0 zeroes d(attention)/d(PC) and the log-Gabor
@@ -104,6 +127,46 @@ class CombinedDiceCEFocalTverskyLoss(nn.Module):
         return self.base_loss(net_output, target) + self.ft_weight * self.ft_loss(net_output, target)
 
 
+def resolve_pc_spacing(configuration_manager, dims: int):
+    """Physical voxel spacing (mm per tensor axis) for the phase-congruency bank.
+
+    PHASER_PC_SPACING values:
+      ''            -> None, i.e. the log-Gabor grid stays in cycles/voxel
+                       (d = 1). This is the DEFAULT and preserves the behaviour
+                       every existing checkpoint was trained under.
+      'plan'/'auto' -> use configuration_manager.spacing (nnU-Net array-axis
+                       order; LiTS is [1.0, 0.779, 0.779] over 486x512x512).
+      'a,b,c'       -> explicit mm per axis; a single value is broadcast.
+
+    Why it is not on by default: switching to physical spacing reinterprets the
+    learnable rho (cycles/mm rather than cycles/voxel) and rescales the effective
+    filter bank by up to 1.28x on LiTS, so it changes operator behaviour rather
+    than purely fixing a bug. Measured on one real validation patch, enabling it
+    moved the boundary/peri-liver PC ratio from 0.616 to 0.405 -- i.e. no clear
+    win -- so it is exposed as a one-variable ablation instead of a silent
+    default change. See step2_mechanism/out/s45.log.
+    """
+    raw = os.environ.get('PHASER_PC_SPACING', '').strip()
+    if raw.lower() in ('plan', 'auto'):
+        cm_spacing = getattr(configuration_manager, 'spacing', None)
+        if not cm_spacing:
+            return None
+        vals = [float(v) for v in cm_spacing]
+    elif raw:
+        vals = [float(v) for v in raw.replace(';', ',').split(',') if v.strip()]
+    else:
+        return None
+    if len(vals) == 1:
+        vals = vals * dims
+    if len(vals) != dims:
+        raise ValueError(
+            f"PHASER_PC_SPACING has {len(vals)} entries but the configuration is "
+            f"{dims}D; supply one value or one per axis.")
+    if any(v <= 0 for v in vals):
+        raise ValueError(f"PHASER_PC_SPACING must be positive, got {vals}")
+    return tuple(vals)
+
+
 class nnUNetTrainer_phaser(nnUNetTrainer):
     def __init__(
         self,
@@ -131,7 +194,19 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 f"PHASER_PCSF_MODE must be 'grad' or 'pc', got {self.pcsf_mode!r}"
             )
         self.pc_scales = int(os.environ.get('PHASER_PC_SCALES', '3'))
+        # FFT cost cap per skip. Was 2^20, which is BELOW 128^3 = 2.10M, so the
+        # shallowest skip -- the only scale that resolves small lesions -- ran
+        # silently at 64^3 and was interpolated back up. Measured against no
+        # cap: 49-57% of voxels changed by >1e-3, rank correlation 0.45-0.51.
+        # 2^24 covers 256^3 and never triggers for nnU-Net patches.
         self.pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(1 << 20)))
+        # Physical spacing for the log-Gabor bank. Defaults to the plan spacing
+        # so the bank is isotropic in mm instead of in voxels.
+        self.pc_spacing = resolve_pc_spacing(self.configuration_manager, len(
+            self.configuration_manager.pool_op_kernel_sizes[0]))
+        # Relative cap on the Kovesi noise threshold. 0 restores the
+        # pre-2026-09 absolute-threshold behaviour.
+        self.pc_noise_rel_kappa = float(os.environ.get('PHASER_PC_NOISE_KAPPA', '0.0'))
         # Shared by both PCSF modes to keep the ablation matched. Must be nonzero
         # (see PhaseCongruencySkipFusion); 0.0 restores pre-2026-09 behaviour.
         self.pcsf_gate_sens = float(os.environ.get('PHASER_PCSF_GATE_SENS', '0.5'))
@@ -187,6 +262,30 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.inside_penalty_weight = float(os.environ.get('PHASER_INSIDE_WEIGHT', '0.02'))
         self.boundary_w_weight = float(os.environ.get('PHASER_BOUNDARY_W_WEIGHT', '0.05'))
 
+        # --- Small-tumour head supervision schedule -----------------------
+        # The head is a *conditioning input* to PFCR, so it must be trained from
+        # the start of training, not from Phase B. Before the fix the head loss
+        # only ran when epoch >= phase2_start (60), which left the tumour prior
+        # at its random initialisation for the whole of Phase A -- and Copy2
+        # (epoch 48) is exactly such a checkpoint. Default now switches on at
+        # epoch 0 with its own short warmup.
+        self.small_head_start = int(os.environ.get('PHASER_SMALL_HEAD_START', '0'))
+        self.small_head_warmup = int(os.environ.get('PHASER_SMALL_HEAD_WARMUP', '10'))
+        self.small_head_weight = float(
+            os.environ.get('PHASER_SMALL_HEAD_WEIGHT', '0.1'))
+
+        # --- Focal Tversky asymmetry --------------------------------------
+        # alpha/beta are exposed so the symmetric setting (0.5/0.5) that removes
+        # the FN-vs-FP bias is a single-variable change. Defaults reproduce the
+        # historical 0.3/0.7.
+        self.ft_alpha = float(os.environ.get('PHASER_FT_ALPHA', '0.3'))
+        self.ft_beta = float(os.environ.get('PHASER_FT_BETA', '0.7'))
+
+        # --- Reproducibility ----------------------------------------------
+        # -1 disables seeding (the historical behaviour: nnU-Net never called
+        # torch.manual_seed, so no run in this repo is reproducible).
+        self.phaser_seed = int(os.environ.get('PHASER_SEED', '-1'))
+
         # --- Warmup for auxiliary losses ---
         self.warmup_epochs = int(os.environ.get('PHASER_WARMUP_EPOCHS', '50'))
 
@@ -216,6 +315,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             + (f", pc_scales={self.pc_scales}, pc_max_voxels={self.pc_max_voxels}"
                if self.pcsf_mode == 'pc' else "") + ")\n"
             f"  PFCR: {self.enable_pfcr} (prior={self.pfcr_use_prior}, budget={self.enable_pfcr_budget}, w={self.pfcr_budget_weight})\n"
+            f"  Phase congruency: pc_scales={self.pc_scales}, pc_max_voxels={self.pc_max_voxels}, "
+            f"spacing={self.pc_spacing}, noise_rel_kappa={self.pc_noise_rel_kappa}\n"
             f"  PC boundary loss: {self.enable_pc_boundary_loss} "
             f"(w={self.pc_boundary_weight}, margin={self.pc_boundary_margin}, "
             f"warmup={self.pc_boundary_warmup}ep, active from epoch 0)\n"
@@ -225,6 +326,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  ACG:  {self.enable_acg}\n"
             f"  LA-ACG: {self.enable_la_acg}\n"
             f"  Small-Tumor Head: {self.enable_small_head}\n"
+            f"  Small-Head Loss: start={self.small_head_start}, warmup={self.small_head_warmup}, w={self.small_head_weight}\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
             f"  Spectral loss: {self.enable_spectral_loss} (w={self.spectral_weight})\n"
             f"  Boundary loss: {self.enable_boundary_loss} (w={self.boundary_weight})\n"
@@ -232,7 +334,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Inside-liver penalty: {self.enable_inside_penalty} (w={self.inside_penalty_weight})\n"
             f"  BoundaryW Dice: {self.enable_boundary_w_loss} (w={self.boundary_w_weight})\n"
             f"  Lesion weight: {self.enable_lesion_weight} (w={self.lesion_weight})\n"
-            f"  Focal Tversky: w={self.ft_weight}\n"
+            f"  Focal Tversky: w={self.ft_weight} (alpha={self.ft_alpha}, beta={self.ft_beta})\n"
+            f"  PHASER_SEED: {self.phaser_seed}"
+            + ("" if self.phaser_seed >= 0 else " (unset -> not reproducible)") + "\n"
             f"  Aux loss warmup: {self.warmup_epochs} epochs\n"
             f"  Three-phase: 0-{self.phase2_start-1} (A), "
             f"{self.phase2_start}-{self.phase3_start-1} (B), "
@@ -305,6 +409,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         pcsf_mode = os.environ.get('PHASER_PCSF_MODE', 'grad')
         pc_scales = int(os.environ.get('PHASER_PC_SCALES', '3'))
         pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(1 << 20)))
+        pc_spacing = resolve_pc_spacing(configuration_manager, dim)
+        pc_noise_rel_kappa = float(os.environ.get('PHASER_PC_NOISE_KAPPA', '0.0'))
         pcsf_gate_sens = float(os.environ.get('PHASER_PCSF_GATE_SENS', '0.5'))
         enable_lwfd = os.environ.get('PHASER_LWFD', '0') == '1'
         enable_acg = os.environ.get('PHASER_ACG', '0') == '1'
@@ -338,6 +444,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             pcsf_mode=pcsf_mode,
             pc_scales=pc_scales,
             pc_max_voxels=pc_max_voxels,
+            pc_spacing=pc_spacing,
+            pc_noise_rel_kappa=pc_noise_rel_kappa,
             pcsf_gate_sens=pcsf_gate_sens,
             enable_lwfd=enable_lwfd,
             enable_acg=enable_acg,
@@ -382,8 +490,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 dice_class=MemoryEfficientSoftDiceLoss,
             )
             focal_tversky = MultiClassFocalTverskyLoss(
-                alpha=0.3,
-                beta=0.7,
+                alpha=self.ft_alpha,
+                beta=self.ft_beta,
                 gamma=4.0 / 3.0,
                 include_background=False,
                 ignore_label=self.label_manager.ignore_label,
@@ -464,6 +572,40 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         if self.current_epoch < start_epoch:
             return 0.0
         return min((self.current_epoch - start_epoch) / max(self.warmup_epochs, 1), 1.0)
+
+    # ------------------------------------------------------------------
+    # Reproducibility
+    # ------------------------------------------------------------------
+    def on_train_start(self):
+        """Seed every RNG when PHASER_SEED is set.
+
+        nnU-Net seeds nothing, so no run in this repository is reproducible and
+        no A-vs-B difference can be separated from run-to-run variance. With
+        PHASER_SEED >= 0 the three RNGs and any dataloader generators are
+        pinned. Note cuDNN determinism is deliberately NOT forced: it costs a
+        lot of throughput and the plan is to compare seeds anyway.
+        """
+        super().on_train_start()
+        if self.phaser_seed < 0:
+            self.print_to_log_file(
+                "Reproducibility: PHASER_SEED unset -> RNGs NOT seeded "
+                "(historical behaviour; reruns will differ).")
+            return
+        import random
+        seed = int(self.phaser_seed)
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        for name in ('dataloader_train', 'dataloader_val'):
+            gen = getattr(getattr(self, name, None), 'generator', None)
+            if gen is not None:
+                gen.manual_seed(seed)
+        self.print_to_log_file(
+            f"Reproducibility: seeded torch / numpy / random with PHASER_SEED={seed} "
+            f"(cuDNN deterministic NOT forced).")
 
     # ------------------------------------------------------------------
     # Training step (with auxiliary losses)
@@ -589,14 +731,22 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 )
                 aux_loss = aux_loss + self.lesion_weight * ramp_b * l_loss
 
-            # Small tumor head loss — Phase B/C (binary: BG vs tumor)
-            if small_logits is not None and in_phase2:
+            # Small tumor head loss — active from PHASER_SMALL_HEAD_START
+            # (default 0), with its own short warmup. This head produces PFCR's
+            # conditioning input, so gating it behind Phase B (epoch >= 60) left
+            # the tumour prior at random initialisation for the whole of Phase A
+            # -- which is exactly the regime Copy2 lives in.
+            if (small_logits is not None
+                    and (self.current_epoch + 1) > self.small_head_start):
                 t4d = main_target.squeeze(1).long() if main_target.dim() == 5 else main_target.long()
                 tumor_target = (t4d == 2).long()
                 tumor_weight = (t4d == 2).float() * 3.0 + 1.0
                 sh_loss = F.cross_entropy(small_logits, tumor_target, reduction='none')
                 sh_loss = (sh_loss * tumor_weight).mean()
-                aux_loss = aux_loss + 0.1 * ramp_b * sh_loss
+                ramp_sh = min(
+                    (self.current_epoch + 1 - self.small_head_start)
+                    / max(self.small_head_warmup, 1), 1.0)
+                aux_loss = aux_loss + self.small_head_weight * ramp_sh * sh_loss
 
             total_loss = seg_loss + aux_loss
 

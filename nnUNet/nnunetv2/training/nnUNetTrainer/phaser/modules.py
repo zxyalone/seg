@@ -164,17 +164,68 @@ class PhaseCongruency(nn.Module):
     - `max_voxels` caps FFT cost: above it the proxy is downsampled by powers of
       two, PC is computed there, and the map is upsampled back. Boundary
       evidence is spatially smooth, so this is a cheap and ablatable trade.
+      NOTE (2026-09): the default 2^20 is BELOW 128^3 = 2.10M, so on a standard
+      nnU-Net patch the shallowest skip is always computed at 64^3. That is not
+      only a cost device -- the 2x average denoises, and removing the cap was
+      measured to make boundary localisation WORSE on a synthetic slab (AUC at
+      CNR 2/4: 1.00/1.00 capped vs 0.50/0.52 uncapped), while a single real
+      patch preferred the uncapped form (boundary/peri ratio 0.62 vs 0.37).
+      Evidence is mixed, so the default is unchanged and `downsample_factor` is
+      now reported in _last_diag so the effective resolution is never silent.
+    - `spacing` (mm/voxel per axis) makes the log-Gabor bank isotropic in
+      physical space. Left at None by default: enabling it reinterprets the
+      learnable rho (cycles/mm instead of cycles/voxel) and rescales the bank by
+      up to 1.28x on LiTS, which is a behaviour change rather than a pure bug
+      fix, and it showed no clear win on one real patch.
+    - `noise_rel_kappa` optionally caps the Kovesi threshold at a fraction of
+      the local multi-scale amplitude sum. MEASURED AND REJECTED as a default:
+      with kappa = 0.5 the threshold stops sparsifying the output (PC > 0 for
+      94% of voxels on a real LiTS patch, versus 48% with the pure Kovesi
+      threshold) and boundary localisation gets *worse* -- on a synthetic slab
+      the boundary-vs-interior AUC fell to 0.39/0.29/0.25 at CNR 0.5/1/2 where
+      the uncapped operator scored 0.52/0.67/1.00. The reason: for step-like
+      objects num/den is ~1.00 at the boundary and ~1.00 in the interior (probe
+      measured 1.0029 vs 0.9992), so the ratio carries no edge information and
+      the absolute threshold was the only thing providing localisation -- by
+      abstaining, not by contrast. Kept at 0.0 for the record.
     """
 
     def __init__(self, dims: int = 3, n_scales: int = 3,
                  min_wavelength: float = 3.0, mult: float = 2.1,
                  sigma_onf: float = 0.55, noise_k: float = 2.0,
-                 max_voxels: int = 1 << 20, eps: float = 1e-3):
+                 max_voxels: int = 1 << 20, eps: float = 1e-3,
+                 spacing=None, noise_rel_kappa: float = 0.0):
         super().__init__()
         self.dims = dims
         self.n_scales = n_scales
         self.max_voxels = max_voxels
         self.eps = eps
+
+        # Physical voxel spacing, one entry per spatial axis in the same order
+        # as the tensor axes. When supplied, the log-Gabor grid is built in
+        # cycles/mm so the bank is isotropic in *physical* space; when None it
+        # stays in cycles/voxel (d = 1), the pre-2026-09 behaviour. LiTS is
+        # resampled to 1.0 / 0.779 / 0.779 mm (~1.28x anisotropy), so this is
+        # not cosmetic.
+        if spacing is None:
+            self.spacing = (1.0,) * dims
+        else:
+            spacing = tuple(float(s) for s in spacing)
+            if len(spacing) != dims:
+                raise ValueError(
+                    f"spacing must have {dims} entries, got {len(spacing)}")
+            if any(s <= 0 for s in spacing):
+                raise ValueError(f"spacing must be positive, got {spacing}")
+            self.spacing = spacing
+
+        # Relative cap on the Kovesi threshold. 0 disables the cap and restores
+        # the pre-2026-09 absolute-threshold behaviour (see forward()).
+        self.noise_rel_kappa = float(noise_rel_kappa)
+
+        # Diagnostics written on every eval-mode forward: T (Kovesi), the
+        # capped T actually used, and the mean T/den ratio. Used by the
+        # mechanism-validation probes; free during training.
+        self._last_diag = None
 
         # Centre frequencies ρ_s = 1/λ_s for λ_s = min_wavelength · mult^s,
         # stored as raw logits so ρ_s = 0.5·σ(raw) stays inside (0, Nyquist).
@@ -200,18 +251,20 @@ class PhaseCongruency(nn.Module):
 
     # -- frequency grid -------------------------------------------------
     def _freq_grid(self, spatial, device):
-        key = (tuple(spatial), str(device))
+        key = (tuple(spatial), str(device), self.spacing)
         hit = self._grid_cache.get(key)
         if hit is not None:
             return hit
 
         axes = []
         for i, n in enumerate(spatial):
-            # rfftn only halves the LAST transformed axis
+            # rfftn only halves the LAST transformed axis. d = physical spacing
+            # (mm/voxel) so rho comes out in cycles/mm and the bank is isotropic
+            # in mm rather than in voxels.
             if i == len(spatial) - 1:
-                axes.append(torch.fft.rfftfreq(n, d=1.0, device=device))
+                axes.append(torch.fft.rfftfreq(n, d=self.spacing[i], device=device))
             else:
-                axes.append(torch.fft.fftfreq(n, d=1.0, device=device))
+                axes.append(torch.fft.fftfreq(n, d=self.spacing[i], device=device))
         grids = torch.meshgrid(*axes, indexing='ij')
 
         rho = torch.sqrt(sum(g ** 2 for g in grids))
@@ -237,6 +290,11 @@ class PhaseCongruency(nn.Module):
         dims = self.dims
         spatial = tuple(x.shape[2:])
         S = self.n_scales
+        # Diagnostics are only populated in eval mode, so clear them here to
+        # avoid a training step exposing a stale reading from the last
+        # validation pass.
+        if self.training:
+            self._last_diag = None
 
         # torch.fft is fp32-only; opt out of autocast for the whole transform.
         with torch.amp.autocast(device_type=x.device.type, enabled=False):
@@ -316,6 +374,43 @@ class PhaseCongruency(nn.Module):
             T = tau_total * (math.sqrt(math.pi / 2.0)
                              + k * math.sqrt((4.0 - math.pi) / 2.0))
             T = T.view(-1, *((1,) * dims))           # [B,1,..] broadcast
+            T_kovesi = T
+
+            # --- Optional relative cap on the noise threshold ---------------
+            # Kovesi's T is an absolute energy estimate read off the noise floor
+            # of the highest-frequency scale. In a mostly-flat volume T can
+            # exceed the whole multi-scale amplitude sum `den`, so `num - T <= 0`
+            # at every voxel and PC degenerates to a constant 0 -- including at
+            # true edges. Measured on LiTS at sigma ~ 5 HU: T/den = 1.15-2.35,
+            # and PC was exactly 0 wherever CNR <= 1.
+            #
+            # Capping T at kappa*den restores scale-freeness (both terms are
+            # degree-1 homogeneous in x, so PC(k.x) == PC(x) still holds), but
+            # it was MEASURED TO BE WORSE and is therefore OFF by default:
+            # see the class docstring. The cap removes the sparsification that
+            # is the operator's only source of localisation. Kept for the
+            # record; set PHASER_PC_NOISE_KAPPA to re-enable.
+            if self.noise_rel_kappa > 0:
+                T = torch.minimum(T, self.noise_rel_kappa * den)
+
+            if not self.training:
+                with torch.no_grad():
+                    self._last_diag = {
+                        'T_kovesi': float(T_kovesi.mean()),
+                        'T_eff': float(T.mean()),
+                        'den_mean': float(den.mean()),
+                        'T_over_den_mean': float((T / den.clamp(min=1e-12)).mean()),
+                        'T_kovesi_over_den_mean': float(
+                            (T_kovesi / den.clamp(min=1e-12)).mean()),
+                        'kappa': float(self.noise_rel_kappa),
+                        'spacing': list(self.spacing),
+                        'downsample_factor': int(factor),
+                        'work_shape': list(work),
+                        'frac_den_above_T_kovesi': float((den > T_kovesi).float().mean()),
+                        'pc_mean': None,        # filled in below
+                        'pc_frac_nonzero': None,
+                        'num_over_den_mean': None,
+                    }
 
             # Relative epsilon: den.mean() is homogeneous of degree 1 in x just
             # like num and den, so contrast invariance survives the guard term
@@ -325,6 +420,13 @@ class PhaseCongruency(nn.Module):
             floor = self.eps * den.mean(dim=sp, keepdim=True)
             pc = (num - T).clamp(min=0.0) / (den + floor + 1e-12)
             pc = pc.unsqueeze(1).clamp(0.0, 1.0)     # [B,1,*work]
+
+            if self._last_diag is not None:
+                with torch.no_grad():
+                    self._last_diag['pc_mean'] = float(pc.mean())
+                    self._last_diag['pc_frac_nonzero'] = float((pc > 0).float().mean())
+                    self._last_diag['num_over_den_mean'] = float(
+                        (num / den.clamp(min=1e-12)).mean())
 
             if factor > 1:
                 pc = interpolate_nd(dims, pc, size=spatial)
@@ -355,7 +457,8 @@ class PhaseCongruencySkipFusion(nn.Module):
     """
 
     def __init__(self, channels: int, dims: int = 3, n_scales: int = 3,
-                 pc_max_voxels: int = 1 << 20, gate_sens_init: float = 0.5):
+                 pc_max_voxels: int = 1 << 20, gate_sens_init: float = 0.5,
+                 spacing=None, noise_rel_kappa: float = 0.5):
         super().__init__()
         self.dims = dims
         # Channel reduction. Initialised to the plain channel mean so the proxy
@@ -365,7 +468,9 @@ class PhaseCongruencySkipFusion(nn.Module):
         nn.init.constant_(self.proxy.weight, 1.0 / max(channels, 1))
 
         self.pc = PhaseCongruency(dims=dims, n_scales=n_scales,
-                                  max_voxels=pc_max_voxels)
+                                  max_voxels=pc_max_voxels,
+                                  spacing=spacing,
+                                  noise_rel_kappa=noise_rel_kappa)
 
         # γ = 0 gives exact identity, which is what protects the VoCo weights.
         # α, by contrast, MUST start nonzero: the gate applies 10·tanh(α) to its
@@ -406,14 +511,17 @@ class PhaseFrequencyCoherenceRouting(nn.Module):
     """Route Haar subbands with contrast-invariant phase evidence."""
 
     def __init__(self, channels: int, dims: int = 3, n_scales: int = 3,
-                 pc_max_voxels: int = 1 << 20, use_prior: bool = False):
+                 pc_max_voxels: int = 1 << 20, use_prior: bool = False,
+                 spacing=None, noise_rel_kappa: float = 0.5):
         super().__init__()
         self.dims = dims
         self.use_prior = use_prior
         self.proxy = conv_nd(dims, channels, 1, 1, bias=False)
         nn.init.constant_(self.proxy.weight, 1.0 / max(channels, 1))
         self.pc = PhaseCongruency(dims=dims, n_scales=n_scales,
-                                  max_voxels=pc_max_voxels)
+                                  max_voxels=pc_max_voxels,
+                                  spacing=spacing,
+                                  noise_rel_kappa=noise_rel_kappa)
         self.router = nn.Sequential(
             conv_nd(dims, 2 if use_prior else 1, 8, 3, padding=1),
             nn.ReLU(inplace=True),
@@ -437,7 +545,11 @@ class PhaseFrequencyCoherenceRouting(nn.Module):
         route_input = pc
         if self.use_prior and tumor_prior is not None:
             prior = interpolate_nd(self.dims, tumor_prior, size=pc.shape[2:])
-            route_input = torch.cat((pc, prior.sigmoid()), dim=1)
+            # tumor_prior already carries probability semantics (a softmax over
+            # the small head's 2 classes, see PhaserUNet.forward). Applying
+            # sigmoid() here was a second, redundant squash: it compressed the
+            # prior into (0.5, 0.73) and destroyed its contrast. Pass through.
+            route_input = torch.cat((pc, prior), dim=1)
         route = torch.softmax(self.router(route_input), dim=1)
         self._last_pc = pc if self.training else pc.detach()
         self._last_route = route if self.training else route.detach()
