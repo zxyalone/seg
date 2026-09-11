@@ -1,0 +1,306 @@
+PhASER-3D 创新合理性验证方案
+版本：v1（2026-09-10）
+适用仓库：/root/autodl-tmp/Downstream_2
+适用数据：Dataset102_LiTS（train 83 / val 21 / test 27），fold 0
+================================================================
+
+
+0. 背景与当前证据边界
+----------------------
+
+当前已有结果：
+  - Copy2（9/5 运行，epoch 48，VoComni 预训练）：
+    24 例 tumor Dice 0.702935 ± 0.152399
+  - 重训 EMA-best（~epoch 101，同配置）：
+    24 例 tumor Dice 0.746671 ± 0.110168（p=0.0112）
+  - 重训 best_tumor_dice（patch pseudo 最高）：
+    24 例 tumor Dice 0.657817 ± 0.178278（最差）
+
+这些结果能说明：
+  - 指标可精确复现、评测管线可信；
+  - patch 级 pseudo dice 不能用于 checkpoint 选择。
+
+这些结果不能说明：
+  - PFCR / 相位证据本身有效：三组都开了 PFCR，差异混杂训练轮数、随机性、
+    checkpoint 选择；
+  - 任何"创新"结论。本方案的目标就是把这些命题拆开逐一验证。
+
+
+1. 待验证命题（可证伪）
+------------------------
+
+C1（机制）  相位一致性（PC）在低对比度下比梯度幅值更稳。
+            证伪：低 CNR 区间 PC 的"边界/内部响应比"不高于 |∇f|。
+C2（结构）  相位证据用于 Haar 低/中/高频路由，优于只用它做普通 skip gate。
+            证伪：PFCR 与 PCSF(pc) 无显著差异。
+C3（训练）  PC ranking 监督使可学习 log-Gabor 适配病灶尺度。
+            证伪：去掉 ranking 后滤波器中心频率、PC gap、路由分布无变化。
+C4（价值）  收益出现在小病灶 / 低对比病灶的分层指标，而非仅整体 Dice。
+            证伪：分层 recall/F1 无改善，或只有 pseudo dice 改善。
+C5（归因）  收益不能由预训练、参数量、训练预算或数据增强解释。
+            证伪：容量匹配对照（PC 置换）或 scratch 对照追平主方法。
+
+
+2. 评测协议（先冻结，任何实验不得更改）
+--------------------------------------
+
+2.1 数据划分
+  - 模型选择：仅用 fold 0 的 21 例验证集。
+  - 27 例测试集锁定，最后只报告一次；不得用测试集选方案。
+
+2.2 推理与指标
+  - 全卷滑窗、无 TTA、case-level。
+  - 三口径同时报：Liver(label1) / Whole liver(label>0) / Tumor(label2)。
+  - 主表：24 例含肿瘤队列；完整测试集口径用 --all-cases 另行报告。
+  - 指标套件：
+      Dice / IoU、lesion-wise recall / precision / F1、FP/scan、
+      HD95 / NSD、按 <10 / 10-20 / >20 mm 分层、按病灶-肝实质 CNR 分层。
+  - 现有工具：reproduce_metrics.py（Dice/IoU、三口径、24/27）。
+    病灶级指标脚本尚需实现（见第 10 节）。
+
+2.3 训练与记录
+  - 所有对照必须同 fold、同 seed 数、同 epoch 预算、同推理设置。
+  - 每个 run 保存：git commit、完整 env 清单、checkpoint hash、
+    seed、实际训练步数、预测与指标 CSV。
+  - 本仓库当前训练未固定全局随机种子（nnUNetTrainer 未调用 torch.manual_seed），
+    需增加 PHASER_SEED（见第 10 节），关键比较至少 2-3 个 seed。
+
+
+3. Step 1：数据与工程可信性（半天，已完成大部分）
+--------------------------------------------------
+
+3.1 已完成
+  [x] Copy2 指标精确复现（reproduce_metrics.py 4/4 PASS）。
+  [x] 预测与 GT 的 size/spacing/origin/direction 一致。
+  [x] 3 个无肿瘤病例确认（LiTS_032/106/115）。
+  [x] 三口径指标（label1 / 整肝 / tumor）可复算。
+
+3.2 待做
+  [ ] 确认 27 例 test 与 train/val 无重叠（splits_final.json）。
+  [ ] 固定训练 seed（PHASER_SEED），并验证同 seed 下 loss 曲线可复现。
+
+
+4. Step 2：机制级验证（不训练，1-2 天，最优先）
+-----------------------------------------------
+
+4.1 合成实验（检验 C1）
+  - 构造：3D 阶梯边缘 / 高斯球，病灶-背景对比度递减 + 不同噪声水平；
+  - 计算 PC 图与 |∇f| 图，统计：
+      boundary_response / interior_response 比值 vs CNR；
+  - 判定：PC 的优势必须随 CNR 下降而扩大；否则机制动机不成立。
+
+4.2 真实病例 PC 响应（检验 C1）
+  - 对 24 例（或 21 例验证集）在 GT 肿瘤边界 / 内部 / 外周肝实质
+    计算 PC 与 |∇f| 的区域均值；
+  - 按病灶-肝实质 CNR 分层（CNR 从训练集确定阈值）；
+  - 输出：散点图 + 分层箱线图 + 分层均值表。
+
+4.3 滤波器分析（检验 C3 前提）
+  - 读 checkpoint 的 pfcr_modules.*.pc.rho_raw / sigma_raw / noise_k；
+  - 换算为波长，对比初始 3.0 / 6.3 / 13.2 voxel，看是否显著偏移；
+  - 对比 A6（有 ranking）与 A5（无 ranking）的滤波器分布。
+
+4.4 路由图分析（检验 C2 / budget）
+  - 统计肿瘤内 vs 肝实质 vs 背景的 low/mid/high 路由均值；
+  - 检查是否接近预算 (0.20,0.40,0.40) / (0.70,0.22,0.08)；
+  - 可视化若干典型病例的路由图。
+
+产出：机制验证报告（图 + 表），决定是否值得进入 Step 3。
+
+
+5. Step 3：单变量消融 pilot（核心）
+------------------------------------
+
+5.1 先做最小三组（fold 0、单 seed、固定 100 epoch）
+  A0  VoComni nnU-Net 基线：PHASER_PFCR=0
+  A1  PCSF grad（幅度域边界对照）：PHASER_PCSF=1 PHASER_PCSF_MODE=grad PHASER_PFCR=0
+  A6  完整 PFCR + prior + budget + PC ranking + VoComni（同重训配置）
+
+  判定：
+    A6 在低 CNR / 小病灶分层上稳定优于 A1 -> 进入 5.2；
+    否则停止，回到机制修改，不扩矩阵。
+
+5.2 完整矩阵（每组同预算，先单 seed，关键组 3 seeds）
+  组   配置（在训练命令 env 基础上修改）                          验证
+  A0   PHASER_PFCR=0                                             基线
+  A1   PHASER_PCSF=1 PHASER_PCSF_MODE=grad PHASER_PFCR=0         幅度域对照
+  A2   PHASER_PCSF=1 PHASER_PCSF_MODE=pc   PHASER_PFCR=0         相位 vs 梯度
+  A3   PHASER_PFCR=1 PHASER_PFCR_USE_PRIOR=0                     路由本身
+  A4   A3 + PHASER_PFCR_USE_PRIOR=1                              语义条件
+  A5   A4 + PHASER_L_PFCR_BUDGET=1                               预算约束
+  A6   A5 + PHASER_L_PC_BOUNDARY=1                               排序监督
+  A7   A6 + PHASER_PC_SHUFFLE=1（需实现）                        PC 置换（容量对照）
+  A8   A6 + VOCOMNI_NNUNET_CKPT=""                               预训练对照
+
+  关键比较：
+    A6 vs A1   相位是否优于梯度（C1/C2）
+    A6 vs A3/A4/A5   各组件是否必要（C2）
+    A7 vs A6   收益来自相位证据还是额外容量（C5）
+    A8 vs A6   预训练是否解释一切（C5）
+
+5.3 训练命令模板
+  参考 README 第 4.1 节完整命令，只改两处：
+    export nnUNet_results=/root/autodl-tmp/nnUNet_data/nnUNet_results_ablation/<组名>
+    按上表增删 PHASER_* 变量
+  每组训练结束后用第 2.2 节协议在 21 例验证集上全卷评估，
+  按验证集 case Dice 选 checkpoint（不要用 pseudo dice）。
+
+
+6. Step 4：因果干预（pilot 有信号后）
+-------------------------------------
+
+6.1 证据移除
+  - 推理时对单个尺度 s 的 PC 证据置零或跨样本置换；
+  - 按病灶计算 U_j,s = L_j(p_{-s}, Y) - L_j(p_full, Y)；
+  - 正值 = 该尺度证据对该病灶有贡献；负值可能是冗余或误增强。
+
+6.2 路由干预
+  - 强制 route = (1/3,1/3,1/3) vs 学习到的 route，比较局部损失；
+  - 检验路由是否真的按病灶区域分配频带。
+
+6.3 监督干预
+  - 对比 A5/A6 的 PC gap（边界-周边）与滤波器频率；
+  - 验证 PC ranking 是否兑现了设计目标。
+
+说明：干预只能说明固定网络内的条件贡献，不等于病理因果或 Shapley 值。
+
+
+7. Step 5：受控退化（对应"低对比"卖点）
+----------------------------------------
+
+  - 对同一 CT 做配对退化（标签几何同步）：
+      对比度缩放、有色噪声、模糊、层厚/各向异性变化；
+  - 在相同物理坐标下评估，报告 clean vs degraded 的配对差值；
+  - 核心交互检验：PC 相对 gradient 的优势是否随 CNR 下降而扩大；
+  - 频域增广/一致性训练已属成熟方向，若收益只来自增强则不算创新。
+
+
+8. Step 6：统计与决策门槛
+--------------------------
+
+  - 关键比较至少 2-3 seeds；paired bootstrap 95% CI + Wilcoxon 或 permutation；
+  - 主终点预先固定，例如：
+      固定 FP/scan 下 <10 mm 病灶 recall +5pt，且整体 tumor Dice 不降；
+      或 24 例 macro tumor Dice +2pt 且两个 seed 方向一致。
+  - 报告效应量与 CI，不只报 p 值；
+  - 门槛未达到则停止或缩减主张，不靠加模块挽救。
+
+
+9. Step 7：外部验证
+--------------------
+
+  - 使用与训练数据无患者重叠、且有肿瘤标注的独立队列（如 3D-IRCADb 等）；
+  - 注意 LiTS 与 MSD Task03 Liver 存在复用关系，不能互为外部测试；
+  - 外部阈值在开发验证集确定并冻结，报告实际达到的敏感度与 FP/scan。
+
+
+10. 需要的代码改动与脚本
+-------------------------
+
+10.1 PHASER_SEED（训练可复现性）
+   - 在 nnUNetTrainer_phaser.on_train_start 或 initialize 中读取 PHASER_SEED，
+     设置 torch.manual_seed / np.random.seed / random.seed；
+   - 目的：同 seed 下关键比较可复现，支持多 seed 统计。
+
+10.2 PHASER_PC_SHUFFLE（A7 容量对照）
+   - 在 PFCR 内把 PC map 替换为空间置换（或 batch 内样本置换）版本，
+     张量形状、参数量、计算路径不变；
+   - 这是证明"收益来自相位证据而非额外容量"的关键开关。
+
+10.3 病灶级指标脚本（validate_lesion_metrics.py）
+   - 连通域分析、一对一匹配（IoU>0.5，报告阈值敏感性）、
+     lesion recall/precision/F1、FP/scan、按大小/CNR 分层；
+   - 复用 reproduce_metrics.py 的路径与队列约定。
+
+10.4 CNR 计算脚本
+   - 对每个病灶计算 lesion-liver CNR（邻域排除其他病灶、血管、肝外）；
+   - 阈值从训练集确定，测试集冻结。
+
+10.5 全卷验证选择（可选但推荐）
+   - 训练中/结束后在 21 例验证集上跑全卷滑窗，保存 checkpoint_best_fullvol.pth；
+   - 替代 EMA pseudo dice 选择，消除第 0 节的混杂。
+
+
+11. 时间与资源预算（单卡 RTX 3090）
+-----------------------------------
+
+  Step 2 机制验证：        1-2 天（不占 GPU 或轻量）
+  Step 3 最小三组 pilot：  3 组 x 100 epoch x ~2 min/epoch ≈ 10-12 GPU 小时
+  Step 3 完整矩阵：        9 组 x 100 epoch ≈ 30 GPU 小时（单 seed）
+  关键组 3 seeds：         +20-30 GPU 小时
+  Step 4/5：              在已训模型上做干预/退化，2-4 天
+  Step 7 外部验证：        视数据获取而定
+
+  建议顺序：Step 2 -> 最小三组 -> 决策 -> 扩矩阵/加 seed。
+
+
+12. 停止 / 证伪条件（提前写死）
+-------------------------------
+
+  出现以下任一情况，应缩减或放弃创新主张：
+  - A6 不优于 A1（相位不优于梯度）；
+  - A7 ≈ A6（收益来自容量/正则而非相位证据）；
+  - 改善只出现在 pseudo dice，全卷 case Dice 与分层 recall 无变化；
+  - 改善只出现在模拟退化，真实低对比病例或外部中心无效；
+  - 噪声协方差/结构估计与真实误差不相关（针对后续 PhASER-R 方向）。
+
+
+13. 预期产出
+------------
+
+  表 1 主消融表（A0-A8 x 全卷 Dice/IoU/recall/FP/scan）
+  表 2 低 CNR 与大小分层表
+  表 3 机制表（PC vs gradient 响应比、滤波器频率、路由分布）
+  图 1 PC 与梯度响应 vs CNR 曲线（合成 + 真实）
+  图 2 典型病例 PC 图 / 路由图 / 预测对比
+  图 3 受控退化下的性能- CNR 曲线
+  附录 复现清单（命令、env、hash、seed）
+
+
+附录 A：训练命令模板（同 README 4.1，只改变量）
+-----------------------------------------------
+
+export nnUNet_raw=/root/autodl-tmp/nnUNet_data/nnUNet_raw
+export nnUNet_preprocessed=/root/autodl-tmp/nnUNet_data/nnUNet_preprocessed
+export nnUNet_results=/root/autodl-tmp/nnUNet_data/nnUNet_results_ablation/<组名>
+export PYTHONPATH=/root/autodl-tmp/Downstream_2/nnUNet
+export CUDA_VISIBLE_DEVICES=0
+export PHASER_SEED=0                       # 需先实现 10.1
+
+# 基础开关（A6 全量）：
+export PHASER_PFCR=1
+export PHASER_PFCR_USE_PRIOR=1
+export PHASER_L_PFCR_BUDGET=1
+export PHASER_SMALL_HEAD=1
+export PHASER_PC_SCALES=3
+export PHASER_PC_MAX_VOXELS=1048576
+export PHASER_PCSF=0
+export PHASER_LWFD=0
+export PHASER_ACG=0
+export PHASER_T_RAF=none
+export PHASER_LA_ACG=0
+export PHASER_L_PC_BOUNDARY=1
+export PHASER_L_SPECTRAL=1
+export PHASER_L_BOUNDARY=1
+export PHASER_ENABLE_LESION_WEIGHT=1
+export PHASER_OVERSAMPLE=0.66
+export PHASER_NUM_EPOCHS=100               # 消融统一预算
+export VOCOMNI_NNUNET_CKPT=/root/autodl-tmp/Downstream_2/VoComni_nnunet.pt
+# A8 改为：export VOCOMNI_NNUNET_CKPT=""
+
+/root/autodl-tmp/envs/mamba/bin/nnUNetv2_train Dataset102_LiTS 3d_fullres 0 \
+  -tr nnUNetTrainer_phaser -p nnUNetPlans
+
+
+附录 B：评测命令
+----------------
+
+# 24 例主口径（label1 / 整肝 / tumor）
+/root/autodl-tmp/envs/mamba/bin/python reproduce_metrics.py \
+  --pred-dir <预测目录> --no-check
+
+# 27 例完整测试集口径
+/root/autodl-tmp/envs/mamba/bin/python reproduce_metrics.py \
+  --pred-dir <预测目录> --all-cases
+
+# 预测命令见 README 第 5 节（--disable_tta）

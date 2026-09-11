@@ -1,0 +1,113 @@
+
+==========================================================================
+Step 2 / 4.2 真实病例 PC 响应 — 边界 vs 外周肝实质（检验 C1）
+==========================================================================
+体素间距 (z,y,x) = (0.7791720032691956, 0.7791720032691956, 1.0) mm
+训练 83 / 验证 21 / 测试 27（测试集锁定，不参与）
+device=cuda  核心上限=120  补边=32  最小病灶=50 体素
+
+=== 训练集：CNR 分布（仅用于冻结分层阈值）===
+  train 20/83
+  train 40/83
+  train 60/83
+  train 80/83
+
+训练集有效病灶 518（总 518）
+CNR 三分位阈值 = 1.2785 / 1.9208
+训练集 CNR: min=0.022  q1=1.088 med=1.616  q3=2.074  max=5.373
+
+=== 验证集：PC 与 |∇f| 区域响应 ===
+  val 1/21 LiTS_006: 7 病灶
+  val 2/21 LiTS_009: 6 病灶
+  val 3/21 LiTS_017: 4 病灶
+  val 4/21 LiTS_024: 1 病灶
+  val 5/21 LiTS_034: 0 病灶
+  val 6/21 LiTS_038: 0 病灶
+  val 7/21 LiTS_039: 1 病灶
+  val 8/21 LiTS_042: 2 病灶
+  val 9/21 LiTS_053: 2 病灶
+  val 10/21 LiTS_056: 2 病灶
+  val 11/21 LiTS_061: 2 病灶
+  val 12/21 LiTS_067: 1 病灶
+  val 13/21 LiTS_073: 1 病灶
+  val 14/21 LiTS_076: 10 病灶
+  val 15/21 LiTS_090: 7 病灶
+  val 16/21 LiTS_094: 14 病灶
+  val 17/21 LiTS_102: 1 病灶
+  val 18/21 LiTS_105: 0 病灶
+  val 19/21 LiTS_120: 6 病灶
+  val 20/21 LiTS_124: 14 病灶
+  val 21/21 LiTS_129: 10 病灶
+
+验证集病灶总数=91  参与 PC/|∇f| 分析=87  裁剪截断跳过=4  无有效外周环=0
+
+  CNR层    n |    CNR中位    PC_b  PC_peri  PC_ratio      g_b   g_peri   g_ratio |   sep_PC    sep_g    sep比
+   low   36 |    0.959  0.0501   0.0682     0.651   25.786   26.562     0.967 |   -0.094   -0.058 -111209953.19
+   mid   29 |    1.595  0.0465   0.0353     1.191   30.448   29.358     1.028 |    0.314    0.104    0.66
+  high   22 |    2.236  0.0797   0.0439     1.678   22.008   19.440     1.111 |    0.777    0.271    1.12
+
+全部 87 个病灶：
+  sep 中位      PC=0.003  |∇f|=0.046  → PC 更优 38/87
+  boundary/peri ratio 中位  PC=1.015  |∇f|=1.021
+  Spearman(CNR, sep_PC)=+0.530  Spearman(CNR, sep_g)=+0.708
+  Spearman(CNR, ratio_PC)=+0.516  Spearman(CNR, ratio_g)=+0.683
+  Spearman(size, sep_PC)=-0.030  Spearman(size, sep_g)=-0.104
+
+距离剖面（负=病灶内；out* 仅统计肝实质）
+     bin        n        PC        |∇f|
+   in0-1     4912    0.0555     25.9943
+   in1-2     2360    0.0468     25.6129
+   in2-4     3336    0.0402     25.6128
+   in4-8     4468    0.0195     26.7934
+  in8-16     3681    0.0176     28.8096
+   in16+      924    0.0037     44.8102
+  out1-2     4295    0.0503     26.6782
+  out2-4     7276    0.0505     25.6043
+  out4-8    17030    0.0515     25.8387
+ out8-16    46712    0.0493     26.0022
+  out16+   574440    0.0475     26.6813
+
+--------------------------------------------------------------------------
+低 CNR 层（中位 0.959）：PC/|∇f| 中位分离度比 = -111209953.19×
+高 CNR 层（中位 2.236）：PC/|∇f| 中位分离度比 = 1.12×
+→ 低 CNR 优势并未更大（不支持 C1）
+→ 低 CNR 层 ratio：PC=0.651 vs |∇f|=0.967
+[write] /root/autodl-tmp/Downstream_2/step2_mechanism/out/s42_real_pc.json
+Traceback (most recent call last):
+  File "/root/autodl-tmp/Downstream_2/step2_mechanism/scripts/s42_real_pc.py", line 425, in <module>
+    main()
+  File "/root/autodl-tmp/Downstream_2/step2_mechanism/scripts/s42_real_pc.py", line 357, in main
+    ax.boxplot([[_fin(r["ratio_pc"]) for r in sub], [_fin(r["ratio_g"]) for r in sub]],
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 453, in wrapper
+    return func(*args, **kwargs)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/__init__.py", line 1524, in inner
+    return func(
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 295, in wrapper
+    return func(*args, **kwargs)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 4232, in boxplot
+    artists = self.bxp(bxpstats, positions=positions, widths=widths,
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 453, in wrapper
+    return func(*args, **kwargs)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 4548, in bxp
+    boxes.append(do_box(box_x, box_y, **box_kw))
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 4468, in do_plot
+    return self.plot(*[xs, ys][maybe_swap], **kwargs)[0]
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 1777, in plot
+    lines = [*self._get_lines(self, *args, data=data, **kwargs)]
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_base.py", line 297, in __call__
+    yield from self._plot_args(
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_base.py", line 546, in _plot_args
+    return [l[0] for l in result]
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_base.py", line 546, in <listcomp>
+    return [l[0] for l in result]
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_base.py", line 539, in <genexpr>
+    result = (make_artist(axes, x[:, j % ncx], y[:, j % ncy], kw,
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/axes/_base.py", line 338, in _make_line
+    seg = mlines.Line2D(x, y, **kw)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/lines.py", line 421, in __init__
+    self._internal_update(kwargs)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/artist.py", line 1235, in _internal_update
+    return self._update_props(
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/matplotlib/artist.py", line 1208, in _update_props
+    raise AttributeError(
+AttributeError: Line2D.set() got an unexpected keyword argument 'facecolor'
