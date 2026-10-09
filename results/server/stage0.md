@@ -17,7 +17,7 @@
 ## 阶段1已得到的结果
 
 - Copy2已保存预测指标复算4/4 PASS。
-- 128³全精度梯度检查遇到CUDA OOM，按清单允许的回退改为96³/50steps/9groups。结果需等完整SUMMARY，不能把部分组PASS当整体完成。
+- 128³全精度梯度检查遇到CUDA OOM，按清单允许的回退改为96³/50steps/9groups。现已得到完整SUMMARY：A0–A8全部PASS。
 
 ## 后续顺序
 

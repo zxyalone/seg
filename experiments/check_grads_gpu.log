@@ -1,0 +1,186 @@
+
+[A0] 0 PhASER tensors, loss 0.939 -> -0.389
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05)]
+   PASS (0 ok, 0 weak, 0 dead)
+
+[A1] 15 PhASER tensors, loss 0.939 -> -0.389
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (15, 0.005, 0.0)]
+   WARN pcsf_modules.3.beta: max|grad|=6.6e-07 moved=yes
+   WARN pcsf_modules.4.alpha: max|grad|=1.3e-09 moved=no
+   WARN pcsf_modules.4.beta: max|grad|=4.4e-10 moved=yes
+   PASS (12 ok, 3 weak, 0 dead)
+
+[A2] 35 PhASER tensors, loss 0.940 -> -0.392
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (5, 0.005, 3e-05), (30, 0.005, 0.0)]
+   WARN pcsf_modules.4.alpha: max|grad|=1.7e-09 moved=no
+   WARN pcsf_modules.4.beta: max|grad|=5.5e-10 moved=yes
+   PASS (33 ok, 2 weak, 0 dead)
+
+[A3] 45 PhASER tensors, loss 0.939 -> -0.389
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (25, 0.005, 3e-05), (20, 0.005, 0.0)]
+   PFCR0: gamma=+0.0031 k=2.000 PC>0 frac=0.245
+   PFCR1: gamma=+0.0025 k=2.000 PC>0 frac=0.449
+   PFCR2: gamma=+0.0021 k=2.000 PC>0 frac=0.675
+   PFCR3: gamma=+0.0006 k=2.000 PC>0 frac=1.000
+   PFCR4: gamma=+0.0000 k=2.000 PC>0 frac=0.266
+   WARN pfcr_modules.0.proxy.weight: max|grad|=9.5e-11 moved=yes
+   WARN pfcr_modules.0.pc.rho_raw: max|grad|=1.2e-11 moved=no
+   WARN pfcr_modules.0.pc.sigma_raw: max|grad|=8.9e-12 moved=no
+   WARN pfcr_modules.0.pc.noise_k: max|grad|=4.6e-12 moved=no
+   WARN pfcr_modules.0.router.0.weight: max|grad|=2.3e-11 moved=yes
+   WARN pfcr_modules.0.router.0.bias: max|grad|=2.3e-11 moved=yes
+   WARN pfcr_modules.0.router.2.bias: max|grad|=7.5e-07 moved=yes
+   WARN pfcr_modules.1.proxy.weight: max|grad|=1.5e-11 moved=yes
+   WARN pfcr_modules.1.pc.rho_raw: max|grad|=1.1e-12 moved=no
+   WARN pfcr_modules.1.pc.sigma_raw: max|grad|=1.1e-12 moved=no
+   WARN pfcr_modules.1.pc.noise_k: max|grad|=3.0e-13 moved=no
+   WARN pfcr_modules.1.router.0.weight: max|grad|=6.8e-12 moved=yes
+   WARN pfcr_modules.1.router.0.bias: max|grad|=4.6e-12 moved=yes
+   WARN pfcr_modules.2.proxy.weight: max|grad|=6.8e-12 moved=yes
+   WARN pfcr_modules.2.pc.rho_raw: max|grad|=1.2e-12 moved=no
+   WARN pfcr_modules.2.pc.sigma_raw: max|grad|=2.5e-12 moved=no
+   WARN pfcr_modules.2.pc.noise_k: max|grad|=3.6e-14 moved=no
+   WARN pfcr_modules.2.router.0.weight: max|grad|=7.1e-13 moved=yes
+   WARN pfcr_modules.2.router.0.bias: max|grad|=2.5e-13 moved=yes
+   WARN pfcr_modules.2.router.2.weight: max|grad|=7.8e-07 moved=yes
+   WARN pfcr_modules.2.router.2.bias: max|grad|=6.6e-07 moved=yes
+   WARN pfcr_modules.3.proxy.weight: max|grad|=3.0e-14 moved=yes
+   WARN pfcr_modules.3.pc.rho_raw: max|grad|=1.0e-15 moved=no
+   WARN pfcr_modules.3.pc.sigma_raw: max|grad|=2.6e-15 moved=no
+   WARN pfcr_modules.3.pc.noise_k: max|grad|=8.9e-16 moved=no
+   WARN pfcr_modules.3.router.0.weight: max|grad|=3.0e-14 moved=yes
+   WARN pfcr_modules.3.router.0.bias: max|grad|=7.6e-15 moved=yes
+   WARN pfcr_modules.3.router.2.weight: max|grad|=7.1e-08 moved=yes
+   WARN pfcr_modules.3.router.2.bias: max|grad|=1.2e-07 moved=yes
+   WARN pfcr_modules.4.proxy.weight: max|grad|=5.5e-24 moved=yes
+   WARN pfcr_modules.4.pc.rho_raw: max|grad|=2.3e-25 moved=no
+   WARN pfcr_modules.4.pc.sigma_raw: max|grad|=2.2e-25 moved=no
+   WARN pfcr_modules.4.pc.noise_k: max|grad|=2.0e-25 moved=no
+   WARN pfcr_modules.4.router.0.weight: max|grad|=9.8e-25 moved=yes
+   WARN pfcr_modules.4.router.0.bias: max|grad|=3.6e-24 moved=yes
+   WARN pfcr_modules.4.router.2.weight: max|grad|=2.8e-12 moved=yes
+   WARN pfcr_modules.4.router.2.bias: max|grad|=1.0e-11 moved=yes
+   PASS (8 ok, 37 weak, 0 dead)
+
+[A4] 55 PhASER tensors, loss 0.952 -> -0.372
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (35, 0.005, 3e-05), (20, 0.005, 0.0)]
+   PFCR0: gamma=+0.0031 k=2.000 PC>0 frac=0.237
+   PFCR1: gamma=+0.0026 k=2.000 PC>0 frac=0.438
+   PFCR2: gamma=+0.0021 k=2.000 PC>0 frac=0.662
+   PFCR3: gamma=+0.0006 k=2.000 PC>0 frac=1.000
+   PFCR4: gamma=+0.0000 k=2.000 PC>0 frac=0.264
+   WARN pfcr_modules.0.proxy.weight: max|grad|=6.1e-11 moved=yes
+   WARN pfcr_modules.0.pc.rho_raw: max|grad|=7.6e-12 moved=no
+   WARN pfcr_modules.0.pc.sigma_raw: max|grad|=5.8e-12 moved=no
+   WARN pfcr_modules.0.pc.noise_k: max|grad|=2.9e-12 moved=no
+   WARN pfcr_modules.0.router.0.weight: max|grad|=1.7e-11 moved=yes
+   WARN pfcr_modules.0.router.0.bias: max|grad|=1.4e-11 moved=yes
+   WARN pfcr_modules.0.router.2.bias: max|grad|=8.6e-07 moved=yes
+   WARN pfcr_modules.1.proxy.weight: max|grad|=8.9e-12 moved=yes
+   WARN pfcr_modules.1.pc.rho_raw: max|grad|=9.3e-13 moved=no
+   WARN pfcr_modules.1.pc.sigma_raw: max|grad|=7.9e-13 moved=no
+   WARN pfcr_modules.1.pc.noise_k: max|grad|=2.0e-13 moved=no
+   WARN pfcr_modules.1.router.0.weight: max|grad|=4.8e-12 moved=yes
+   WARN pfcr_modules.1.router.0.bias: max|grad|=4.5e-12 moved=yes
+   WARN pfcr_modules.2.proxy.weight: max|grad|=1.3e-12 moved=yes
+   WARN pfcr_modules.2.pc.rho_raw: max|grad|=2.1e-13 moved=no
+   WARN pfcr_modules.2.pc.sigma_raw: max|grad|=4.1e-13 moved=no
+   WARN pfcr_modules.2.pc.noise_k: max|grad|=4.1e-15 moved=no
+   WARN pfcr_modules.2.router.0.weight: max|grad|=4.8e-13 moved=yes
+   WARN pfcr_modules.2.router.0.bias: max|grad|=1.2e-13 moved=yes
+   WARN pfcr_modules.2.router.2.weight: max|grad|=3.6e-07 moved=yes
+   WARN pfcr_modules.2.router.2.bias: max|grad|=6.6e-07 moved=yes
+   WARN pfcr_modules.3.proxy.weight: max|grad|=3.0e-14 moved=yes
+   WARN pfcr_modules.3.pc.rho_raw: max|grad|=1.4e-15 moved=no
+   WARN pfcr_modules.3.pc.sigma_raw: max|grad|=1.4e-15 moved=no
+   WARN pfcr_modules.3.pc.noise_k: max|grad|=8.2e-16 moved=no
+   WARN pfcr_modules.3.router.0.weight: max|grad|=2.1e-14 moved=yes
+   WARN pfcr_modules.3.router.0.bias: max|grad|=9.0e-15 moved=yes
+   WARN pfcr_modules.3.router.2.weight: max|grad|=7.9e-08 moved=yes
+   WARN pfcr_modules.3.router.2.bias: max|grad|=1.2e-07 moved=yes
+   WARN pfcr_modules.4.proxy.weight: max|grad|=7.8e-24 moved=yes
+   WARN pfcr_modules.4.pc.rho_raw: max|grad|=4.1e-25 moved=no
+   WARN pfcr_modules.4.pc.sigma_raw: max|grad|=4.1e-25 moved=no
+   WARN pfcr_modules.4.pc.noise_k: max|grad|=3.7e-25 moved=no
+   WARN pfcr_modules.4.router.0.weight: max|grad|=1.5e-24 moved=yes
+   WARN pfcr_modules.4.router.0.bias: max|grad|=3.6e-24 moved=yes
+   WARN pfcr_modules.4.router.2.weight: max|grad|=1.7e-12 moved=yes
+   WARN pfcr_modules.4.router.2.bias: max|grad|=8.9e-12 moved=yes
+   WARN small_head.head.0.bias: max|grad|=8.3e-09 moved=yes
+   PASS (17 ok, 38 weak, 0 dead)
+
+[A5] 55 PhASER tensors, loss 0.955 -> -0.356
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (35, 0.005, 3e-05), (20, 0.005, 0.0)]
+   PFCR0: gamma=+0.0031 k=2.000 PC>0 frac=0.237
+   PFCR1: gamma=+0.0025 k=2.000 PC>0 frac=0.438
+   PFCR2: gamma=+0.0021 k=2.000 PC>0 frac=0.662
+   PFCR3: gamma=+0.0006 k=2.000 PC>0 frac=1.000
+   PFCR4: gamma=+0.0000 k=2.000 PC>0 frac=0.264
+   WARN pfcr_modules.0.pc.sigma_raw: max|grad|=8.6e-07 moved=yes
+   WARN pfcr_modules.0.pc.noise_k: max|grad|=2.6e-07 moved=no
+   WARN pfcr_modules.1.pc.sigma_raw: max|grad|=2.9e-07 moved=yes
+   WARN pfcr_modules.1.pc.noise_k: max|grad|=7.1e-08 moved=no
+   WARN pfcr_modules.2.pc.sigma_raw: max|grad|=2.0e-07 moved=no
+   WARN pfcr_modules.2.pc.noise_k: max|grad|=2.4e-08 moved=no
+   WARN pfcr_modules.2.router.0.weight: max|grad|=7.1e-07 moved=yes
+   WARN pfcr_modules.2.router.0.bias: max|grad|=6.4e-07 moved=yes
+   WARN pfcr_modules.3.pc.rho_raw: max|grad|=1.5e-07 moved=no
+   WARN pfcr_modules.3.pc.sigma_raw: max|grad|=1.2e-07 moved=no
+   WARN pfcr_modules.3.pc.noise_k: max|grad|=4.2e-08 moved=no
+   WARN pfcr_modules.3.router.0.weight: max|grad|=7.1e-07 moved=yes
+   WARN pfcr_modules.3.router.0.bias: max|grad|=5.2e-07 moved=yes
+   WARN pfcr_modules.4.pc.rho_raw: max|grad|=8.7e-08 moved=no
+   WARN pfcr_modules.4.pc.sigma_raw: max|grad|=8.6e-08 moved=no
+   WARN pfcr_modules.4.pc.noise_k: max|grad|=7.8e-08 moved=no
+   WARN pfcr_modules.4.router.0.weight: max|grad|=5.3e-07 moved=yes
+   WARN pfcr_modules.4.router.0.bias: max|grad|=6.2e-07 moved=yes
+   WARN small_head.head.0.bias: max|grad|=7.8e-09 moved=yes
+   PASS (36 ok, 19 weak, 0 dead)
+
+[A6] 55 PhASER tensors, loss 0.957 -> -0.360
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (35, 0.005, 3e-05), (20, 0.005, 0.0)]
+   PFCR0: gamma=+0.0031 k=1.999 PC>0 frac=0.209
+   PFCR1: gamma=+0.0024 k=2.000 PC>0 frac=0.290
+   PFCR2: gamma=+0.0021 k=2.000 PC>0 frac=0.376
+   PFCR3: gamma=+0.0006 k=2.001 PC>0 frac=0.589
+   PFCR4: gamma=-0.0000 k=1.997 PC>0 frac=0.345
+   WARN pfcr_modules.3.router.0.bias: max|grad|=6.3e-07 moved=yes
+   WARN pfcr_modules.4.router.0.weight: max|grad|=9.0e-07 moved=yes
+   WARN pfcr_modules.4.router.0.bias: max|grad|=7.5e-07 moved=yes
+   WARN small_head.head.0.bias: max|grad|=9.4e-08 moved=yes
+   PASS (51 ok, 4 weak, 0 dead)
+
+[A7] 55 PhASER tensors, loss 0.957 -> -0.360
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (35, 0.005, 3e-05), (20, 0.005, 0.0)]
+   PFCR0: gamma=+0.0032 k=2.000 PC>0 frac=0.214
+   PFCR1: gamma=+0.0024 k=2.000 PC>0 frac=0.288
+   PFCR2: gamma=+0.0021 k=2.000 PC>0 frac=0.390
+   PFCR3: gamma=+0.0006 k=2.001 PC>0 frac=0.621
+   PFCR4: gamma=-0.0000 k=1.997 PC>0 frac=0.343
+   WARN pfcr_modules.0.router.0.weight: max|grad|=2.4e-07 moved=yes
+   WARN pfcr_modules.0.router.0.bias: max|grad|=5.6e-07 moved=yes
+   WARN pfcr_modules.1.router.0.weight: max|grad|=3.9e-07 moved=yes
+   WARN pfcr_modules.1.router.0.bias: max|grad|=3.5e-07 moved=yes
+   WARN pfcr_modules.2.router.0.weight: max|grad|=6.6e-08 moved=yes
+   WARN pfcr_modules.2.router.0.bias: max|grad|=1.1e-07 moved=yes
+   WARN pfcr_modules.3.router.0.weight: max|grad|=1.8e-07 moved=yes
+   WARN pfcr_modules.3.router.0.bias: max|grad|=1.3e-07 moved=yes
+   WARN pfcr_modules.4.router.0.weight: max|grad|=1.2e-07 moved=yes
+   WARN pfcr_modules.4.router.0.bias: max|grad|=1.7e-07 moved=yes
+   WARN small_head.head.0.bias: max|grad|=9.4e-08 moved=yes
+   PASS (44 ok, 11 weak, 0 dead)
+
+[A8] 55 PhASER tensors, loss 0.957 -> -0.360
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (35, 0.005, 3e-05), (20, 0.005, 0.0)]
+   PFCR0: gamma=+0.0031 k=1.999 PC>0 frac=0.210
+   PFCR1: gamma=+0.0024 k=2.000 PC>0 frac=0.289
+   PFCR2: gamma=+0.0021 k=2.000 PC>0 frac=0.387
+   PFCR3: gamma=+0.0006 k=2.001 PC>0 frac=0.619
+   PFCR4: gamma=-0.0000 k=1.997 PC>0 frac=0.347
+   WARN pfcr_modules.3.router.0.bias: max|grad|=6.2e-07 moved=yes
+   WARN pfcr_modules.4.router.0.weight: max|grad|=9.0e-07 moved=yes
+   WARN pfcr_modules.4.router.0.bias: max|grad|=7.4e-07 moved=yes
+   WARN small_head.head.0.bias: max|grad|=1.0e-07 moved=yes
+   PASS (51 ok, 4 weak, 0 dead)
+
+SUMMARY: A0=PASS, A1=PASS, A2=PASS, A3=PASS, A4=PASS, A5=PASS, A6=PASS, A7=PASS, A8=PASS
