@@ -16,6 +16,12 @@
 三组完成 200 epoch、21 例无 TTA 验证及评测后才进入阶段 5。
 不使用训练日志中的 pseudo Dice 选择分支。
 
+三组阶段 4 进程全部结束后，自动执行 `audit_stage4_nonfinite.sh`：
+从每组最新的 `training_log_*.txt` 汇总 non-finite gradient 和 non-finite loss 次数，
+并按 epoch 统计梯度跳过次数（按用户命令显示前 20 个 epoch）。
+输出保存为 `$DATA/nnUNet_results_v2/_orchestration/stage4_nonfinite_audit.log`。
+该统计提供核查证据，现有放行规则保持不变。
+
 阶段 4 已有后台进程由 tmux 中的调度器接管监控，训练进程不重启。
 新任务由该 tmux 调度器启动。GPU 利用率和运行状态持续写入
 `$DATA/nnUNet_results_v2/_orchestration/`。
