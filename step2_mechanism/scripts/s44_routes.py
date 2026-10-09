@@ -16,6 +16,13 @@ Step 2 / 4.4 — 路由图分析（检验 C2 / budget）
   4. 跨 checkpoint 对比（含 Phase B 已开启 budget 监督的 run）。
 
 注意：测试集 27 例保持锁定，patch 取自 fold 0 验证集病例。
+
+勘误（2026-10-09）：旧版逐尺度打印的"语义选择性"先对 low/mid/high 三个频带的
+**有符号**差值求平均再取绝对值。route 逐体素和为 1，三带差值之和恒为 0，
+因此旧值（10⁻⁹~10⁻⁸）只是浮点残差，不是选择性。正确定义是逐频带
+|μ(route_b|肿瘤) − μ(route_b|背景)| 的均值（以及三带 L1 和）。
+summary 里的 mean_abs_selectivity 一直是逐频带取绝对值，不受影响。
+self_test() 在合成 route 上验证该统计量。
 """
 
 from __future__ import annotations
@@ -151,6 +158,10 @@ def analyse_patch(routes, seg, patch_img):
             )
             e["selectivity"] = e["tumor_mean"] - e["bg_mean"] if mt.sum() and mb.sum() else float("nan")
             rec["bands"][b] = e
+        # 选择性：逐频带取绝对值（三带有符号差值之和恒为 0，不能先平均）
+        sels = [rec["bands"][b]["selectivity"] for b in BAND]
+        rec["selectivity_mean_abs"] = float(np.mean(np.abs(sels)))
+        rec["selectivity_l1"] = float(np.sum(np.abs(sels)))
         # 预算偏差
         rec["route_mean_global"] = [rec["bands"][b]["global_mean"] for b in BAND]
         rec["route_mean_tumor"] = [rec["bands"][b]["tumor_mean"] for b in BAND]
@@ -165,7 +176,26 @@ def analyse_patch(routes, seg, patch_img):
     return recs
 
 
+def self_test():
+    """合成 route：肿瘤内 (0.2,0.4,0.4)、背景 (0.7,0.22,0.08)，选择性已知。"""
+    seg = np.zeros((16, 16, 16), np.int16)
+    seg[4:12, 4:12, 4:12] = 2
+    r = np.empty((3,) + seg.shape, np.float32)
+    for c, (t, b) in enumerate(zip(LESION_BUDGET, BG_BUDGET)):
+        r[c] = np.where(seg == 2, t, b)
+    rec = analyse_patch([r], seg, None)[0]
+    per_band = [abs(rec["bands"][b]["selectivity"]) for b in BAND]
+    want = np.abs(LESION_BUDGET - BG_BUDGET)
+    assert np.allclose(per_band, want, atol=1e-6), (per_band, want)
+    assert abs(rec["selectivity_mean_abs"] - want.mean()) < 1e-6
+    assert abs(rec["selectivity_l1"] - want.sum()) < 1e-6
+    # 旧（错误）统计量：有符号均值恒为 0
+    assert abs(np.mean([rec["bands"][b]["selectivity"] for b in BAND])) < 1e-6
+    print(f"[self-test] route 选择性统计正确：逐带 |Δ| = {np.round(per_band, 3).tolist()}")
+
+
 def main():
+    self_test()
     banner("Step 2 / 4.4 路由图分析 — PFCR 路由是否按语义分配频带（C2 / budget）")
     tr, va, te = splits()
     print(f"队列：fold 0 验证集（测试集 {len(te)} 例锁定）")
@@ -224,9 +254,10 @@ def main():
         for s in range(nsc):
             gstd = np.mean([c["scales"][s]["bands"][b]["spatial_std"] for c in per_case for b in BAND])
             gmean = np.mean([c["scales"][s]["bands"][b]["global_mean"] for c in per_case for b in BAND])
-            sel = np.nanmean([c["scales"][s]["bands"][b]["selectivity"] for c in per_case for b in BAND])
+            sel = np.nanmean([c["scales"][s]["selectivity_mean_abs"] for c in per_case])
+            sel_l1 = np.nanmean([c["scales"][s]["selectivity_l1"] for c in per_case])
             print(f"      scale {s}: 空间std/均值={gstd/max(gmean,1e-9):.3e}  "
-                  f"语义选择性 |肿瘤-背景| 均值={abs(sel):.4e}")
+                  f"语义选择性 逐带|肿瘤-背景|均值={sel:.4e}  L1={sel_l1:.4e}")
         dbg = np.mean([c["scales"][s]["dev_vs_bg_budget"] for c in per_case for s in range(nsc)])
         dls = np.mean([c["scales"][s]["dev_vs_lesion_budget"] for c in per_case for s in range(nsc)])
         print(f"  平均 |route − 背景预算|_1 = {dbg:.4f}   |route_tumor − 病灶预算|_1 = {dls:.4f}")

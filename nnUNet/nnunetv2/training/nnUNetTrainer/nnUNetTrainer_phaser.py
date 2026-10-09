@@ -1,6 +1,25 @@
 """
 PhASER Trainer for nnUNet.
 
+V2 configuration (used for all experiments in the manuscript; see
+experiments/configs/*.env for the exact per-group settings):
+  PHASER_PFCR=1 PHASER_PFCR_USE_PRIOR=1 PHASER_L_PFCR_BUDGET=1
+  PHASER_L_PC_BOUNDARY=1, everything else at its default (off).
+  Loss = DiceCE (deep supervision) + psi(e)*(0.2 L_rank + 0.05 L_budget + 0.1 L_prior),
+  psi(e) = min(1, (e+1)/PHASER_AUX_WARMUP), all three active from epoch 0.
+
+V2 switches added for the ablation / analysis protocol:
+  PHASER_SEED=<int>        seeds python/numpy/torch and the augmentation workers
+  PHASER_AUX_WARMUP=5      ramp length (epochs) shared by L_rank, L_budget, L_prior
+  PHASER_PFCR_SHUFFLE_PC=1 A7 control: router sees spatially permuted PC
+  PHASER_INTERVENE=none|pc_zero|route_uniform|prior_zero|gate_zero
+                           inference-time intervention (E11)
+  PHASER_INTERVENE_LEVELS=0,1,2  skip levels the intervention applies to (default all)
+  PHASER_LEGACY=1          pre-V2 inference (double-sigmoid prior, PC noise scale
+                           from scale 0); only for old checkpoints such as Copy2
+  PHASER_FT_WEIGHT         Focal Tversky weight, default 0.0 (= DiceCE only);
+                           pre-V2 runs used 0.15
+
 Supports ablation studies via environment variables:
   PHASER_PCSF=1        → skip boundary gating
   PHASER_PCSF_MODE=grad|pc
@@ -9,7 +28,8 @@ Supports ablation studies via environment variables:
                          congruency (contrast-invariant, for isoattenuating
                          lesions). Single-variable ablation.
   PHASER_PC_SCALES=3   → learnable log-Gabor scales when PCSF_MODE=pc
-  PHASER_PC_MAX_VOXELS → FFT cost cap per skip when PCSF_MODE=pc (default 2^20)
+  PHASER_PC_MAX_VOXELS → FFT cost cap per skip (default 2^22, i.e. no
+                         downsampling for 128^3 patches; pre-V2 runs used 2^20)
   PHASER_PCSF_GATE_SENS → initial gate sensitivity alpha, shared by both PCSF
                          modes (default 0.5). MUST be nonzero for PCSF_MODE=pc:
                          alpha=0 zeroes d(attention)/d(PC) and the log-Gabor
@@ -19,7 +39,6 @@ Supports ablation studies via environment variables:
                          it exists to un-throttle the log-Gabor filters early.
                          PHASER_PC_BOUNDARY_WEIGHT (default 0.2)
                          PHASER_PC_BOUNDARY_MARGIN (default 0.2)
-                         PHASER_PC_BOUNDARY_WARMUP (default 5 epochs)
   PHASER_LWFD=1        → Learnable Wavelet Feature Decomposition
   PHASER_ACG=1         → Anatomical Context Gating
   PHASER_L_SPECTRAL=1  → Spectral consistency loss
@@ -27,7 +46,7 @@ Supports ablation studies via environment variables:
 
   PHASER_BOUNDARY_WEIGHT=0.1   (default)
   PHASER_SPECTRAL_WEIGHT=0.05  (default)
-  PHASER_FT_WEIGHT=0.3         Focal Tversky weight (default)
+  PHASER_FT_WEIGHT=0.0         Focal Tversky weight (default; 0 disables it)
 
 Usage:
   # Baseline
@@ -38,7 +57,14 @@ Usage:
       nnUNetv2_train Dataset003_Liver 3d_fullres 0 -tr nnUNetTrainer_phaser
 """
 
+import hashlib
+import json
 import os
+import random
+import socket
+import subprocess
+import time
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -64,6 +90,24 @@ from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
     pc_boundary_ranking_loss, phase_frequency_budget_loss
 
 
+# V2: no downsampling of the 128^3 skip before the FFT. With 2^20 the shallowest
+# PC map was computed at 64^3 and changed substantially (design review I2).
+PC_MAX_VOXELS_DEFAULT = 1 << 22
+
+# Scalar / reparameterised PhASER parameters. Weight decay would pull them
+# towards 0, i.e. towards rho=0.25, sigma=0.5, k=ln 2 and closed gates, which
+# are arbitrary targets, so they go into a no-decay group.
+NO_DECAY_PARAM_NAMES = ('rho_raw', 'sigma_raw', 'noise_k', 'residual_gate',
+                        'alpha', 'beta', 'gamma', 'alphas')
+
+
+def _seed_everything(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
 class GroupPolyLRScheduler(_LRScheduler):
     """
     Polynomial LR decay that PRESERVES per-group base LR ratios.
@@ -81,7 +125,7 @@ class GroupPolyLRScheduler(_LRScheduler):
         self.ctr = 0
         # Snapshot each group's base lr (the 0.3x / 0.5x / 1.0x absolute values)
         self.base_lrs_per_group = [g['lr'] for g in optimizer.param_groups]
-        super().__init__(optimizer, -1, False)
+        super().__init__(optimizer, -1)
 
     def step(self, current_step=None):
         if current_step is None or current_step == -1:
@@ -114,6 +158,13 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         unpack_dataset: bool = True,
         device: torch.device = torch.device("cuda"),
     ):
+        # Seed before super().__init__ / initialize() so that network
+        # initialisation (re-initialised heads and all PhASER modules) is
+        # reproducible as well.
+        seed_env = os.environ.get('PHASER_SEED', '')
+        self.seed = int(seed_env) if seed_env != '' else None
+        if self.seed is not None:
+            _seed_everything(self.seed)
         super().__init__(plans, configuration, fold, dataset_json, unpack_dataset, device)
         # Disable AMP for diagnosis/workstations where rare FP16 overflow creates
         # non-finite losses. Default remains enabled for normal CUDA training.
@@ -131,7 +182,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 f"PHASER_PCSF_MODE must be 'grad' or 'pc', got {self.pcsf_mode!r}"
             )
         self.pc_scales = int(os.environ.get('PHASER_PC_SCALES', '3'))
-        self.pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(1 << 20)))
+        self.pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(PC_MAX_VOXELS_DEFAULT)))
         # Shared by both PCSF modes to keep the ablation matched. Must be nonzero
         # (see PhaseCongruencySkipFusion); 0.0 restores pre-2026-09 behaviour.
         self.pcsf_gate_sens = float(os.environ.get('PHASER_PCSF_GATE_SENS', '0.5'))
@@ -145,16 +196,18 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         # retunes the centre frequencies from [.333,.159,.076] to [.350,.204,.023].
         self.pc_boundary_weight = float(os.environ.get('PHASER_PC_BOUNDARY_WEIGHT', '0.2'))
         self.pc_boundary_margin = float(os.environ.get('PHASER_PC_BOUNDARY_MARGIN', '0.2'))
-        # Unlike every other auxiliary loss this one is NOT deferred to Phase B.
-        # Its whole purpose is to un-throttle the log-Gabor filters, which are
-        # scaled by tanh(gamma)~0 early in training; starting it at epoch 60
-        # would leave them frozen for the first 60 epochs. Short 5-epoch ramp
-        # instead of the global 50-epoch warmup, so it is active from epoch 0.
-        self.pc_boundary_warmup = int(os.environ.get('PHASER_PC_BOUNDARY_WARMUP', '5'))
+        # Like the other V2 auxiliary losses this one is active from epoch 0 with
+        # the shared PHASER_AUX_WARMUP ramp: it exists to un-throttle the
+        # log-Gabor filters, which are scaled by tanh(gamma)~0 early in training.
         self.enable_pfcr = os.environ.get('PHASER_PFCR', '0') == '1'
         self.pfcr_use_prior = os.environ.get('PHASER_PFCR_USE_PRIOR', '0') == '1'
         self.enable_pfcr_budget = os.environ.get('PHASER_L_PFCR_BUDGET', '0') == '1'
         self.pfcr_budget_weight = float(os.environ.get('PHASER_PFCR_BUDGET_WEIGHT', '0.05'))
+        self.pfcr_shuffle_pc = os.environ.get('PHASER_PFCR_SHUFFLE_PC', '0') == '1'
+        self.legacy = os.environ.get('PHASER_LEGACY', '0') == '1'
+        self.prior_weight = float(os.environ.get('PHASER_PRIOR_WEIGHT', '0.1'))
+        # One ramp for the three V2 auxiliary losses (rank, budget, prior).
+        self.aux_warmup = int(os.environ.get('PHASER_AUX_WARMUP', '5'))
         self.enable_lwfd = os.environ.get('PHASER_LWFD', '0') == '1'
         self.enable_acg = os.environ.get('PHASER_ACG', '0') == '1'
         self.t_raf_mode = os.environ.get('PHASER_T_RAF', 'none')
@@ -182,7 +235,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.boundary_weight = float(os.environ.get('PHASER_BOUNDARY_WEIGHT', '0.05'))
         self.spectral_weight = float(os.environ.get('PHASER_SPECTRAL_WEIGHT', '0.05'))
         self.lesion_weight = float(os.environ.get('PHASER_LESION_WEIGHT', '0.2'))
-        self.ft_weight = float(os.environ.get('PHASER_FT_WEIGHT', '0.15'))
+        self.ft_weight = float(os.environ.get('PHASER_FT_WEIGHT', '0.0'))
         self.gate_loss_weight = float(os.environ.get('PHASER_GATE_LOSS_WEIGHT', '0.03'))
         self.inside_penalty_weight = float(os.environ.get('PHASER_INSIDE_WEIGHT', '0.02'))
         self.boundary_w_weight = float(os.environ.get('PHASER_BOUNDARY_W_WEIGHT', '0.05'))
@@ -200,7 +253,6 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.initial_lr = 5e-3
         self.weight_decay = 3e-5
         self.oversample_foreground_percent = float(os.environ.get('PHASER_OVERSAMPLE', '0.66'))
-        self.tumor_oversample_percent = float(os.environ.get('PHASER_TUMOR_OVERSAMPLE', '0.0'))
 
         # Best raw validation Dice for tumor label 2. This is tracked
         # independently from nnU-Net's EMA mean-foreground Dice checkpoint.
@@ -212,13 +264,15 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.print_to_log_file(
             f"\n{'='*60}\n"
             f"PhASER-GPT Trainer Configuration:\n"
+            f"  Seed: {self.seed}  Legacy: {self.legacy}  PFCR shuffle PC (A7): {self.pfcr_shuffle_pc}\n"
+            f"  Aux warmup (rank/budget/prior): {self.aux_warmup} epochs, prior w={self.prior_weight}\n"
             f"  PCSF: {self.enable_pcsf} (mode={self.pcsf_mode}, gate_sens={self.pcsf_gate_sens}"
             + (f", pc_scales={self.pc_scales}, pc_max_voxels={self.pc_max_voxels}"
                if self.pcsf_mode == 'pc' else "") + ")\n"
             f"  PFCR: {self.enable_pfcr} (prior={self.pfcr_use_prior}, budget={self.enable_pfcr_budget}, w={self.pfcr_budget_weight})\n"
             f"  PC boundary loss: {self.enable_pc_boundary_loss} "
             f"(w={self.pc_boundary_weight}, margin={self.pc_boundary_margin}, "
-            f"warmup={self.pc_boundary_warmup}ep, active from epoch 0)\n"
+            f"ramp=PHASER_AUX_WARMUP, active from epoch 0)\n"
             f"  LWFD: {self.enable_lwfd}\n"
             f"  LWFD Mode: {'full'}\n"
             f"  T-RAF: {self.t_raf_mode}\n"
@@ -240,7 +294,6 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Total epochs: {self.num_epochs}\n"
             f"  Initial LR: {self.initial_lr}\n"
             f"  Oversample: {self.oversample_foreground_percent}\n"
-            f"  Tumor oversample (within FG): {self.tumor_oversample_percent}\n"
             f"{'='*60}\n"
         )
 
@@ -304,7 +357,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         pfcr_use_prior = os.environ.get('PHASER_PFCR_USE_PRIOR', '0') == '1'
         pcsf_mode = os.environ.get('PHASER_PCSF_MODE', 'grad')
         pc_scales = int(os.environ.get('PHASER_PC_SCALES', '3'))
-        pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(1 << 20)))
+        pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(PC_MAX_VOXELS_DEFAULT)))
         pcsf_gate_sens = float(os.environ.get('PHASER_PCSF_GATE_SENS', '0.5'))
         enable_lwfd = os.environ.get('PHASER_LWFD', '0') == '1'
         enable_acg = os.environ.get('PHASER_ACG', '0') == '1'
@@ -313,6 +366,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         t_raf_mode = os.environ.get('PHASER_T_RAF', 'none')
         enable_la_acg = os.environ.get('PHASER_LA_ACG', '0') == '1'
         enable_small_head = os.environ.get('PHASER_SMALL_HEAD', '0') == '1'
+        pfcr_shuffle_pc = os.environ.get('PHASER_PFCR_SHUFFLE_PC', '0') == '1'
+        pfcr_intervene = os.environ.get('PHASER_INTERVENE', 'none')
+        levels_env = os.environ.get('PHASER_INTERVENE_LEVELS', '').strip()
+        pfcr_intervene_levels = [int(v) for v in levels_env.split(',')] if levels_env else None
+        legacy = os.environ.get('PHASER_LEGACY', '0') == '1'
         # Tier-1 ablation module switches
         # T-RAF prior mode requires small head for tumor prior generation
         if (t_raf_mode in ('prior',) or (pfcr_use_prior and enable_pfcr)) and not enable_small_head:
@@ -347,6 +405,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             enable_la_acg=enable_la_acg,
             enable_small_head=enable_small_head,
             num_classes=label_manager.num_segmentation_heads,
+            pfcr_shuffle_pc=pfcr_shuffle_pc,
+            pfcr_intervene=pfcr_intervene,
+            pfcr_intervene_levels=pfcr_intervene_levels,
+            legacy=legacy,
         )
 
         return model
@@ -381,14 +443,17 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 ignore_label=self.label_manager.ignore_label,
                 dice_class=MemoryEfficientSoftDiceLoss,
             )
-            focal_tversky = MultiClassFocalTverskyLoss(
-                alpha=0.3,
-                beta=0.7,
-                gamma=4.0 / 3.0,
-                include_background=False,
-                ignore_label=self.label_manager.ignore_label,
-            )
-            loss = CombinedDiceCEFocalTverskyLoss(dice_ce, focal_tversky, self.ft_weight)
+            if self.ft_weight > 0:
+                focal_tversky = MultiClassFocalTverskyLoss(
+                    alpha=0.3,
+                    beta=0.7,
+                    gamma=4.0 / 3.0,
+                    include_background=False,
+                    ignore_label=self.label_manager.ignore_label,
+                )
+                loss = CombinedDiceCEFocalTverskyLoss(dice_ce, focal_tversky, self.ft_weight)
+            else:
+                loss = dice_ce
 
         if self.enable_deep_supervision:
             deep_supervision_scales = self._get_deep_supervision_scales()
@@ -404,6 +469,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
     # ------------------------------------------------------------------
     def configure_optimizers(self):
         phaser_params = []
+        phaser_no_decay = []
         encoder_params = []
         decoder_params = []
         other_params = []
@@ -418,7 +484,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             if not param.requires_grad:
                 continue
             if id(param) in phaser_param_ids:
-                phaser_params.append(param)
+                if name.split('.')[-1] in NO_DECAY_PARAM_NAMES:
+                    phaser_no_decay.append(param)
+                else:
+                    phaser_params.append(param)
             elif 'encoder' in name:
                 encoder_params.append(param)
             elif 'decoder' in name:
@@ -433,6 +502,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             param_groups.append({'params': decoder_params, 'lr': self.initial_lr * 0.5})
         if phaser_params:
             param_groups.append({'params': phaser_params, 'lr': self.initial_lr})
+        if phaser_no_decay:
+            param_groups.append({'params': phaser_no_decay, 'lr': self.initial_lr,
+                                 'weight_decay': 0.0})
         if other_params:
             param_groups.append({'params': other_params, 'lr': self.initial_lr})
 
@@ -449,6 +521,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         # decoder 0.5x / phaser 1.0x). The stock PolyLRScheduler would overwrite
         # every group with a single lr and destroy the differential schedule.
         lr_scheduler = GroupPolyLRScheduler(optimizer, self.num_epochs)
+        self.print_to_log_file(
+            "Optimizer groups: " + ", ".join(
+                f"{len(g['params'])} params lr={g['lr']:.2e} wd={g['weight_decay']:g}"
+                for g in optimizer.param_groups))
         return optimizer, lr_scheduler
 
     # ------------------------------------------------------------------
@@ -464,6 +540,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         if self.current_epoch < start_epoch:
             return 0.0
         return min((self.current_epoch - start_epoch) / max(self.warmup_epochs, 1), 1.0)
+
+    def _v2_ramp(self) -> float:
+        """psi(e) = min(1, (e+1)/W): shared by L_rank, L_budget and L_prior,
+        non-zero from the first epoch (manuscript Eq. 28)."""
+        return min((self.current_epoch + 1) / max(self.aux_warmup, 1), 1.0)
 
     # ------------------------------------------------------------------
     # Training step (with auxiliary losses)
@@ -562,7 +643,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 routes = getattr(net_pfcr, '_last_pfcr_routes', None)
                 if routes:
                     budget_loss = phase_frequency_budget_loss(routes, main_target)
-                    aux_loss = aux_loss + self.pfcr_budget_weight * ramp_b * budget_loss
+                    aux_loss = aux_loss + self.pfcr_budget_weight * self._v2_ramp() * budget_loss
 
             # PC boundary ranking loss — active from epoch 0 (see __init__ note).
             # Supervises the PFCR/PCSF phase-congruency maps so the log-Gabor filters get a
@@ -572,8 +653,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 net_pc = self.network.module if self.is_ddp else self.network
                 pc_maps = getattr(net_pc, '_last_pc_maps', None)
                 if pc_maps:
-                    ramp_pc = min((self.current_epoch + 1)
-                                  / max(self.pc_boundary_warmup, 1), 1.0)
+                    ramp_pc = self._v2_ramp()
                     pc_l = pc_boundary_ranking_loss(
                         pc_maps, main_target, tumor_label=2,
                         margin=self.pc_boundary_margin,
@@ -589,14 +669,15 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 )
                 aux_loss = aux_loss + self.lesion_weight * ramp_b * l_loss
 
-            # Small tumor head loss — Phase B/C (binary: BG vs tumor)
-            if small_logits is not None and in_phase2:
+            # Prior (small tumor) head loss (binary: BG vs tumor). V2: active
+            # from epoch 0, because PFCR conditions on the prior from epoch 0.
+            if small_logits is not None and self.prior_weight > 0:
                 t4d = main_target.squeeze(1).long() if main_target.dim() == 5 else main_target.long()
                 tumor_target = (t4d == 2).long()
                 tumor_weight = (t4d == 2).float() * 3.0 + 1.0
-                sh_loss = F.cross_entropy(small_logits, tumor_target, reduction='none')
+                sh_loss = F.cross_entropy(small_logits.float(), tumor_target, reduction='none')
                 sh_loss = (sh_loss * tumor_weight).mean()
-                aux_loss = aux_loss + 0.1 * ramp_b * sh_loss
+                aux_loss = aux_loss + self.prior_weight * self._v2_ramp() * sh_loss
 
             total_loss = seg_loss + aux_loss
 
@@ -626,6 +707,101 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             self.optimizer.step()
 
         return {'loss': total_loss.detach().cpu().numpy()}
+
+    # ------------------------------------------------------------------
+    # Reproducibility: worker seeds and run manifest
+    # ------------------------------------------------------------------
+    def get_dataloaders(self):
+        mt_gen_train, mt_gen_val = super().get_dataloaders()
+        if self.seed is not None:
+            # The multi-process augmenters start lazily, so their per-worker
+            # seeds can still be set here. Batch order across workers stays
+            # non-deterministic (NonDetMultiThreadedAugmenter), so runs with the
+            # same seed are close but not bit-identical.
+            for offset, gen in ((0, mt_gen_train), (10_000, mt_gen_val)):
+                n = getattr(gen, 'num_processes', None)
+                if n and hasattr(gen, 'seeds'):
+                    gen.seeds = [self.seed * 100_000 + offset + i for i in range(n)]
+        return mt_gen_train, mt_gen_val
+
+    def _manifest_path(self) -> str:
+        return os.path.join(self.output_folder, 'run_manifest.json')
+
+    def _write_manifest(self, **updates) -> None:
+        if self.local_rank != 0:
+            return
+        path = self._manifest_path()
+        manifest = {}
+        if os.path.isfile(path):
+            with open(path) as f:
+                manifest = json.load(f)
+        manifest.update(updates)
+        os.makedirs(self.output_folder, exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(manifest, f, indent=2, sort_keys=True)
+
+    @staticmethod
+    def _git_commit() -> str:
+        repo = os.path.dirname(os.path.abspath(__file__))
+        try:
+            commit = subprocess.check_output(['git', '-C', repo, 'rev-parse', 'HEAD'],
+                                             stderr=subprocess.DEVNULL, text=True).strip()
+            dirty = subprocess.check_output(['git', '-C', repo, 'status', '--porcelain'],
+                                            stderr=subprocess.DEVNULL, text=True).strip()
+            return commit + ('-dirty' if dirty else '')
+        except Exception:
+            return 'unknown'
+
+    def on_train_start(self):
+        super().on_train_start()
+        gpu = torch.cuda.get_device_name(self.device) if self.device.type == 'cuda' else self.device.type
+        self._write_manifest(
+            git_commit=self._git_commit(),
+            env={k: v for k, v in sorted(os.environ.items())
+                 if k.startswith(('PHASER_', 'nnUNet_', 'VOCOMNI_'))},
+            seed=self.seed,
+            num_epochs=self.num_epochs,
+            num_iterations_per_epoch=self.num_iterations_per_epoch,
+            fold=self.fold,
+            gpu=gpu,
+            host=socket.gethostname(),
+            torch_version=torch.__version__,
+            start_time=time.strftime('%Y-%m-%d %H:%M:%S'),
+            start_epoch=self.current_epoch,
+        )
+
+    def on_train_end(self):
+        super().on_train_end()
+        final = os.path.join(self.output_folder, 'checkpoint_final.pth')
+        sha = None
+        if os.path.isfile(final):
+            h = hashlib.sha256()
+            with open(final, 'rb') as f:
+                for chunk in iter(lambda: f.read(1 << 20), b''):
+                    h.update(chunk)
+            sha = h.hexdigest()
+        self._write_manifest(
+            end_time=time.strftime('%Y-%m-%d %H:%M:%S'),
+            epochs_completed=self.current_epoch,
+            checkpoint_final_sha256=sha,
+        )
+
+    def perform_actual_validation(self, save_probabilities: bool = False):
+        """Final validation without mirroring TTA (protocol: no TTA anywhere).
+
+        nnU-Net's predictor here always mirrors over inference_allowed_mirroring_axes;
+        clearing the axes for the duration of the call disables it. The value
+        stored in the checkpoint is unaffected (checkpoint_final is written
+        before validation). PHASER_VAL_TTA=1 restores nnU-Net's behaviour.
+        """
+        if os.environ.get('PHASER_VAL_TTA', '0') == '1':
+            return super().perform_actual_validation(save_probabilities)
+        axes = self.inference_allowed_mirroring_axes
+        self.inference_allowed_mirroring_axes = None
+        try:
+            return super().perform_actual_validation(save_probabilities)
+        finally:
+            self.inference_allowed_mirroring_axes = axes
 
     # ------------------------------------------------------------------
     # Deep supervision toggle (required for nnUNet validation/inference)

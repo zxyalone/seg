@@ -101,6 +101,9 @@ def run_prediction(ckpt: Path, pred_dir: Path, gpu: str) -> None:
         "PHASER_T_RAF": "none",
         "PHASER_LA_ACG": "0",
         "PHASER_SMALL_HEAD": "1",
+        # Copy2 was trained with pre-V2 code: double-sigmoid prior and PC noise
+        # scale from scale 0. V2 changed both, so restore them for this checkpoint.
+        "PHASER_LEGACY": "1",
     })
 
     # -chk 相对于 fold_0 目录

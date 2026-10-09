@@ -63,7 +63,7 @@ $$
 \tau = \frac{\operatorname{median}_{\mathbf{x}}\, \mathrm{sg}\!\left[A_1(\mathbf{x})\right]}{\sqrt{\ln 4}}, \tag{8}
 $$
 
-where $\mathrm{sg}[\cdot]$ stops the gradient and $s = 1$ is the scale initialized as the finest. The noise contributions of all scales are accumulated with the gain
+where $\mathrm{sg}[\cdot]$ stops the gradient. The index $s = 1$ denotes the scale whose learned center frequency $\rho_s$ is currently highest. At initialization this is the scale with $\lambda = 3$ voxels; nothing in Eq. (4) keeps the scales in their initial order during training. The noise contributions of all scales are accumulated with the gain
 
 $$
 g = \sum_{s=1}^{S} \frac{\rho_s}{\max_{s'} \rho_{s'}} . \tag{9}
@@ -83,7 +83,7 @@ $$
 \mathrm{PC} = \operatorname{clip}_{[0,1]}\!\left( \frac{\left[\, E - T \,\right]_+}{\Sigma_A + \epsilon\, \overline{\Sigma_A} + \epsilon_0} \right), \tag{11}
 $$
 
-where $[\cdot]_+ = \max(\cdot, 0)$ and $\overline{\Sigma_A}$ is the spatial mean of $\Sigma_A$ over the patch. We use $\epsilon = 10^{-3}$, and $\epsilon_0 = 10^{-12}$ only guards against division by zero. Without $T$, Eq. (11) reduces to the ratio $E/(\Sigma_A + \epsilon)$ used by FSIM \cite{zhang2011fsim}. FSIM computes that ratio with oriented 2D log-Gabor pairs; here it is computed from the isotropic 3D monogenic signal. [[V2-pending: hard threshold $[E-T]_+$ vs. a soft threshold]]
+where $[\cdot]_+ = \max(\cdot, 0)$ and $\overline{\Sigma_A}$ is the spatial mean of $\Sigma_A$ over the patch. We use $\epsilon = 10^{-3}$, and $\epsilon_0 = 10^{-12}$ only guards against division by zero. Without $T$, Eq. (11) reduces to the ratio $E/(\Sigma_A + \epsilon)$ used by FSIM \cite{zhang2011fsim}. FSIM computes that ratio with oriented 2D log-Gabor pairs; here it is computed from the isotropic 3D monogenic signal. We keep Kovesi's hard threshold, so PC is exactly zero wherever the local energy lies inside the noise circle.
 
 **Contrast invariance.** For any $a > 0$ and $b \in \mathbb{R}$,
 
@@ -95,7 +95,7 @@ holds exactly, up to $\epsilon_0$. The argument has three steps. First, $G_s(0) 
 
 Two limits of Eq. (12) matter. (i) The invariance concerns the operator and its input $p_l$. It does not make the network invariant to CT contrast, because $X_l$ is a nonlinear function of the image. (ii) $T$ is estimated from the same input. PC is therefore invariant to global rescaling but not to the local signal-to-noise ratio. A margin whose energy falls inside the noise circle yields $\mathrm{PC} = 0$ whatever its scale. Section 4.8 and Fig. 3 examine this behavior.
 
-**Implementation.** Under automatic mixed precision (AMP), the whole spectral block runs in fp32 with autocast disabled, because half-precision FFTs have limited dynamic range and limited operator support. We use real-input FFTs. One forward transform of $p$ is followed by a single batched inverse transform over the $S(1+3) = 12$ complex kernels of Eq. (5). Frequency grids are in cycles per voxel and are cached per input shape. To bound cost, a proxy with more than $2^{20}$ voxels is downsampled by powers of two (trilinear, at least 8 voxels per axis). PC is computed at the reduced size and upsampled back. With $128^3$ patches, this affects only $l = 1$, whose PC is computed at $64^3$. [[V2-pending: keep or remove the $2^{20}$-voxel cap]]
+**Implementation.** Under automatic mixed precision (AMP), the whole spectral block runs in fp32 with autocast disabled, because half-precision FFTs have limited dynamic range and limited operator support. We use real-input FFTs. One forward transform of $p$ is followed by a single batched inverse transform over the $S(1+3) = 12$ complex kernels of Eq. (5). Frequency grids are in cycles per voxel and are cached per input shape. Because the voxel spacing is $1.0 \times 0.78 \times 0.78$ mm, the filters are isotropic in voxel units but not in millimetres. A cost guard downsamples proxies with more than $2^{22}$ voxels by powers of two; with $128^3$ patches it never triggers, so every PC map is computed at the full resolution of its skip.
 
 ## 3.3 Phase–Frequency Coherence Routing (PFCR)
 
@@ -145,7 +145,7 @@ $$
 
 PFCR is thus a spatially varying, three-band equalizer. Each band gain lies in $(0, 2)$. The total extra gain, $\tanh(\gamma_l)$, is set by the residual gate, and the route only redistributes it among bands. At initialization, $Y_l = X_l/3$ and $\tanh(0) = 0$, so $\tilde{X}_l = X_l$ exactly. Zero-gated residuals are a common way to add modules to a pretrained network. Here the identity start protects the VoComni features while the new parameters are still random.
 
-**Gradient flow at initialization.** The identity start has a side effect. At $\gamma_l = 0$, $\partial \tilde{X}_l / \partial R_l = 0$ and $\partial \tilde{X}_l / \partial \mathrm{PC}_l = 0$. The segmentation loss therefore reaches only $\gamma_l$, through $\partial \tilde{X}_l/\partial \gamma_l = Y_l = X_l/3$. The router, the proxy and the log-Gabor parameters receive segmentation gradients only after $\gamma_l$ moves away from zero, and those gradients are scaled by $\tanh(\gamma_l)$. The auxiliary losses $\mathcal{L}_{\mathrm{rank}}$ and $\mathcal{L}_{\mathrm{budget}}$ (Section 3.5) act directly on $\mathrm{PC}_l$ and $R_l$. They give these parameters a gradient path that bypasses $\tanh(\gamma_l)$. The zero-initialized $\mathbf{W}_2$ does not block this path, because $\partial R_l / \partial \mathbf{W}_2$ is proportional to the hidden activations, which are non-zero.
+**Gradient flow at initialization.** The identity start has a side effect. At $\gamma_l = 0$, $\partial \tilde{X}_l / \partial R_l = 0$ and $\partial \tilde{X}_l / \partial \mathrm{PC}_l = 0$. The segmentation loss therefore reaches only $\gamma_l$, through $\partial \tilde{X}_l/\partial \gamma_l = Y_l = X_l/3$. The router, the proxy and the log-Gabor parameters receive segmentation gradients only after $\gamma_l$ moves away from zero, and those gradients are scaled by $\tanh(\gamma_l)$. The auxiliary losses $\mathcal{L}_{\mathrm{rank}}$ and $\mathcal{L}_{\mathrm{budget}}$ (Section 3.5) act directly on $\mathrm{PC}_l$ and $R_l$. They give these parameters a gradient path that bypasses $\tanh(\gamma_l)$. The zero-initialized $\mathbf{W}_2$ does not block this path, because $\partial R_l / \partial \mathbf{W}_2$ is proportional to the hidden activations, which are non-zero. $\mathbf{W}_1$ receives gradient only once $\mathbf{W}_2$ has left zero. Without $\mathcal{L}_{\mathrm{rank}}$, the proxy and log-Gabor parameters keep only the path scaled by $\tanh(\gamma_l)$; a gradient check on synthetic volumes confirms that they then receive gradients several orders of magnitude smaller early in training (Supplement S3). The ablation without $\mathcal{L}_{\mathrm{rank}}$ (A5) therefore also tests largely untrained filters.
 
 ## 3.4 Tumor-prior head
 
@@ -170,9 +170,9 @@ $\phi_1$ ($32 \to 32$) and $\phi_2$ ($64 \to 32$) are $3\times3\times3$ convolut
 - Each PFCR module has $C_l + 475$ parameters. These are $C_l$ proxy weights, 7 log-Gabor and threshold parameters ($3\,\theta^\rho$, $3\,\theta^\sigma$, $\theta^k$), 467 router parameters and $\gamma_l$. <!-- router: W1 = 2*8*27 + 8 = 440; W2 = 8*3*1 + 3 = 27; total 467. 467 + 7 + 1 = 475. -->
 - The five PFCR modules add $\sum_l C_l + 5 \times 475 = 800 + 2{,}375 = 3{,}175$ parameters. <!-- sum C_l = 32+64+128+256+320 = 800 -->
 - The prior head adds $138{,}466$ parameters. <!-- phi1 = 32*32*27+32 = 27,680; phi2 = 64*32*27+32 = 55,328; psi1 = 64*32*27+32 = 55,328; IN affine = 2*32 = 64; psi2 = 32*2+2 = 66; total 138,466 -->
-- In total, PhASER-3D adds $141{,}641$ parameters, or [[TBD: % of the backbone's parameter count]].
+- In total, PhASER-3D adds $141{,}641$ parameters, or 0.45% of the $31{,}196{,}399$ parameters of the backbone. <!-- measured with experiments/cost.py; matches the hand count above -->
 
-On the spectral side, each skip and sample needs one forward real FFT plus 12 inverse transforms on $N'_l$ voxels. Here $N'_l = 64^3, 64^3, 32^3, 16^3, 8^3$, where the first value reflects the voxel cap. This totals $13 \times 561{,}664 \approx 7.30\times10^6$ transformed voxels per sample, at $O(N'_l \log N'_l)$ each and independent of $C_l$. <!-- 2*262,144 + 32,768 + 4,096 + 512 = 561,664 --> Dense convolutions add, per $128^3$ patch, about 1.09 GMAC for the routers and 0.09 GMAC for the proxies. The prior head adds 188.6 GMAC, because $\phi_1$ and $\psi_1$ run at full resolution. <!-- routers: (2*8*27 + 8*3) = 456 MAC/voxel x sum_l N_l (2,396,672) = 1.093e9; proxies: sum_l C_l N_l = 8.93e7; head: 27,648*128^3 + 55,296*64^3 + 55,296*128^3 + 64*128^3 = 1.886e11 --> Backbone MACs, wall-clock time and memory are reported in Table 7 [[TBD: measured]].
+On the spectral side, each skip and sample needs one forward real FFT plus 12 inverse transforms on $N'_l$ voxels. Here $N'_l = 128^3, 64^3, 32^3, 16^3, 8^3$. This totals $13 \times 2{,}396{,}672 \approx 3.12\times10^7$ transformed voxels per sample, at $O(N'_l \log N'_l)$ each and independent of $C_l$. <!-- 2,097,152 + 262,144 + 32,768 + 4,096 + 512 = 2,396,672 --> Dense convolutions add, per $128^3$ patch, about 1.09 GMAC for the routers and 0.09 GMAC for the proxies. The prior head adds 188.6 GMAC, because $\phi_1$ and $\psi_1$ run at full resolution. <!-- routers: (2*8*27 + 8*3) = 456 MAC/voxel x sum_l N_l (2,396,672) = 1.093e9; proxies: sum_l C_l N_l = 8.93e7; head: 27,648*128^3 + 55,296*64^3 + 55,296*128^3 + 64*128^3 = 1.886e11 --> Backbone MACs, wall-clock time and memory are reported in Table 7 [[TBD: measured]].
 
 ## 3.5 Training objective
 
@@ -237,7 +237,7 @@ $$
 \eta_g(e) = \eta_g(0)\, \big(1 - e/E\big)^{0.9}, \qquad E = 200, \tag{29}
 $$
 
-Eq. (29) preserves the group ratios. By contrast, nnU-Net's default poly scheduler overwrites all groups with a single rate. Weight decay $3\times10^{-5}$ applies to all convolution weights and biases. It does not apply to the scalar PhASER parameters $\theta^\rho_s$, $\theta^\sigma_s$, $\theta^k$ and $\gamma_l$. Decay would pull these toward 0, which corresponds to $\rho_s = 0.25$, $\sigma_s = 0.5$, $k = \ln 2$ and a closed gate. Those targets are arbitrary and unrelated to the initialization. Gradients are clipped at norm 12, and training uses AMP, with the PC block in fp32 (Section 3.2). Epochs, iterations, batch size and sampling are listed in Section 4.2 and Table 2.
+Eq. (29) preserves the group ratios. By contrast, nnU-Net's default poly scheduler overwrites all groups with a single rate. Weight decay $3\times10^{-5}$ applies to all convolution weights and biases. It does not apply to the scalar PhASER parameters $\theta^\rho_s$, $\theta^\sigma_s$, $\theta^k$ and $\gamma_l$, which form a separate parameter group with learning rate $\eta_0$. Decay would pull these toward 0, which corresponds to $\rho_s = 0.25$, $\sigma_s = 0.5$, $k = \ln 2$ and a closed gate. Those targets are arbitrary and unrelated to the initialization. Gradients are clipped at norm 12, and training uses AMP, with the PC block in fp32 (Section 3.2). Epochs, iterations, batch size and sampling are listed in Section 4.2 and Table 2.
 
 ## Figure specifications
 
@@ -280,32 +280,22 @@ Eq. (29) preserves the group ratios. By contrast, nnU-Net's default poly schedul
 
 ## Open questions for the authors
 
-**Code vs. V2 configuration.** This section describes the V2 behavior specified in the brief. Each item below is a place where the current code differs. The code needs to change, or this text does.
-
-1. **Prior activation.** `phaser/unet.py` (`tumor_prior = torch.sigmoid(small_logits[:, 1:2])`) and `PhaseFrequencyCoherenceRouting.forward` (`prior.sigmoid()`) apply the sigmoid twice. V2 (Eq. 21) uses `softmax(small_logits, 1)[:, 1:2]` once.
-2. **Prior supervision timing.** In `train_step`, the small-head loss runs only when `in_phase2` (epoch ≥ 60), weighted by `ramp_b`, a 50-epoch ramp starting at epoch 60. V2 starts it at epoch 0 with the 5-epoch ramp of Eq. (28).
-3. **Budget-loss timing.** `phase_frequency_budget_loss` is weighted by `ramp_b = _aux_ramp(phase2_start=60)`, so it is effectively zero until epoch 60 and reaches full weight at epoch 110. V2 activates it from epoch 0 with the 5-epoch ramp.
-4. **Ramp formula.** The PC-ranking ramp in the code is `min((e+1)/5, 1)`, which is non-zero at epoch 0. `_aux_ramp` is `(e - start)/warmup`, which is zero at its start epoch. I wrote Eq. (28) with `(e+1)/5` for all three auxiliary terms. Please confirm, and use one helper for all three.
-5. **Segmentation loss.** `_build_loss` always wraps DiceCE in `CombinedDiceCEFocalTverskyLoss`, adding Focal Tversky with α = 0.3, β = 0.7, γ = 4/3 and weight `PHASER_FT_WEIGHT`, default 0.15. The module docstring wrongly says 0.3. V2 uses DiceCE only.
-6. **Weight decay.** `configure_optimizers` applies `weight_decay = 3e-5` to every group, including `rho_raw`, `sigma_raw`, `noise_k` and `residual_gate`. V2 excludes them, which requires a separate no-decay group with the PhASER learning rate. Should the proxy weights and router convolutions also be excluded? I assumed they are not.
-7. **Budget loss on tumor-free samples.** For samples without tumor, the code still adds the lesion term, `|0 − β_in|`, a constant 1/3 per sample with zero gradient. This inflates the logged loss but does not change training. Eq. (25) uses an indicator. Please align the code, or accept the discrepancy.
-8. **Other switches.** The V2 launch must keep all other auxiliary losses and modules at their default "off" values. These are boundary, spectral, lesion-weight, gate, inside-liver and boundary-weighted losses; PCSF; LWFD; ACG; LA-ACG; T-RAF; and CFF (`PHASER_FUSION=none`). Please confirm.
-9. **Checkpoint.** The trainer additionally saves `checkpoint_best_tumor_dice.pth` and nnU-Net's EMA-best checkpoint. V2 reports final-epoch weights, so evaluation scripts must load `checkpoint_final.pth`.
+**Code vs. V2 configuration — resolved in the V2 code (2026-10-09, see `experiments/README.md` §1).** Items 1–9 of the previous list are implemented as described in this section: single softmax for the prior (Eq. 21); prior, budget and ranking losses all active from epoch 0 with the shared ramp of Eq. (28); DiceCE without Focal Tversky (`PHASER_FT_WEIGHT=0`); a no-decay group for $\theta^\rho, \theta^\sigma, \theta^k, \gamma$ (proxy and router convolutions keep weight decay); the indicator of Eq. (25) for tumor-free samples; all other modules and losses off (`experiments/configs/A6.env`); evaluation of `checkpoint_final.pth` only.
 
 **Discrepancies between the brief and the code that I resolved in favor of the code (please confirm):**
 
 10. **Router kernel.** The brief writes `Conv3(ReLU(Conv3(·)))`. The code's second layer is a 1×1×1 convolution (`conv_nd(dims, 8, 3, 1)`), so Eq. (13) uses 3×3×3 followed by 1×1×1. If "Conv3" meant "3 output channels", the two agree.
 11. **Prior head structure.** The brief says "two 3×3×3 convs". The code has three 3×3×3 convolutions ($\phi_1$, $\phi_2$, $\psi_1$), then instance norm, ReLU and a 1×1×1 classifier (Eqs. 19–20).
 
-**Open technical decisions ([[V2-pending]]):**
+**Technical decisions taken for V2 (please confirm):**
 
-12. **Voxel cap.** With `pc_max_voxels = 2^20`, the PC of the shallowest skip is computed at $64^3$ and upsampled. The design review (I2) measured a substantial change of the PC map from this. Keep the cap, raise it, or remove it?
-13. **Hard vs. soft threshold.** Eq. (11) uses a hard threshold $[E-T]_+$. A soft threshold is an alternative. The design review (I1) found $T/\Sigma_A$ between 1.17 and 1.98 on validation patches.
-14. **Noise-scale index.** The noise scale always uses `A[:, 0]`, the scale *initialized* as finest. Nothing enforces $\rho_1 > \rho_2 > \rho_3$ after training. Should we sort the scales, or use `argmax(rho_s)`?
-15. **Gain exponent.** Eq. (9) uses the noise-gain exponent 1, inherited from Kovesi's estimator. For an isotropic 3D band-pass filter, the white-noise amplitude grows roughly as $\rho_s^{3/2}$, so Eq. (9) is a heuristic in 3D. Should we keep it and call it a heuristic, or change the exponent?
-16. **Physical spacing.** The frequency grid is in voxel units (`d = 1.0`), so the "isotropic" filters are anisotropic in millimetres (1.0 vs. 0.78 mm; design review I6). I described the grid in voxel units. Should we change the code, or state this as a limitation?
-17. **Prior gradient.** $P$ is not detached before the router, so routing gradients also train the prior head. Is this intended? It slightly mixes the roles of $\mathcal{L}_{\mathrm{prior}}$ and the router.
-18. **Softmax routing.** Softmax routing cannot switch off enhancement at a voxel (Eq. 18; design review C3). I state this as a property in Section 3.3. Should Section 5 discuss it as a limitation?
+12. **Voxel cap.** Raised to $2^{22}$: no downsampling with $128^3$ patches (text above updated).
+13. **Hard vs. soft threshold.** Hard threshold kept (Kovesi's definition); the abstention behavior it causes is analyzed in Section 4.8 rather than engineered away.
+14. **Noise-scale index.** The code now uses the scale with the highest learned $\rho_s$ (Eq. 8 text updated); verified that PC is unchanged when the scale order is permuted.
+15. **Gain exponent.** Kept at 1 and should be called a heuristic in 3D if a reviewer asks; no code change.
+16. **Physical spacing.** Grid stays in voxel units; Section 3.2 now states the resulting anisotropy in millimetres. Consider listing it among the limitations in Section 5.
+17. **Prior gradient.** Kept as is ($P$ not detached).
+18. **Softmax routing.** Kept; Section 5 can discuss it as a limitation.
 
 **Content to supply:**
 

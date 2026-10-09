@@ -83,10 +83,17 @@ class PhaserUNet(nn.Module):
         enable_la_acg: bool = False,
         enable_small_head: bool = False,
         num_classes: int = 3,
+        pfcr_shuffle_pc: bool = False,
+        pfcr_intervene: str = 'none',
+        pfcr_intervene_levels=None,
+        legacy: bool = False,
     ):
         super().__init__()
         self.base_model = base_model
         self.dims = spatial_dims
+        # legacy=True reproduces pre-V2 inference (double-sigmoid prior, PC
+        # noise scale from scale 0) for old checkpoints such as Copy2.
+        self.legacy = legacy
 
         # Encoder and decoder references
         self.encoder = base_model.encoder
@@ -165,10 +172,17 @@ class PhaserUNet(nn.Module):
         self.enable_pfcr = enable_pfcr
         self.pfcr_use_prior = pfcr_use_prior
         if enable_pfcr:
+            # Inference-time interventions (E11) apply to the listed skip levels
+            # (0 = shallowest); None means all levels.
+            levels = set(range(n_skips)) if pfcr_intervene_levels is None \
+                else set(pfcr_intervene_levels)
             self.pfcr_modules = nn.ModuleList([
                 PhaseFrequencyCoherenceRouting(
                     feature_channels[i], dims=self.dims, n_scales=pc_scales,
                     pc_max_voxels=pc_max_voxels, use_prior=pfcr_use_prior,
+                    shuffle_pc=pfcr_shuffle_pc,
+                    intervene=pfcr_intervene if i in levels else 'none',
+                    legacy=legacy,
                 )
                 for i in range(n_skips)
             ])
@@ -255,7 +269,12 @@ class PhaserUNet(nn.Module):
         compute_small = self.enable_small_head and (self.training or _prior_mode)
         if compute_small:
             small_logits = self.small_head(skips)
-            tumor_prior = torch.sigmoid(small_logits[:, 1:2])
+            if self.legacy:
+                tumor_prior = torch.sigmoid(small_logits[:, 1:2])
+            else:
+                # The head is trained with 2-class CE, so the tumor probability
+                # is the softmax over its two logits.
+                tumor_prior = torch.softmax(small_logits.float(), dim=1)[:, 1:2].to(small_logits.dtype)
         elif _prior_mode:
             small_logits = None
 

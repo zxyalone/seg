@@ -169,12 +169,18 @@ class PhaseCongruency(nn.Module):
     def __init__(self, dims: int = 3, n_scales: int = 3,
                  min_wavelength: float = 3.0, mult: float = 2.1,
                  sigma_onf: float = 0.55, noise_k: float = 2.0,
-                 max_voxels: int = 1 << 20, eps: float = 1e-3):
+                 max_voxels: int = 1 << 20, eps: float = 1e-3,
+                 legacy: bool = False):
         super().__init__()
         self.dims = dims
         self.n_scales = n_scales
         self.max_voxels = max_voxels
         self.eps = eps
+        # legacy=True estimates the noise scale from A[:, 0] (the scale that was
+        # *initialised* finest) as pre-V2 checkpoints did. V2 uses the scale
+        # whose learned ρ_s is currently highest, because nothing keeps the
+        # learned centre frequencies in their initial order.
+        self.legacy = legacy
 
         # Centre frequencies ρ_s = 1/λ_s for λ_s = min_wavelength · mult^s,
         # stored as raw logits so ρ_s = 0.5·σ(raw) stays inside (0, Nyquist).
@@ -305,7 +311,8 @@ class PhaseCongruency(nn.Module):
             # median over ~10^6 voxels would otherwise route the entire gradient
             # through a single arbitrarily-selected element. k stays learnable so
             # the network still tunes how aggressively noise is suppressed.
-            A0 = A[:, 0].detach()                    # highest-frequency scale
+            finest = 0 if self.legacy else int(torch.argmax(rho_s.detach()))
+            A0 = A[:, finest].detach()               # highest-frequency scale
             med = A0.flatten(1).median(dim=1).values
             tau = med / math.sqrt(math.log(4.0))     # [B]
             # Generalises Kovesi's geometric sum (1−mult^−S)/(1−mult^−1) to the
@@ -403,17 +410,40 @@ class PhaseCongruencySkipFusion(nn.Module):
 
 
 class PhaseFrequencyCoherenceRouting(nn.Module):
-    """Route Haar subbands with contrast-invariant phase evidence."""
+    """
+    Route Haar subbands with contrast-invariant phase evidence.
+
+    Control and analysis switches (all default off):
+      shuffle_pc  A7 capacity control. The router sees a per-sample random
+                  spatial permutation of PC, so it keeps the PC value
+                  distribution, parameters and compute but loses its spatial
+                  content. _last_pc stays unshuffled, so the ranking loss still
+                  trains the filters exactly as in the full model.
+      intervene   inference-time intervention (E11), one of
+                  'none' | 'pc_zero' | 'route_uniform' | 'prior_zero' | 'gate_zero'.
+      legacy      pre-V2 behaviour: the prior is passed through a second
+                  sigmoid and the PC noise scale is taken from scale 0. Only for
+                  re-running inference with old checkpoints.
+    """
+
+    INTERVENTIONS = ('none', 'pc_zero', 'route_uniform', 'prior_zero', 'gate_zero')
 
     def __init__(self, channels: int, dims: int = 3, n_scales: int = 3,
-                 pc_max_voxels: int = 1 << 20, use_prior: bool = False):
+                 pc_max_voxels: int = 1 << 20, use_prior: bool = False,
+                 shuffle_pc: bool = False, intervene: str = 'none',
+                 legacy: bool = False):
         super().__init__()
+        if intervene not in self.INTERVENTIONS:
+            raise ValueError(f"intervene must be one of {self.INTERVENTIONS}, got {intervene!r}")
         self.dims = dims
         self.use_prior = use_prior
+        self.shuffle_pc = shuffle_pc
+        self.intervene = intervene
+        self.legacy = legacy
         self.proxy = conv_nd(dims, channels, 1, 1, bias=False)
         nn.init.constant_(self.proxy.weight, 1.0 / max(channels, 1))
         self.pc = PhaseCongruency(dims=dims, n_scales=n_scales,
-                                  max_voxels=pc_max_voxels)
+                                  max_voxels=pc_max_voxels, legacy=legacy)
         self.router = nn.Sequential(
             conv_nd(dims, 2 if use_prior else 1, 8, 3, padding=1),
             nn.ReLU(inplace=True),
@@ -434,13 +464,32 @@ class PhaseFrequencyCoherenceRouting(nn.Module):
             else:
                 x = F.pad(x, (0, pad[1], 0, pad[0]))
         pc = self.pc(self.proxy(x))
-        route_input = pc
+        self._last_pc = pc if self.training else pc.detach()
+        pc_in = pc
+        if self.shuffle_pc:
+            flat = pc.flatten(2)
+            perm = torch.stack([torch.randperm(flat.shape[-1], device=pc.device)
+                                for _ in range(flat.shape[0])])
+            pc_in = torch.gather(flat, 2, perm.unsqueeze(1)).view_as(pc)
+        if self.intervene == 'pc_zero':
+            pc_in = torch.zeros_like(pc_in)
+        route_input = pc_in
         if self.use_prior and tumor_prior is not None:
             prior = interpolate_nd(self.dims, tumor_prior, size=pc.shape[2:])
-            route_input = torch.cat((pc, prior.sigmoid()), dim=1)
+            if self.legacy:
+                prior = prior.sigmoid()
+            if self.intervene == 'prior_zero':
+                prior = torch.zeros_like(prior)
+            route_input = torch.cat((pc_in, prior), dim=1)
         route = torch.softmax(self.router(route_input), dim=1)
-        self._last_pc = pc if self.training else pc.detach()
+        if self.intervene == 'route_uniform':
+            route = torch.full_like(route, 1.0 / route.shape[1])
         self._last_route = route if self.training else route.detach()
+        if self.intervene == 'gate_zero':
+            if any(pad):
+                slices = (slice(None), slice(None), *[slice(0, size) for size in original_shape])
+                x = x[slices]
+            return x, route
         bands = dwt_haar_nd(self.dims, x)
         band_route = interpolate_nd(self.dims, route, size=bands[0].shape[2:])
         if self.dims == 3:

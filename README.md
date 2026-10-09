@@ -7,6 +7,9 @@
 仓库只保留复现所需的推理代码（本项目 fork 的 nnU-Net），所有旧实验代码、模块、文档、PPT 和
 实验产物已删除；完整旧版本见文末备份。
 
+> **2026-10-09 更新**：新实验一律使用 V2 代码（修复清单、梯度检查、训练队列、评测与统计脚本见 [`experiments/README.md`](experiments/README.md)）。
+> 本 README 描述的 Copy2 复现不受影响：`reproduce_metrics.py --predict` 会自动设置 `PHASER_LEGACY=1`，恢复旧版推理行为。
+
 ---
 
 ## 1. 复现目标

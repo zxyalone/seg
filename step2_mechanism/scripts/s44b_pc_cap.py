@@ -21,6 +21,7 @@ import sys
 
 import numpy as np
 import torch
+from scipy.stats import spearmanr
 
 sys.path.insert(0, "/root/autodl-tmp/Downstream_2/step2_mechanism/scripts")
 from common import (  # noqa: E402
@@ -84,9 +85,14 @@ def main():
                          mean_pc_cap=float(pc_cap.mean()),
                          mean_pc_full=float(pc_full.mean()),
                          frac_changed_gt_1e3=float((diff > 1e-3).mean()),
-                         spearman=float(np.corrcoef(
-                             np.argsort(np.argsort(pc_cap.ravel())),
-                             np.argsort(np.argsort(pc_full.ravel())))[0, 1])))
+                         # 勘误：旧版用 argsort 排名，PC 有大量并列的 0 值，
+                         # 并列被任意拆开，秩相关被系统性低估。改用平均秩。
+                         spearman=float(spearmanr(pc_cap.ravel(), pc_full.ravel())[0]),
+                         spearman_nonzero=float(spearmanr(
+                             pc_cap.ravel()[(pc_cap.ravel() > 0) | (pc_full.ravel() > 0)],
+                             pc_full.ravel()[(pc_cap.ravel() > 0) | (pc_full.ravel() > 0)])[0]),
+                         frac_zero_cap=float((pc_cap == 0).mean()),
+                         frac_zero_full=float((pc_full == 0).mean())))
         print(f"[{case}] mean|ΔPC|={rows[-1]['mean_abs_diff']:.5f} "
               f"max|ΔPC|={rows[-1]['max_abs_diff']:.5f} "
               f"Δ>1e-3 体素占比={rows[-1]['frac_changed_gt_1e3']:.3%} "

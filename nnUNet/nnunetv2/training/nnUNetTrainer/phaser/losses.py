@@ -317,7 +317,10 @@ def phase_frequency_budget_loss(routes: list, target: torch.Tensor = None,
         lesion_mean = (route * mask).sum(dim=spatial, keepdim=True) / lesion_mass
         background_mean = (route * (1.0 - mask)).sum(dim=spatial, keepdim=True) / background_mass
         lesion_budget_tensor = route.new_tensor(lesion_budget).view(1, 3, *([1] * len(spatial)))
-        total = total + (lesion_mean - lesion_budget_tensor).abs().mean()
+        # Samples without tumor have no lesion mean; without this indicator they
+        # would add a constant |0 - budget| with zero gradient to the logged loss.
+        has_lesion = (mask.sum(dim=spatial, keepdim=True) > 0).to(route.dtype)
+        total = total + ((lesion_mean - lesion_budget_tensor).abs() * has_lesion).mean()
         total = total + (background_mean - bg_budget).abs().mean()
     return total / len(routes)
 
