@@ -1,0 +1,311 @@
+% refs.bib — PhASER-3D manuscript
+% Keys match manuscript/00_writing_brief.md §7. Metadata taken from the PDFs in 文献/ and OpenAlex (2026-10-09).
+% Entries marked "% CHECK" need verification against the publisher page before submission.
+
+% ---------------- Benchmarks / data ----------------
+@article{bilic2023lits,
+  title   = {The Liver Tumor Segmentation Benchmark ({LiTS})},
+  author  = {Bilic, Patrick and Christ, Patrick and Li, Hongwei Bran and Vorontsov, Eugene and others},
+  journal = {Medical Image Analysis},
+  volume  = {84},
+  pages   = {102680},
+  year    = {2023},
+  doi     = {10.1016/j.media.2022.102680}
+}
+
+@article{simpson2019msd,
+  title   = {A large annotated medical image dataset for the development and evaluation of segmentation algorithms},
+  author  = {Simpson, Amber L. and Antonelli, Michela and Bakas, Spyridon and Bilello, Michel and Farahani, Keyvan and van Ginneken, Bram and others},
+  journal = {arXiv preprint arXiv:1902.09063},
+  year    = {2019}
+}
+
+% ---------------- Baselines ----------------
+@article{isensee2021nnunet,
+  title   = {nn{U-Net}: a self-configuring method for deep learning-based biomedical image segmentation},
+  author  = {Isensee, Fabian and Jaeger, Paul F. and Kohl, Simon A. A. and Petersen, Jens and Maier-Hein, Klaus H.},
+  journal = {Nature Methods},
+  volume  = {18},
+  number  = {2},
+  pages   = {203--211},
+  year    = {2021},
+  doi     = {10.1038/s41592-020-01008-z}
+}
+
+@inproceedings{isensee2024revisited,
+  title     = {nn{U-Net} Revisited: A Call for Rigorous Validation in {3D} Medical Image Segmentation},
+  author    = {Isensee, Fabian and Wald, Tassilo and Ulrich, Constantin and Baumgartner, Michael and Roy, Saikat and Maier-Hein, Klaus and J{\"a}ger, Paul F.},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention -- MICCAI 2024},
+  year      = {2024},
+  note      = {arXiv:2404.09556}  % CHECK: LNCS volume and pages
+}
+
+@article{ma2024umamba,
+  title   = {{U-Mamba}: Enhancing Long-range Dependency for Biomedical Image Segmentation},
+  author  = {Ma, Jun and Li, Feifei and Wang, Bo},
+  journal = {arXiv preprint arXiv:2401.04722},
+  year    = {2024}
+}
+
+@inproceedings{roy2023mednext,
+  title     = {{MedNeXt}: Transformer-driven Scaling of {ConvNets} for Medical Image Segmentation},
+  author    = {Roy, Saikat and Koehler, Gregor and Ulrich, Constantin and Baumgartner, Michael and Petersen, Jens and Isensee, Fabian and Jaeger, Paul F. and Maier-Hein, Klaus},
+  booktitle = {Medical Image Computing and Computer Assisted Intervention -- MICCAI 2023},
+  year      = {2023},
+  note      = {arXiv:2303.09975}  % CHECK: LNCS volume and pages
+}
+
+@inproceedings{hatamizadeh2022swinunetr,
+  title     = {Swin {UNETR}: Swin Transformers for Semantic Segmentation of Brain Tumors in {MRI} Images},
+  author    = {Hatamizadeh, Ali and Nath, Vishwesh and Tang, Yucheng and Yang, Dong and Roth, Holger R. and Xu, Daguang},
+  booktitle = {Brainlesion: Glioma, Multiple Sclerosis, Stroke and Traumatic Brain Injuries (BrainLes 2021)},
+  year      = {2022},
+  note      = {arXiv:2201.01266}  % CHECK: LNCS volume and pages
+}
+
+@article{li2018hdenseunet,
+  title   = {{H-DenseUNet}: Hybrid Densely Connected {UNet} for Liver and Tumor Segmentation from {CT} Volumes},
+  author  = {Li, Xiaomeng and Chen, Hao and Qi, Xiaojuan and Dou, Qi and Fu, Chi-Wing and Heng, Pheng-Ann},
+  journal = {IEEE Transactions on Medical Imaging},
+  volume  = {37},
+  number  = {12},
+  pages   = {2663--2674},
+  year    = {2018},
+  doi     = {10.1109/TMI.2018.2845918}
+}
+
+% ---------------- Pretraining ----------------
+@inproceedings{wu2024voco,
+  title     = {{VoCo}: A Simple-yet-Effective Volume Contrastive Learning Framework for {3D} Medical Image Analysis},
+  author    = {Wu, Linshan and Zhuang, Jiaxin and Chen, Hao},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2024},
+  note      = {arXiv:2402.17300}  % CHECK: pages
+}
+
+@article{wu2024largescale,
+  title   = {Large-Scale {3D} Medical Image Pre-training with Geometric Context Priors},
+  author  = {Wu, Linshan and Zhuang, Jiaxin and Chen, Hao},
+  journal = {arXiv preprint arXiv:2410.09890},
+  year    = {2024}
+  % CHECK: confirm this is the correct citation for the VoComni pretrained nnU-Net weights
+}
+
+% ---------------- Phase congruency / frequency ----------------
+@article{kovesi1999phase,
+  title   = {Image Features from Phase Congruency},
+  author  = {Kovesi, Peter},
+  journal = {Videre: Journal of Computer Vision Research},
+  volume  = {1},
+  number  = {3},
+  pages   = {1--26},
+  year    = {1999}
+}
+
+@article{felsberg2001monogenic,
+  title   = {The Monogenic Signal},
+  author  = {Felsberg, Michael and Sommer, Gerald},
+  journal = {IEEE Transactions on Signal Processing},
+  volume  = {49},
+  number  = {12},
+  pages   = {3136--3144},
+  year    = {2001},
+  doi     = {10.1109/78.969520}
+}
+
+@article{zhang2011fsim,
+  title   = {{FSIM}: A Feature Similarity Index for Image Quality Assessment},
+  author  = {Zhang, Lin and Zhang, Lei and Mou, Xuanqin and Zhang, David},
+  journal = {IEEE Transactions on Image Processing},
+  volume  = {20},
+  number  = {8},
+  pages   = {2378--2386},
+  year    = {2011},
+  doi     = {10.1109/TIP.2011.2109730}
+}
+
+@inproceedings{li2020wavecnn,
+  title     = {Wavelet Integrated {CNNs} for Noise-Robust Image Classification},
+  author    = {Li, Qiufu and Shen, Linlin and Guo, Sheng and Lai, Zhihui},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2020},
+  note      = {arXiv:2005.03337}  % CHECK: pages
+}
+
+@article{jiang2025texlivernet,
+  title   = {{TexLiverNet}: Leveraging Medical Knowledge and Spatial-Frequency Perception for Enhanced Liver Tumor Segmentation},
+  author  = {Jiang, Xiaoyan and Zhou, Zhi and Wang, Hailing and Wang, Guozhong and Fang, Zhijun},
+  journal = {arXiv preprint arXiv:2411.04595},
+  year    = {2024}
+  % CHECK: final venue (possibly a 2025 conference)
+}
+
+@article{han2025frequency,
+  title   = {Frequency Domain Unlocks New Perspectives for Abdominal Medical Image Segmentation},
+  author  = {Han, Kai and Ma, Siqi and Qian, Chengxuan and Chen, Jun and Lyu, Chongwen and Song, Yuqing and Liu, Zhe},
+  journal = {arXiv preprint arXiv:2510.11005},
+  year    = {2025}
+}
+
+% ---------------- Evaluation ----------------
+@article{maierhein2024metrics,
+  title   = {Metrics reloaded: recommendations for image analysis validation},
+  author  = {Maier-Hein, Lena and Reinke, Annika and Godau, Patrick and Tizabi, Minu D. and others},
+  journal = {Nature Methods},
+  volume  = {21},
+  number  = {2},
+  pages   = {195--212},
+  year    = {2024},
+  doi     = {10.1038/s41592-023-02151-z}
+}
+
+@article{reinke2024pitfalls,
+  title   = {Understanding metric-related pitfalls in image analysis validation},
+  author  = {Reinke, Annika and Tizabi, Minu D. and Baumgartner, Michael and Eisenmann, Matthias and others},
+  journal = {Nature Methods},
+  volume  = {21},
+  number  = {2},
+  pages   = {182--194},
+  year    = {2024},
+  doi     = {10.1038/s41592-023-02150-0}
+}
+
+@inproceedings{kofler2023blob,
+  title     = {blob loss: Instance Imbalance Aware Loss Functions for Semantic Segmentation},
+  author    = {Kofler, Florian and Shit, Suprosanna and Ezhov, Ivan and Fidon, Lucas and Horvath, Izabela and Al-Maskari, Rami and others},
+  booktitle = {Information Processing in Medical Imaging (IPMI 2023)},
+  year      = {2023},
+  note      = {arXiv:2205.08209}  % CHECK: LNCS volume and pages
+}
+
+% ---------------- BSPC liver tumor segmentation ----------------
+@article{ma2025msffe,
+  title   = {{MSFFE-Net}: Multi-scale Spatial-Frequency Feature Enhancement for accurate liver tumor segmentation},
+  author  = {Ma, Jinlin and Zhang, Kai and Ma, Ziping and Lu, Ke},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {113},
+  pages   = {108963},
+  year    = {2026},
+  doi     = {10.1016/j.bspc.2025.108963}
+}
+
+@article{bian2026mambaclinix,
+  title   = {{MambaClinix}: Hierarchical Gated Convolution and {Mamba}-Based {U-Net} for Enhanced {3D} Medical Image Segmentation},
+  author  = {Bian, Chenyuan and Xia, Nan and Yang, Xia and Wang, Feifei and Wang, Fengjiao and Wei, Bin and Dong, Qian},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {124},
+  pages   = {110657},
+  year    = {2026},
+  doi     = {10.1016/j.bspc.2026.110657}
+  % CHECK: author list taken from arXiv:2409.12533; OpenAlex lists different authors for the BSPC version
+}
+
+@article{cheng2024egunetr,
+  title   = {{EG-UNETR}: An edge-guided liver tumor segmentation network based on cross-level interactive transformer},
+  author  = {Cheng, Dongxu and Zhou, Zifang and Zhang, Jingwen},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {97},
+  pages   = {106739},
+  year    = {2024},
+  doi     = {10.1016/j.bspc.2024.106739}
+}
+
+@article{liu2025okmil,
+  title   = {Object knowledge-aware multiple instance learning for small tumor segmentation},
+  author  = {Liu, Haofeng and Gou, Shuiping and Zhou, Yanyan and Jiao, Changzhe and Liu, Wenbo and Shi, Mei and Luo, Zhonghua},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {115},
+  pages   = {109400},
+  year    = {2026},
+  doi     = {10.1016/j.bspc.2025.109400}
+}
+
+@article{wang2025rioUNeXt,
+  title   = {A novel omni-dimensional dynamic convolution-based feature fusion framework for liver and tumor segmentation from {CT}},
+  author  = {Wang, Jinke and Guo, Liang and Ge, Quanxu and Wang, Haiying and Tamura, Shinichi},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {112},
+  pages   = {108572},
+  year    = {2026},
+  doi     = {10.1016/j.bspc.2025.108572}
+}
+
+@article{wu2025tcanet,
+  title   = {{TCA-Net}: Liver tumor segmentation based on a new contextual feature encoding module and attention mechanism},
+  author  = {Wu, Wei and Zhang, Chengjun and Wang, Maofeng and Wang, Ting and Li, Lihua and Xi, Xugang},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {112},
+  pages   = {108518},
+  year    = {2026},
+  doi     = {10.1016/j.bspc.2025.108518}
+}
+
+@article{zhu2025bppnet,
+  title   = {{BPP-net}: bio-inspired parallel pathway network for liver and tumor segmentation},
+  author  = {Zhu, Minwei and Cai, Zhefei and Fan, Yingle and Chen, Yuwei},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {112},
+  pages   = {108497},
+  year    = {2026},
+  doi     = {10.1016/j.bspc.2025.108497}
+}
+
+@article{zheng2025abedice,
+  title   = {Adaptive boundary-enhanced Dice loss for image segmentation},
+  author  = {Zheng, Yanyan and Tian, Bihan and Yu, Shuchen and Yang, Xiaoguo and Yu, Qingxiang and Zhou, Jie and Jiang, Gaoqiang and Zheng, Qinxiang and Pu, Jiantao and Wang, Lei},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {106},
+  pages   = {107741},
+  year    = {2025},
+  doi     = {10.1016/j.bspc.2025.107741}
+}
+
+@article{hu2024msml,
+  title   = {{MSML-AttUNet}: A hierarchical attention network with multi-scale and multi-task for precision liver tumor segmentation},
+  author  = {Hu, Zhentao and Chen, Hongyu and Hua, Long and Ren, Xing and Mei, Weiqiang},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {99},
+  pages   = {106861},
+  year    = {2025},
+  doi     = {10.1016/j.bspc.2024.106861}
+}
+
+@article{qi2024addunet,
+  title   = {{AD-DUNet}: A dual-branch encoder approach by combining axial Transformer with cascaded dilated convolutions for liver and hepatic tumor segmentation},
+  author  = {Qi, Hang and Wang, Weijiang and Shi, Yueting and Wang, Xiaohua},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {95},
+  pages   = {106397},
+  year    = {2024},
+  doi     = {10.1016/j.bspc.2024.106397}
+}
+
+@article{peng2024spidernet,
+  title   = {{Spider-Net}: High-resolution multi-scale attention network with full-attention decoder for tumor segmentation in kidney, liver and pancreas},
+  author  = {Peng, Yanjun and Hu, Xiqing and Hao, Xiaobo and Liu, Pengcheng and Deng, Yanhui and Li, Zhengyu},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {93},
+  pages   = {106163},
+  year    = {2024},
+  doi     = {10.1016/j.bspc.2024.106163}
+}
+
+@article{you2024pgcnet,
+  title   = {Contour-induced parallel graph reasoning for liver tumor segmentation},
+  author  = {You, Yilin and Bai, Zhengyao and Zhang, Yihan and Li, Zekai},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {92},
+  pages   = {106111},
+  year    = {2024},
+  doi     = {10.1016/j.bspc.2024.106111}
+}
+
+@article{raghaw2025tmpednet,
+  title   = {{T-MPEDNet}: Unveiling the Synergy of Transformer-aware Multiscale Progressive Encoder-Decoder Network with Feature Recalibration for Tumor and Liver Segmentation},
+  author  = {Raghaw, Chandravardhan Singh and Sanjotra, Jasmer Singh and Rehman, Mohammad Zia Ur and Bansal, Shubhi and Dar, Shahid Shafi and Kumar, Nagendra},
+  journal = {Biomedical Signal Processing and Control},
+  volume  = {110},
+  pages   = {108225},
+  year    = {2025},
+  doi     = {10.1016/j.bspc.2025.108225}
+}

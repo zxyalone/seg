@@ -15,3 +15,7 @@ opencode.json
 
 # Build artifacts
 *.egg-info/
+
+# Literature PDFs (copyrighted; keep only the index README in git)
+文献/**/*.pdf
+.DS_Store
