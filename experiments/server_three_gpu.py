@@ -131,7 +131,7 @@ def monitor():
         STOP_MONITOR.wait(30)
 
 
-def adopt_stage4(old_controller):
+def adopt_stage4(old_controller, controller_lock):
     old = json.loads((HERE / 'state.json').read_text())
     assert old['stage'] == 'stage4', 'Only an in-progress stage 4 can be adopted'
     identities = {}
@@ -159,6 +159,8 @@ def adopt_stage4(old_controller):
         time.sleep(0.1)
     else:
         raise RuntimeError('Old controller did not stop')
+    # A running shared-queue controller owns this lock until it exits.
+    fcntl.flock(controller_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     STATE.update(old)
     STATE.update(pid=os.getpid(), controller='tmux shared GPU queue', adopted_at=stamp(),
                  git_commit=subprocess.check_output(['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip(),
@@ -387,8 +389,7 @@ def main():
     args = parser.parse_args()
     HERE.mkdir(exist_ok=True)
     with (HERE / 'controller.lock').open('w') as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        complete = adopt_stage4(args.old_controller)
+        complete = adopt_stage4(args.old_controller, handle)
         audit_stage4()
         if not complete:
             STATE['stage'] = 'stage4_failed'
