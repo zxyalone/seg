@@ -6,9 +6,9 @@ cap = 1048576  (2^20)   full = 67108864
   128^3 =   2097152   > cap ? True
   64^3 =    262144   > cap ? False
   32^3 =     32768   > cap ? False
-[LiTS_006] mean|ΔPC|=0.07344 max|ΔPC|=0.72487 Δ>1e-3 体素占比=53.847% PC 均值 cap=0.1145 full=0.0699 秩相关=0.5142
-[LiTS_009] mean|ΔPC|=0.07953 max|ΔPC|=0.71673 Δ>1e-3 体素占比=57.050% PC 均值 cap=0.1270 full=0.0833 秩相关=0.5058
-[LiTS_017] mean|ΔPC|=0.07275 max|ΔPC|=0.70965 Δ>1e-3 体素占比=49.237% PC 均值 cap=0.1069 full=0.0477 秩相关=0.4507
+[LiTS_006] mean|ΔPC|=0.07344 max|ΔPC|=0.72487 Δ>1e-3 体素占比=53.847% PC 均值 cap=0.1145 full=0.0699 秩相关=0.5869
+[LiTS_009] mean|ΔPC|=0.07953 max|ΔPC|=0.71673 Δ>1e-3 体素占比=57.050% PC 均值 cap=0.1270 full=0.0833 秩相关=0.6066
+[LiTS_017] mean|ΔPC|=0.07275 max|ΔPC|=0.70965 Δ>1e-3 体素占比=49.237% PC 均值 cap=0.1069 full=0.0477 秩相关=0.5680
 
 [fig] /root/autodl-tmp/Downstream_2/step2_mechanism/figs/fig44b_pc_max_voxels_effect.png
 [write] /root/autodl-tmp/Downstream_2/step2_mechanism/out/s44b_pc_cap.json
