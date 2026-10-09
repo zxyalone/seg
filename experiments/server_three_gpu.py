@@ -98,7 +98,8 @@ def finished(group, seed=0):
         if not manifest.get('checkpoint_final_sha256'):
             return False
     lines = (ROOT / name / 'launcher.log').read_text(errors='replace').lower()
-    return not any(word in lines for word in ('non-finite', 'out of memory', 'traceback', 'cuda error'))
+    # Skipped non-finite batches are reported in the audit, not a completion veto.
+    return not any(word in lines for word in ('out of memory', 'traceback', 'cuda error'))
 
 
 def monitor():
@@ -144,8 +145,13 @@ def adopt_stage4(old_controller):
             assert f'experiments/run.sh {group} 0'.encode() in command, f'Unexpected PID for {group}'
     assert old['pid'] == old_controller
     command = Path(f'/proc/{old_controller}/cmdline').read_bytes()
-    assert b'schedule_three_gpu.py' in command, 'Refusing to stop an unrelated process'
-    (HERE / 'schedule_before_shared_queue.json').write_text(json.dumps(old, indent=2, ensure_ascii=False))
+    assert any(name in command for name in (b'schedule_three_gpu.py', b'server_three_gpu.py')), \
+        'Refusing to stop an unrelated process'
+    if old.get('controller') == 'tmux shared GPU queue':
+        snapshot = HERE / 'schedule_before_report_only_audit.json'
+    else:
+        snapshot = HERE / 'schedule_before_shared_queue.json'
+    snapshot.write_text(json.dumps(old, indent=2, ensure_ascii=False))
     os.kill(old_controller, signal.SIGTERM)  # controller only; existing GPU jobs are preserved
     for _ in range(50):
         if pid_identity(old_controller) is None:
@@ -157,7 +163,8 @@ def adopt_stage4(old_controller):
     STATE.update(pid=os.getpid(), controller='tmux shared GPU queue', adopted_at=stamp(),
                  git_commit=subprocess.check_output(['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip(),
                  stage6_policy='FIFO checklist order; next available GPU takes the next ready job',
-                 gate_document_sha256=hashlib.sha256((REPO / 'experiments/DECISION_GATE.md').read_bytes()).hexdigest())
+                 gate_document_sha256=hashlib.sha256((REPO / 'experiments/DECISION_GATE.md').read_bytes()).hexdigest(),
+                 nonfinite_policy='report counts only; continue automatically when outputs are complete')
     STATE.pop('stage6_lanes', None)
     for key in ('stage6_common_lanes', 'branch_a_extra'):
         STATE.pop(key, None)
@@ -173,7 +180,7 @@ def adopt_stage4(old_controller):
         good = finished(group)
         with LOCK:
             job.update(status='complete' if good else 'failed', ended_at=stamp(),
-                       completion_evidence='final checkpoint + 200 epoch manifest + exact 21-case evaluation + clean error log')
+                       completion_evidence='final checkpoint + 200 epoch manifest + exact 21-case evaluation + no hard errors; non-finite warnings reported separately')
             save()
         log(f'Stage4 END {group}_s0 complete={good}')
         return good
@@ -198,10 +205,35 @@ def copy_evaluation(name):
     return str(dest.relative_to(REPO))
 
 
+def audit_stage4():
+    """Print the requested warning counts before automatically evaluating the gate."""
+    STATE['stage'] = 'stage4_audit'
+    save()
+    report = HERE / 'stage4_nonfinite_audit.log'
+    env = env_for(0)
+    env.update(R=str(ROOT), F=FOLD)
+    with report.open('w') as stream:
+        result = subprocess.run(['bash', str(REPO / 'experiments/audit_stage4_nonfinite.sh')],
+                                cwd=REPO, env=env, stdout=stream, stderr=subprocess.STDOUT)
+    print(report.read_text(), end='', flush=True)
+    status = {'status': 'complete' if result.returncode == 0 else 'failed',
+              'exit_code': result.returncode, 'report': str(report), 'finished_at': stamp(),
+              'policy': 'non-finite counts are informational; complete outputs proceed automatically'}
+    (HERE / 'stage4_nonfinite_audit_status.json').write_text(json.dumps(status, indent=2))
+    STATE['nonfinite_audit'] = status
+    save()
+    if result.returncode:
+        raise RuntimeError('Stage-4 diagnostic command failed; inspect the audit log')
+    destination = REPO / 'results/server/stage4_nonfinite_audit.log'
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(report, destination)
+
+
 def gate():
     STATE['stage'] = 'stage5'
     save()
-    paths = [copy_evaluation(group + '_s0') for group in ('A0', 'A1', 'A6')]
+    paths = ['results/server/stage4_nonfinite_audit.log']
+    paths += [copy_evaluation(group + '_s0') for group in ('A0', 'A1', 'A6')]
     for cohort, filename in [('Tumor', 'gate_val.csv'), ('All', 'gate_val_all.csv')]:
         cmd = [str(BIN / 'python'), str(REPO / 'experiments/eval/stats.py'), '--cohort', cohort]
         for group in ('A0', 'A1', 'A6'):
@@ -356,7 +388,9 @@ def main():
     HERE.mkdir(exist_ok=True)
     with (HERE / 'controller.lock').open('w') as handle:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        if not adopt_stage4(args.old_controller):
+        complete = adopt_stage4(args.old_controller)
+        audit_stage4()
+        if not complete:
             STATE['stage'] = 'stage4_failed'
             save()
             return

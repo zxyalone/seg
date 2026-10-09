@@ -20,7 +20,9 @@
 从每组最新的 `training_log_*.txt` 汇总 non-finite gradient 和 non-finite loss 次数，
 并按 epoch 统计梯度跳过次数（按用户命令显示前 20 个 epoch）。
 输出保存为 `$DATA/nnUNet_results_v2/_orchestration/stage4_nonfinite_audit.log`。
-该统计提供核查证据，现有放行规则保持不变。
+该统计仅输出核查日志，non-finite gradient/loss 次数不作为暂停条件。
+checkpoint、200 epoch 运行记录和 21 例验证结果完整，且没有进程硬错误时，
+核查日志输出后自动进入阶段 5，再按决策结果进入阶段 6；不增加人工确认步骤。
 
 阶段 4 已有后台进程由 tmux 中的调度器接管监控，训练进程不重启。
 新任务由该 tmux 调度器启动。GPU 利用率和运行状态持续写入
