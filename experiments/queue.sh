@@ -3,6 +3,7 @@
 #
 #   experiments/queue.sh stage1          # E2-E4: A6, A0, A1 (seed 0) -> decision gate
 #   experiments/queue.sh stage2          # after the gate: E5-E9
+#   experiments/queue.sh stage2-b        # branch B: matched A0/A1/A6 seeds first
 #   experiments/queue.sh smoke           # E0: every group for 2 epochs
 #   GPU=1 experiments/queue.sh custom A6:1 A0:1
 #
@@ -14,10 +15,11 @@ REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 case ${1:-} in
   stage1) JOBS=(A6:0 A0:0 A1:0) ;;
   stage2) JOBS=(A7:0 A6:1 A0:1 A6:2 A0:2 A5:0 A8:0) ;;
+  stage2-b) JOBS=(A6:1 A0:1 A1:1 A6:2 A0:2 A1:2 A7:0 A8:0) ;;
   smoke)  JOBS=(A0:0 A1:0 A5:0 A6:0 A7:0 A8:0); export EPOCHS=2
           export RESULTS_ROOT=${RESULTS_ROOT:-/root/autodl-tmp/nnUNet_data/nnUNet_results_smoke} ;;
   custom) shift; JOBS=("$@") ;;
-  *) echo "usage: $0 stage1|stage2|smoke|custom GROUP:SEED..." >&2; exit 1 ;;
+  *) echo "usage: $0 stage1|stage2|stage2-b|smoke|custom GROUP:SEED..." >&2; exit 1 ;;
 esac
 
 for job in "${JOBS[@]}"; do

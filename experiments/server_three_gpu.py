@@ -363,17 +363,141 @@ def execute(job, gpu):
     return good
 
 
-def shared_queue(jobs, run=execute):
+def stage6_plan(branch, include_a8=True):
+    if branch == 'B':
+        jobs = [('A6', 1), ('A0', 1), ('A1', 1), ('A6', 2), ('A0', 2), ('A1', 2), ('A7', 0)]
+    else:
+        jobs = [('A7', 0), ('A6', 1), ('A0', 1), ('A6', 2), ('A0', 2), ('A5', 0)]
+    if include_a8:
+        jobs.append(('A8', 0))
+    if branch == 'A':
+        jobs.append(('ResEnc', 0))
+    return jobs + [('Cost', 0)]
+
+
+def job_name(job):
+    group, seed = job
+    return f'{group}_s{seed}' if group != 'Cost' else 'E16_cost'
+
+
+def adopt_stage6(old_controller, jobs):
+    """Suspend only the old supervisor so its terminal cannot hang up live jobs."""
+    with (HERE / 'handoff.lock').open('w') as handoff:
+        fcntl.flock(handoff, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        old = json.loads((HERE / 'state.json').read_text())
+        assert old['stage'] == 'stage6' and old['pid'] == old_controller
+        command = Path(f'/proc/{old_controller}/cmdline').read_bytes()
+        assert b'server_three_gpu.py' in command, 'Unexpected controller process'
+        retired_lock = HERE / f'controller_suspended_{old_controller}.lock'
+        assert not retired_lock.exists(), 'Handoff was already started'
+        handle, renamed, committed = None, False, False
+        os.kill(old_controller, signal.SIGSTOP)
+        try:
+            for _ in range(50):
+                status = Path(f'/proc/{old_controller}/stat').read_text().rpartition(')')[2].split()[0]
+                if status in ('T', 't'):
+                    break
+                time.sleep(0.1)
+            else:
+                raise RuntimeError('Old controller did not suspend')
+            old = json.loads((HERE / 'state.json').read_text())
+            assert old['stage'] == 'stage6' and old['pid'] == old_controller
+            plan_names = {job_name(job) for job in jobs}
+            adopted = {}
+            for name, record in old['jobs'].items():
+                if record['status'] != 'running':
+                    continue
+                assert name in plan_names, f'Active job {name} is outside the new plan'
+                pid = record.get('pid')
+                assert pid, f'Missing PID for {name}'
+                identity = pid_identity(pid)
+                if identity is not None:
+                    group, seed = name.rsplit('_s', 1)
+                    cmd = Path(f'/proc/{pid}/cmdline').read_bytes().replace(b'\0', b' ')
+                    assert f'experiments/run.sh {group} {seed}'.encode() in cmd
+                else:
+                    group, seed = name.rsplit('_s', 1)
+                    assert finished(group, int(seed)), f'{name} exited without complete outputs'
+                assert record['gpu'] not in adopted, 'Multiple jobs on one GPU'
+                group, seed = name.rsplit('_s', 1)
+                adopted[record['gpu']] = {'job': (group, int(seed)), 'pid': pid, 'identity': identity}
+            (HERE / 'schedule_before_multiseed_update.json').write_text(json.dumps(old, indent=2, ensure_ascii=False))
+            (HERE / 'controller.lock').rename(retired_lock)
+            renamed = True
+            handle = (HERE / 'controller.lock').open('w')
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            STATE.update(old)
+            STATE.update(pid=os.getpid(), git_commit=subprocess.check_output(
+                ['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip(),
+                stage6_queue=[f'{group}:{seed}' for group, seed in jobs],
+                stage6_optional=['A8:0'] if ('A8', 0) in jobs else [],
+                stage6_priority_reason='Match three seeds for A0/A1/A6 before pending controls; preserve already-running A7',
+                stage6_updated_at=stamp(), stage6_adopted=[job_name(item['job']) for item in adopted.values()],
+                suspended_controller={'pid': old_controller, 'status': 'suspended_until_adopted_jobs_exit'})
+            (HERE / 'scheduler.pid').write_text(str(os.getpid()) + '\n')
+            save()
+            committed = True
+            log('Stage6 handoff: preserved all running GPU jobs; prioritized matched A1 seeds; gate unchanged')
+            threading.Thread(target=monitor, daemon=True).start()
+            return handle, adopted
+        except Exception:
+            if not committed:
+                if handle:
+                    handle.close()
+                if renamed:
+                    retired_lock.replace(HERE / 'controller.lock')
+                (HERE / 'state.json').write_text(json.dumps(old, indent=2, ensure_ascii=False))
+                (HERE / 'scheduler.pid').write_text(str(old_controller) + '\n')
+                STATE.clear()
+                os.kill(old_controller, signal.SIGCONT)
+            raise
+
+
+def retire_suspended_controller():
+    record = STATE.get('suspended_controller')
+    if not record or record['status'] == 'retired':
+        return
+    pid = record['pid']
+    if pid_identity(pid) is not None:
+        command = Path(f'/proc/{pid}/cmdline').read_bytes()
+        assert b'server_three_gpu.py' in command
+        os.kill(pid, signal.SIGKILL)  # Only after its original GPU jobs have exited.
+    record.update(status='retired', retired_at=stamp())
+    save()
+
+
+def shared_queue(jobs, run=execute, adopted=None):
+    adopted = adopted or {}
     ready = queue.Queue()
     for job in jobs:
         ready.put(job)
     outcomes = []
+    remaining_adopted = set(adopted)
     def worker(gpu):
+        if gpu in adopted:
+            item = adopted[gpu]
+            while item['identity'] is not None and pid_identity(item['pid']) == item['identity']:
+                time.sleep(5)
+            group, seed = item['job']
+            good = finished(group, seed)
+            with LOCK:
+                STATE['jobs'][job_name(item['job'])].update(status='complete' if good else 'failed', ended_at=stamp())
+                outcomes.append((item['job'], good))
+                remaining_adopted.remove(gpu)
+                if not remaining_adopted:
+                    retire_suspended_controller()
+                save()
+            log(f'Adopted END {job_name(item["job"])} success={good}; GPU{gpu} takes the next priority job')
         while True:
             try:
                 job = ready.get_nowait()
             except queue.Empty:
                 return
+            with LOCK:
+                label = f'{job[0]}:{job[1]}'
+                if label in STATE.get('stage6_pending_queue', []):
+                    STATE['stage6_pending_queue'].remove(label)
+                    save()
             result = run(job, gpu)
             with LOCK:
                 outcomes.append((job, result))
@@ -383,11 +507,38 @@ def shared_queue(jobs, run=execute):
     return outcomes
 
 
+def finish_stage6(outcomes):
+    paths = [copy_evaluation(f'{group}_s{seed}') for (group, seed), good in outcomes if good and group != 'Cost']
+    if paths:
+        commit_results('Results: stage-6 training and validation evidence', paths)
+    STATE['stage'] = 'training_complete_analysis_pending' if all(good for _, good in outcomes) else 'stage6_has_failed_jobs'
+    STATE['pending_checklist'] = ['E10 postprocessing selection', 'E11 interventions', 'E12 contrast degradation',
+                                  'E13 trained mechanism analysis', 'E14 external cohort', 'stage7 protocol freeze and one-time test']
+    save()
+    log('Training queue finished. Analysis and protocol prerequisites precede stage7; no test set prediction was launched.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--old-controller', type=int, required=True)
+    parser.add_argument('--resume-stage6', action='store_true', help='Adopt existing stage-6 jobs and update pending priorities')
+    parser.add_argument('--skip-a8', action='store_true', help='Omit the optional final A8 run')
     args = parser.parse_args()
     HERE.mkdir(exist_ok=True)
+    if args.resume_stage6:
+        old = json.loads((HERE / 'state.json').read_text())
+        jobs = stage6_plan(old['gate']['branch'], include_a8=not args.skip_a8)
+        handle, adopted = adopt_stage6(args.old_controller, jobs)
+        occupied = {job_name(item['job']) for item in adopted.values()}
+        pending = [job for job in jobs if job_name(job) not in occupied and
+                   STATE['jobs'].get(job_name(job), {}).get('status') != 'complete']
+        prior_results = [(job, True) for job in jobs if job_name(job) not in occupied and
+                         STATE['jobs'].get(job_name(job), {}).get('status') == 'complete']
+        STATE['stage6_pending_queue'] = [f'{group}:{seed}' for group, seed in pending]
+        save()
+        with handle:
+            finish_stage6(prior_results + shared_queue(pending, adopted=adopted))
+        return
     with (HERE / 'controller.lock').open('w') as handle:
         complete = adopt_stage4(args.old_controller, handle)
         audit_stage4()
@@ -396,24 +547,11 @@ def main():
             save()
             return
         branch = gate()
-        jobs = [('A7', 0), ('A6', 1), ('A0', 1), ('A6', 2), ('A0', 2)]
-        if branch == 'A':
-            jobs.append(('A5', 0))
-        jobs.append(('A8', 0))
-        if branch == 'A':
-            jobs.append(('ResEnc', 0))
-        jobs.append(('Cost', 0))
+        jobs = stage6_plan(branch, include_a8=not args.skip_a8)
         STATE.update(stage='stage6', stage6_queue=[f'{group}:{seed}' for group, seed in jobs])
         save()
         outcomes = shared_queue(jobs)
-        paths = [copy_evaluation(f'{group}_s{seed}') for (group, seed), good in outcomes if good and group != 'Cost']
-        if paths:
-            commit_results('Results: stage-6 training and validation evidence', paths)
-        STATE['stage'] = 'training_complete_analysis_pending' if all(good for _, good in outcomes) else 'stage6_has_failed_jobs'
-        STATE['pending_checklist'] = ['E10 postprocessing selection', 'E11 interventions', 'E12 contrast degradation',
-                                      'E13 trained mechanism analysis', 'E14 external cohort', 'stage7 protocol freeze and one-time test']
-        save()
-        log('Training queue finished. Analysis and protocol prerequisites precede stage7; no test set prediction was launched.')
+        finish_stage6(outcomes)
 
 
 if __name__ == '__main__':
