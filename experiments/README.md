@@ -14,7 +14,7 @@
 | 5 | 主损失恒带 Focal Tversky（且 docstring 写错权重） | `PHASER_FT_WEIGHT` 默认 0，=0 时只用 DiceCE | `_build_loss` |
 | 6 | weight decay 作用于标量/重参数化参数 | `rho_raw, sigma_raw, noise_k, residual_gate, alpha, beta, gamma` 单独成组，wd = 0 | `configure_optimizers` |
 | 7 | 无肿瘤样本的 budget 病灶项是常数 1/3 | 乘指示函数（论文 Eq. 25） | `losses.py` |
-| 8 | 最浅层 PC 被 2²⁰ 上限降到 64³（I2） | 默认上限 2²²，128³ 不再降采样 | trainer `PC_MAX_VOXELS_DEFAULT` |
+| 8 | 最浅层 PC 被 2²⁰ 上限降到 64³（I2） | **保持 2²⁰**。`fix/p0-mechanism-defects` 分支实测：去掉上限后合成数据边界 AUC 变差（CNR 2/4：1.00/1.00 → 0.50/0.52），但 1 个真实 patch 变好（0.37 → 0.62），证据不一致；降 2 倍本身有去噪作用。`PHASER_PC_MAX_VOXELS=4194304` 作为消融；实际降采样倍数写在 `_last_diag` | trainer `PC_MAX_VOXELS_DEFAULT` |
 | 9 | 噪声尺度固定取 scale 0，学习后不一定最细 | 取当前 ρ_s 最大的尺度（已验证与尺度顺序无关） | `PhaseCongruency.forward` |
 | 10 | 训练不可复现（I8） | `PHASER_SEED`：python/numpy/torch + 增强 worker 种子 | trainer `__init__`、`get_dataloaders` |
 | 11 | 无运行记录 | `run_manifest.json`：git commit、全部 `PHASER_*/nnUNet_*` 变量、seed、GPU、起止时间、epoch、final checkpoint SHA-256 | trainer `on_train_start/end` |
@@ -22,8 +22,9 @@
 | 13 | 新对照 | A7：`PHASER_PFCR_SHUFFLE_PC=1`（router 看到逐样本空间置换的 PC；排序损失仍用原 PC） | PFCR |
 | 14 | 推理期干预（E11） | `PHASER_INTERVENE=pc_zero/route_uniform/prior_zero/gate_zero`，`PHASER_INTERVENE_LEVELS=0,1` | PFCR |
 | 15 | torch ≥ 2.2 的 `LRScheduler` 不再接受 `verbose` 位置参数 | 去掉该参数（torch 2.1 行为不变） | `GroupPolyLRScheduler` |
+| 16 | 合并自 `fix/p0-mechanism-defects` | 消融开关（默认全关）：`PHASER_PC_SPACING`（按 mm 建频率网格）、`PHASER_PC_NOISE_KAPPA`（阈值相对封顶，实测更差）、`PHASER_FT_ALPHA/BETA`；PC 的 eval 诊断 `_last_diag`；验证脚本 `step2_mechanism/scripts/s45_verify_fixes.py` 与报告 `p0_fix_report.md` | `modules.py`、trainer |
 
-未改动、在论文中作为性质或局限陈述：硬阈值 `[E−T]+`；噪声增益指数 1（3D 下是启发式）；频率网格以体素为单位（z 与 xy 物理尺度差 1.28×）；prior 不 detach；softmax 路由无法逐体素关闭。
+未改动、在论文中作为性质或局限陈述：硬阈值 `[E−T]+`；最浅层 PC 在 64³ 上计算；噪声增益指数 1（3D 下是启发式）；频率网格以体素为单位（z 与 xy 物理尺度差 1.28×）；prior 不 detach；softmax 路由无法逐体素关闭。
 
 ## 2. E0 梯度检查结果（`check_grads.py`）
 

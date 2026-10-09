@@ -28,8 +28,18 @@ Supports ablation studies via environment variables:
                          congruency (contrast-invariant, for isoattenuating
                          lesions). Single-variable ablation.
   PHASER_PC_SCALES=3   → learnable log-Gabor scales when PCSF_MODE=pc
-  PHASER_PC_MAX_VOXELS → FFT cost cap per skip (default 2^22, i.e. no
-                         downsampling for 128^3 patches; pre-V2 runs used 2^20)
+  PHASER_PC_MAX_VOXELS → FFT cost cap per skip (default 2^20). 2^20 is below
+                         128^3, so the shallowest skip is computed at 64^3 and
+                         interpolated back. Kept after measurement: the 2x average
+                         denoises (synthetic AUC better capped, one real patch
+                         better uncapped; step2_mechanism/p0_fix_report.md).
+                         4194304 (= no downsampling) is an ablation.
+  PHASER_PC_SPACING    → '' (default, cycles/voxel), 'plan', or 'a,b,c' mm per
+                         axis for the log-Gabor bank. Ablation only.
+  PHASER_PC_NOISE_KAPPA → cap the Kovesi threshold at kappa * sum_s A_s.
+                         Default 0 (off); measured to localise worse.
+  PHASER_FT_ALPHA / PHASER_FT_BETA → Focal Tversky asymmetry (0.3 / 0.7),
+                         only used when PHASER_FT_WEIGHT > 0
   PHASER_PCSF_GATE_SENS → initial gate sensitivity alpha, shared by both PCSF
                          modes (default 0.5). MUST be nonzero for PCSF_MODE=pc:
                          alpha=0 zeroes d(attention)/d(PC) and the log-Gabor
@@ -90,9 +100,32 @@ from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
     pc_boundary_ranking_loss, phase_frequency_budget_loss
 
 
-# V2: no downsampling of the 128^3 skip before the FFT. With 2^20 the shallowest
-# PC map was computed at 64^3 and changed substantially (design review I2).
-PC_MAX_VOXELS_DEFAULT = 1 << 22
+# FFT voxel cap. 2^20 < 128^3, so the shallowest skip runs at 64^3. Removing the
+# cap changes that PC map substantially (design review I2), but measurements on
+# the fix/p0-mechanism-defects branch did not show it to be better (the 2x
+# average denoises), so the historical value is kept and 2^22 is an ablation.
+PC_MAX_VOXELS_DEFAULT = 1 << 20
+
+
+def resolve_pc_spacing(configuration_manager, dims: int):
+    """mm per tensor axis for the PC log-Gabor bank, from PHASER_PC_SPACING:
+    '' -> None (cycles/voxel, default); 'plan'/'auto' -> the plan spacing;
+    'a,b,c' -> explicit values (a single value is broadcast)."""
+    raw = os.environ.get('PHASER_PC_SPACING', '').strip()
+    if raw.lower() in ('plan', 'auto'):
+        cm_spacing = getattr(configuration_manager, 'spacing', None)
+        if not cm_spacing:
+            return None
+        vals = [float(v) for v in cm_spacing]
+    elif raw:
+        vals = [float(v) for v in raw.replace(';', ',').split(',') if v.strip()]
+    else:
+        return None
+    if len(vals) == 1:
+        vals = vals * dims
+    if len(vals) != dims or any(v <= 0 for v in vals):
+        raise ValueError(f"PHASER_PC_SPACING must give 1 or {dims} positive values, got {vals}")
+    return tuple(vals)
 
 # Scalar / reparameterised PhASER parameters. Weight decay would pull them
 # towards 0, i.e. towards rho=0.25, sigma=0.5, k=ln 2 and closed gates, which
@@ -183,6 +216,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             )
         self.pc_scales = int(os.environ.get('PHASER_PC_SCALES', '3'))
         self.pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(PC_MAX_VOXELS_DEFAULT)))
+        self.pc_spacing = resolve_pc_spacing(
+            self.configuration_manager, len(self.configuration_manager.pool_op_kernel_sizes[0]))
+        self.pc_noise_rel_kappa = float(os.environ.get('PHASER_PC_NOISE_KAPPA', '0.0'))
         # Shared by both PCSF modes to keep the ablation matched. Must be nonzero
         # (see PhaseCongruencySkipFusion); 0.0 restores pre-2026-09 behaviour.
         self.pcsf_gate_sens = float(os.environ.get('PHASER_PCSF_GATE_SENS', '0.5'))
@@ -236,6 +272,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.spectral_weight = float(os.environ.get('PHASER_SPECTRAL_WEIGHT', '0.05'))
         self.lesion_weight = float(os.environ.get('PHASER_LESION_WEIGHT', '0.2'))
         self.ft_weight = float(os.environ.get('PHASER_FT_WEIGHT', '0.0'))
+        self.ft_alpha = float(os.environ.get('PHASER_FT_ALPHA', '0.3'))
+        self.ft_beta = float(os.environ.get('PHASER_FT_BETA', '0.7'))
         self.gate_loss_weight = float(os.environ.get('PHASER_GATE_LOSS_WEIGHT', '0.03'))
         self.inside_penalty_weight = float(os.environ.get('PHASER_INSIDE_WEIGHT', '0.02'))
         self.boundary_w_weight = float(os.environ.get('PHASER_BOUNDARY_W_WEIGHT', '0.05'))
@@ -269,6 +307,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  PCSF: {self.enable_pcsf} (mode={self.pcsf_mode}, gate_sens={self.pcsf_gate_sens}"
             + (f", pc_scales={self.pc_scales}, pc_max_voxels={self.pc_max_voxels}"
                if self.pcsf_mode == 'pc' else "") + ")\n"
+            f"  Phase congruency: pc_max_voxels={self.pc_max_voxels}, spacing={self.pc_spacing}, "
+            f"noise_rel_kappa={self.pc_noise_rel_kappa}\n"
             f"  PFCR: {self.enable_pfcr} (prior={self.pfcr_use_prior}, budget={self.enable_pfcr_budget}, w={self.pfcr_budget_weight})\n"
             f"  PC boundary loss: {self.enable_pc_boundary_loss} "
             f"(w={self.pc_boundary_weight}, margin={self.pc_boundary_margin}, "
@@ -286,7 +326,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Inside-liver penalty: {self.enable_inside_penalty} (w={self.inside_penalty_weight})\n"
             f"  BoundaryW Dice: {self.enable_boundary_w_loss} (w={self.boundary_w_weight})\n"
             f"  Lesion weight: {self.enable_lesion_weight} (w={self.lesion_weight})\n"
-            f"  Focal Tversky: w={self.ft_weight}\n"
+            f"  Focal Tversky: w={self.ft_weight} (alpha={self.ft_alpha}, beta={self.ft_beta})\n"
             f"  Aux loss warmup: {self.warmup_epochs} epochs\n"
             f"  Three-phase: 0-{self.phase2_start-1} (A), "
             f"{self.phase2_start}-{self.phase3_start-1} (B), "
@@ -358,6 +398,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         pcsf_mode = os.environ.get('PHASER_PCSF_MODE', 'grad')
         pc_scales = int(os.environ.get('PHASER_PC_SCALES', '3'))
         pc_max_voxels = int(os.environ.get('PHASER_PC_MAX_VOXELS', str(PC_MAX_VOXELS_DEFAULT)))
+        pc_spacing = resolve_pc_spacing(configuration_manager, dim)
+        pc_noise_rel_kappa = float(os.environ.get('PHASER_PC_NOISE_KAPPA', '0.0'))
         pcsf_gate_sens = float(os.environ.get('PHASER_PCSF_GATE_SENS', '0.5'))
         enable_lwfd = os.environ.get('PHASER_LWFD', '0') == '1'
         enable_acg = os.environ.get('PHASER_ACG', '0') == '1'
@@ -409,6 +451,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             pfcr_intervene=pfcr_intervene,
             pfcr_intervene_levels=pfcr_intervene_levels,
             legacy=legacy,
+            pc_spacing=pc_spacing,
+            pc_noise_rel_kappa=pc_noise_rel_kappa,
         )
 
         return model
@@ -445,8 +489,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             )
             if self.ft_weight > 0:
                 focal_tversky = MultiClassFocalTverskyLoss(
-                    alpha=0.3,
-                    beta=0.7,
+                    alpha=self.ft_alpha,
+                    beta=self.ft_beta,
                     gamma=4.0 / 3.0,
                     include_background=False,
                     ignore_label=self.label_manager.ignore_label,

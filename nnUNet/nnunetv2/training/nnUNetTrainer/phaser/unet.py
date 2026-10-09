@@ -87,6 +87,8 @@ class PhaserUNet(nn.Module):
         pfcr_intervene: str = 'none',
         pfcr_intervene_levels=None,
         legacy: bool = False,
+        pc_spacing=None,
+        pc_noise_rel_kappa: float = 0.0,
     ):
         super().__init__()
         self.base_model = base_model
@@ -160,6 +162,7 @@ class PhaserUNet(nn.Module):
                         feature_channels[i], dims=self.dims,
                         n_scales=pc_scales, pc_max_voxels=pc_max_voxels,
                         gate_sens_init=pcsf_gate_sens,
+                        spacing=pc_spacing, noise_rel_kappa=pc_noise_rel_kappa,
                     )
                     for i in range(n_skips)
                 ])
@@ -183,6 +186,7 @@ class PhaserUNet(nn.Module):
                     shuffle_pc=pfcr_shuffle_pc,
                     intervene=pfcr_intervene if i in levels else 'none',
                     legacy=legacy,
+                    spacing=pc_spacing, noise_rel_kappa=pc_noise_rel_kappa,
                 )
                 for i in range(n_skips)
             ])

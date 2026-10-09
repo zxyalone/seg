@@ -162,20 +162,49 @@ class PhaseCongruency(nn.Module):
     - torch.fft has no half-precision support, so the transform block forces
       fp32 regardless of autocast.
     - `max_voxels` caps FFT cost: above it the proxy is downsampled by powers of
-      two, PC is computed there, and the map is upsampled back. Boundary
-      evidence is spatially smooth, so this is a cheap and ablatable trade.
+      two, PC is computed there, and the map is upsampled back. The default
+      2^20 is below 128^3, so on a standard patch the shallowest skip is
+      computed at 64^3. This is not only a cost device: the 2x average
+      denoises. Measured (step2_mechanism/p0_fix_report.md): removing the cap
+      made boundary localisation worse on a synthetic slab (AUC at CNR 2/4:
+      1.00/1.00 capped vs 0.50/0.52 uncapped) but better on one real patch
+      (boundary/peri ratio 0.62 vs 0.37). The default is kept; the effective
+      `downsample_factor` is reported in _last_diag.
+    - `spacing` (mm/voxel per axis) makes the log-Gabor bank isotropic in
+      physical space. None (default) keeps cycles/voxel; enabling it
+      reinterprets the learnable rho and rescales the bank by up to 1.28x on
+      LiTS, with no clear win on one real patch, so it is an ablation only.
+    - `noise_rel_kappa` optionally caps the Kovesi threshold at kappa * sum_s A_s.
+      Measured and rejected as a default: it stops the threshold from
+      sparsifying the output (PC > 0 for 94% of voxels vs 48%) and boundary
+      AUC on a synthetic slab fell to 0.39/0.29/0.25 at CNR 0.5/1/2 (uncapped
+      0.52/0.67/1.00), because num/den is ~1 at both boundary and interior of
+      step-like objects. 0.0 (default) = pure Kovesi threshold.
     """
 
     def __init__(self, dims: int = 3, n_scales: int = 3,
                  min_wavelength: float = 3.0, mult: float = 2.1,
                  sigma_onf: float = 0.55, noise_k: float = 2.0,
                  max_voxels: int = 1 << 20, eps: float = 1e-3,
-                 legacy: bool = False):
+                 legacy: bool = False, spacing=None, noise_rel_kappa: float = 0.0):
         super().__init__()
         self.dims = dims
         self.n_scales = n_scales
         self.max_voxels = max_voxels
         self.eps = eps
+        # Physical voxel spacing per tensor axis; None keeps the grid in
+        # cycles/voxel (d = 1), the behaviour every checkpoint was trained with.
+        if spacing is None:
+            self.spacing = (1.0,) * dims
+        else:
+            spacing = tuple(float(s) for s in spacing)
+            if len(spacing) != dims or any(s <= 0 for s in spacing):
+                raise ValueError(f"spacing must be {dims} positive values, got {spacing}")
+            self.spacing = spacing
+        self.noise_rel_kappa = float(noise_rel_kappa)
+        # Eval-mode diagnostics (threshold, effective resolution, PC sparsity)
+        # for the mechanism probes.
+        self._last_diag = None
         # legacy=True estimates the noise scale from A[:, 0] (the scale that was
         # *initialised* finest) as pre-V2 checkpoints did. V2 uses the scale
         # whose learned ρ_s is currently highest, because nothing keeps the
@@ -206,18 +235,19 @@ class PhaseCongruency(nn.Module):
 
     # -- frequency grid -------------------------------------------------
     def _freq_grid(self, spatial, device):
-        key = (tuple(spatial), str(device))
+        key = (tuple(spatial), str(device), self.spacing)
         hit = self._grid_cache.get(key)
         if hit is not None:
             return hit
 
         axes = []
         for i, n in enumerate(spatial):
-            # rfftn only halves the LAST transformed axis
+            # rfftn only halves the LAST transformed axis. d = spacing, so the
+            # grid is in cycles/voxel by default and cycles/mm with spacing.
             if i == len(spatial) - 1:
-                axes.append(torch.fft.rfftfreq(n, d=1.0, device=device))
+                axes.append(torch.fft.rfftfreq(n, d=self.spacing[i], device=device))
             else:
-                axes.append(torch.fft.fftfreq(n, d=1.0, device=device))
+                axes.append(torch.fft.fftfreq(n, d=self.spacing[i], device=device))
         grids = torch.meshgrid(*axes, indexing='ij')
 
         rho = torch.sqrt(sum(g ** 2 for g in grids))
@@ -243,6 +273,8 @@ class PhaseCongruency(nn.Module):
         dims = self.dims
         spatial = tuple(x.shape[2:])
         S = self.n_scales
+        if self.training:
+            self._last_diag = None
 
         # torch.fft is fp32-only; opt out of autocast for the whole transform.
         with torch.amp.autocast(device_type=x.device.type, enabled=False):
@@ -323,6 +355,10 @@ class PhaseCongruency(nn.Module):
             T = tau_total * (math.sqrt(math.pi / 2.0)
                              + k * math.sqrt((4.0 - math.pi) / 2.0))
             T = T.view(-1, *((1,) * dims))           # [B,1,..] broadcast
+            T_kovesi = T
+            # Optional relative cap (off by default, see class docstring).
+            if self.noise_rel_kappa > 0:
+                T = torch.minimum(T, self.noise_rel_kappa * den)
 
             # Relative epsilon: den.mean() is homogeneous of degree 1 in x just
             # like num and den, so contrast invariance survives the guard term
@@ -332,6 +368,25 @@ class PhaseCongruency(nn.Module):
             floor = self.eps * den.mean(dim=sp, keepdim=True)
             pc = (num - T).clamp(min=0.0) / (den + floor + 1e-12)
             pc = pc.unsqueeze(1).clamp(0.0, 1.0)     # [B,1,*work]
+
+            if not self.training:
+                with torch.no_grad():
+                    dclamp = den.clamp(min=1e-12)
+                    self._last_diag = {
+                        'T_kovesi': float(T_kovesi.mean()),
+                        'T_eff': float(T.mean()),
+                        'den_mean': float(den.mean()),
+                        'T_over_den_mean': float((T / dclamp).mean()),
+                        'T_kovesi_over_den_mean': float((T_kovesi / dclamp).mean()),
+                        'kappa': self.noise_rel_kappa,
+                        'spacing': list(self.spacing),
+                        'downsample_factor': int(factor),
+                        'work_shape': list(work),
+                        'frac_den_above_T_kovesi': float((den > T_kovesi).float().mean()),
+                        'pc_mean': float(pc.mean()),
+                        'pc_frac_nonzero': float((pc > 0).float().mean()),
+                        'num_over_den_mean': float((num / dclamp).mean()),
+                    }
 
             if factor > 1:
                 pc = interpolate_nd(dims, pc, size=spatial)
@@ -362,7 +417,8 @@ class PhaseCongruencySkipFusion(nn.Module):
     """
 
     def __init__(self, channels: int, dims: int = 3, n_scales: int = 3,
-                 pc_max_voxels: int = 1 << 20, gate_sens_init: float = 0.5):
+                 pc_max_voxels: int = 1 << 20, gate_sens_init: float = 0.5,
+                 spacing=None, noise_rel_kappa: float = 0.0):
         super().__init__()
         self.dims = dims
         # Channel reduction. Initialised to the plain channel mean so the proxy
@@ -372,7 +428,8 @@ class PhaseCongruencySkipFusion(nn.Module):
         nn.init.constant_(self.proxy.weight, 1.0 / max(channels, 1))
 
         self.pc = PhaseCongruency(dims=dims, n_scales=n_scales,
-                                  max_voxels=pc_max_voxels)
+                                  max_voxels=pc_max_voxels, spacing=spacing,
+                                  noise_rel_kappa=noise_rel_kappa)
 
         # γ = 0 gives exact identity, which is what protects the VoCo weights.
         # α, by contrast, MUST start nonzero: the gate applies 10·tanh(α) to its
@@ -431,7 +488,7 @@ class PhaseFrequencyCoherenceRouting(nn.Module):
     def __init__(self, channels: int, dims: int = 3, n_scales: int = 3,
                  pc_max_voxels: int = 1 << 20, use_prior: bool = False,
                  shuffle_pc: bool = False, intervene: str = 'none',
-                 legacy: bool = False):
+                 legacy: bool = False, spacing=None, noise_rel_kappa: float = 0.0):
         super().__init__()
         if intervene not in self.INTERVENTIONS:
             raise ValueError(f"intervene must be one of {self.INTERVENTIONS}, got {intervene!r}")
@@ -443,7 +500,8 @@ class PhaseFrequencyCoherenceRouting(nn.Module):
         self.proxy = conv_nd(dims, channels, 1, 1, bias=False)
         nn.init.constant_(self.proxy.weight, 1.0 / max(channels, 1))
         self.pc = PhaseCongruency(dims=dims, n_scales=n_scales,
-                                  max_voxels=pc_max_voxels, legacy=legacy)
+                                  max_voxels=pc_max_voxels, legacy=legacy,
+                                  spacing=spacing, noise_rel_kappa=noise_rel_kappa)
         self.router = nn.Sequential(
             conv_nd(dims, 2 if use_prior else 1, 8, 3, padding=1),
             nn.ReLU(inplace=True),
