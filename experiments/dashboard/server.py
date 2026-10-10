@@ -22,6 +22,9 @@ RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fu
 CST = timezone(timedelta(hours=8))
 HTML = Path(__file__).with_name('index.html')
 RUN_NAME = re.compile(r'(?:A[0-8]|ResEnc)_s[0-9]+|E16_cost')
+ANALYSIS_LOGS = {'analysis_scheduler': 'analysis_scheduler.log', 'analysis_selftest': 'analysis_selftest.log',
+                 'E13': 'analysis_E13.log', 'E11_summary': 'analysis_E11_summary.log', 'E12_summary': 'analysis_E12_summary.log',
+                 **{f'{e}_shard{i}': f'analysis_{e}_shard{i}.log' for e in ('E11', 'E12') for i in range(3)}}
 LOCK = threading.Lock()
 CACHE = {'time': 0, 'data': None, 'gpu_time': 0, 'gpu': [], 'gpu_error': None}
 
@@ -104,7 +107,7 @@ def run_info(name, job):
     }
 
 
-def stage_cards(state, runs):
+def stage_cards(state, runs, analysis=None):
     stage = state.get('stage', '')
     # Historical stages are backed by imported records, never inferred from epoch progress.
     evidence = [
@@ -131,6 +134,12 @@ def stage_cards(state, runs):
     cards.append({'id': 6, 'title': '第二批训练与分析', 'status': 'analysis_pending' if train_finished else 'failed' if stage == 'stage6_has_failed_jobs' else 'running' if queue else 'pending',
                   'progress': round(sum(runs.get(n, {}).get('progress', 0) for n in queue) / len(queue), 1) if queue else 0,
                   'detail': f'训练 / 成本队列 {done} / {len(queue)} 完成；E10–E14 分析与外部数据准备待完成', 'source': '当前服务器'})
+    if analysis:
+        items = analysis.get('items', {})
+        count = sum(item.get('status') == 'complete' for item in items.values())
+        phase = analysis.get('phase')
+        cards[-1]['status'] = 'running' if phase in ('selftest', 'running') else 'failed' if phase == 'analysis_failed' else 'analysis_pending'
+        cards[-1]['detail'] = f'训练 / 成本队列 {done} / {len(queue)} 完成；E11–E13 分析 {count}/3 完成；E10 / E14 / E17 待完成'
     frozen = (REPO / 'experiments/PROTOCOL_FROZEN').is_file()
     test_runs = [name for name, row in runs.items() if name != 'E16_cost' and row['status'] != 'cancelled']
     tested = external = predictions = 0
@@ -209,11 +218,17 @@ def snapshot():
             mtime = (HERE / 'state.json').stat().st_mtime
         except OSError:
             mtime = 0
+        analysis = read_json(HERE / 'analysis_state.json', {})
+        if analysis:
+            analysis['controller_alive'] = process_alive(analysis.get('pid'))
+            analysis['age_seconds'] = round(now - (HERE / 'analysis_state.json').stat().st_mtime)
+            for job in analysis.get('jobs', {}).values():
+                job['process_alive'] = process_alive(job.get('pid')) if job.get('status') == 'running' else None
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
-            'stages': stage_cards(state, runs), 'runs': list(runs.values()),
+            'stages': stage_cards(state, runs, analysis), 'runs': list(runs.values()), 'analysis': analysis,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -251,6 +266,8 @@ class Handler(BaseHTTPRequestHandler):
                     path = HERE / 'scheduler.log'
                 elif name == 'audit':
                     path = HERE / 'stage4_nonfinite_audit.log'
+                elif name in ANALYSIS_LOGS:
+                    path = HERE / ANALYSIS_LOGS[name]
                 elif RUN_NAME.fullmatch(name) and name in {r['name'] for r in snapshot()['runs']}:
                     path = ROOT / name / 'launcher.log'
                 else:

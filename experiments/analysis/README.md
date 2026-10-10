@@ -12,6 +12,17 @@
 
 耗时按 A6 单个 patch 前向 77 ms 估算。以第一个病例日志打印的秒数为准再修正。
 
+## 当前服务器执行记录（2026-10-10）
+
+已拉取 main 上的 `6dd11f1`。附带 CPU 合成数据端到端自检全部通过，日志归档为 `results/server/analysis_selftest.log`；这些合成数据指标不属于论文实验结果。
+北京时间 21:47 由 `experiments/server_analysis.py` 启动：GPU0 E13，GPU1/2 E11 的前两个病例分片。
+共享队列随后派发第三个 E11 分片和三个 E12 分片；推理齐备后，在 CPU 上自动做评测、统计和基线核验。
+E11 none / E12 α=1 的 Tumor Dice 与原 eval_val 的绝对差容限为 1e-6；E12 realised CNR 中位比值与 α 的容差沿用附带测试的 0.02。
+核验失败会记录 failed，不把输出当作已完成分析。小结果归档到 `results/E11`、`results/E12`、`results/E13`，预测体数据留在服务器。
+
+实时进度：`$DATA/nnUNet_results_v2/_orchestration/analysis_state.json`；调度日志为 `analysis_scheduler.log`，各任务为 `analysis_<任务名>.log`。
+上述分析只读取 21 例验证集；阶段 7 的一次性测试须在协议前置条件完成后另行执行。
+
 ## 运行
 
 ```bash

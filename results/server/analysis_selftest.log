@@ -1,0 +1,205 @@
+Dataset102_LiTS
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+
+####################
+verify_dataset_integrity Done. 
+If you didn't see any error messages then your dataset is most likely OK!
+####################
+
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+2D U-Net configuration:
+{'data_identifier': 'nnUNetPlans_2d', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 6, 'patch_size': array([80, 80]), 'median_image_size_in_voxels': array([72., 72.]), 'spacing': array([0.77999997, 0.77999997]), 'normalization_schemes': ['CTNormalization'], 'use_mask_for_norm': [False], 'UNet_class_name': 'PlainConvUNet', 'UNet_base_num_features': 32, 'n_conv_per_stage_encoder': (2, 2, 2, 2, 2), 'n_conv_per_stage_decoder': (2, 2, 2, 2), 'num_pool_per_axis': [4, 4], 'pool_op_kernel_sizes': [[1, 1], [2, 2], [2, 2], [2, 2], [2, 2]], 'conv_kernel_sizes': [[3, 3], [3, 3], [3, 3], [3, 3], [3, 3]], 'unet_max_num_features': 512, 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'batch_dice': True}
+
+Using <class 'nnunetv2.imageio.simpleitk_reader_writer.SimpleITKIO'> as reader/writer
+3D fullres U-Net configuration:
+{'data_identifier': 'nnUNetPlans_3d_fullres', 'preprocessor_name': 'DefaultPreprocessor', 'batch_size': 2, 'patch_size': array([40, 80, 80]), 'median_image_size_in_voxels': array([40., 72., 72.]), 'spacing': array([1.        , 0.77999997, 0.77999997]), 'normalization_schemes': ['CTNormalization'], 'use_mask_for_norm': [False], 'UNet_class_name': 'PlainConvUNet', 'UNet_base_num_features': 32, 'n_conv_per_stage_encoder': (2, 2, 2, 2, 2), 'n_conv_per_stage_decoder': (2, 2, 2, 2), 'num_pool_per_axis': [3, 4, 4], 'pool_op_kernel_sizes': [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [1, 2, 2]], 'conv_kernel_sizes': [[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]], 'unet_max_num_features': 320, 'resampling_fn_data': 'resample_data_or_seg_to_shape', 'resampling_fn_seg': 'resample_data_or_seg_to_shape', 'resampling_fn_data_kwargs': {'is_seg': False, 'order': 3, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_seg_kwargs': {'is_seg': True, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'resampling_fn_probabilities': 'resample_data_or_seg_to_shape', 'resampling_fn_probabilities_kwargs': {'is_seg': False, 'order': 1, 'order_z': 0, 'force_separate_z': None}, 'batch_dice': False}
+
+Plans were saved to /tmp/tmpseh4srbu/pre/Dataset102_LiTS/nnUNetPlans.json
+built A0_s0 16220396
+built A1_s0 16220408
+built A6_s0 16361242
+built A6_s1 16361242
+built A7_s0 16361242
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+[1/1] LiTS_000: 3 lesions, 20 predictions, 17s
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+[1/1] LiTS_001: 3 lesions, 20 predictions, 18s
+evaluate A6_s0 none
+evaluate A6_s0 pc_zero@0
+evaluate A6_s0 pc_zero@1
+evaluate A6_s0 pc_zero@2
+evaluate A6_s0 pc_zero@3
+evaluate A6_s0 pc_zero@4
+evaluate A6_s0 pc_zero@all
+evaluate A6_s0 route_uniform
+evaluate A6_s0 prior_zero
+evaluate A6_s0 gate_zero
+evaluate A6_s1 none
+evaluate A6_s1 pc_zero@0
+evaluate A6_s1 pc_zero@1
+evaluate A6_s1 pc_zero@2
+evaluate A6_s1 pc_zero@3
+evaluate A6_s1 pc_zero@4
+evaluate A6_s1 pc_zero@all
+evaluate A6_s1 route_uniform
+evaluate A6_s1 prior_zero
+evaluate A6_s1 gate_zero
+| Intervention | Δ Tumor DSC (pp) [95% CI] | Δ Lesion recall (pp) [95% CI] | Δ FP/scan [95% CI] | Median U_j low | mid | high |
+|---|---|---|---|---|---|---|
+| None (A6) | 0 | 0 | 0 | – | – | – |
+| Zero PC, level 1 | -0.00 [-0.00, +0.00] | +0.00 [+0.00, +0.00] | +68.500 [+55.500, +81.500] | – | -0.0001 (n=3) | -0.0001 (n=3) |
+| Zero PC, level 2 | +0.00 [-0.00, +0.00] | +0.00 [+0.00, +0.00] | +0.500 [-1.000, +2.000] | – | +0.0000 (n=3) | +0.0000 (n=3) |
+| Zero PC, level 3 | +0.00 [+0.00, +0.00] | +0.00 [+0.00, +0.00] | +1.000 [+0.500, +1.500] | – | +0.0000 (n=3) | -0.0000 (n=3) |
+| Zero PC, level 4 | -0.00 [-0.00, +0.00] | +0.00 [+0.00, +0.00] | +0.000 [-0.500, +0.500] | – | -0.0000 (n=3) | +0.0000 (n=3) |
+| Zero PC, level 5 | +0.00 [+0.00, +0.00] | +0.00 [+0.00, +0.00] | +0.000 [+0.000, +0.000] | – | +0.0000 (n=3) | +0.0000 (n=3) |
+| Zero PC, all levels | +0.00 [-0.00, +0.00] | +0.00 [+0.00, +0.00] | +78.500 [+63.000, +94.000] | – | -0.0000 (n=3) | -0.0001 (n=3) |
+| Uniform route (1/3, 1/3, 1/3) | -0.00 [-0.01, +0.00] | +0.00 [+0.00, +0.00] | -15.000 [-16.500, -13.500] | – | -0.0001 (n=3) | +0.0001 (n=3) |
+| Zero prior | -0.00 [-0.01, +0.01] | +0.00 [+0.00, +0.00] | -38.750 [-40.500, -37.000] | – | +0.0000 (n=3) | +0.0002 (n=3) |
+| PFCR off (out = x) | +0.01 [+0.01, +0.01] | +0.00 [+0.00, +0.00] | -26.250 [-30.500, -22.000] | – | -0.0001 (n=3) | +0.0002 (n=3) |
+Runs: A6_s0, A6_s1; cohort Tumor; per-case values averaged over seeds; 200 case-level bootstrap resamples. U_j over lesions ≥ 50 voxels (preprocessed space), averaged over seeds per lesion.
+
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+There are 2 cases in the source folder
+I am process 0 out of 1 (max process ID is 0, we start counting with 0!)
+There are 2 cases that I would like to predict
+
+Predicting LiTS_000:
+perform_everything_on_gpu: False
+Prediction done, transferring to CPU if needed
+sending off prediction to background worker for resampling and export
+done with LiTS_000
+
+Predicting LiTS_001:
+perform_everything_on_gpu: False
+Prediction done, transferring to CPU if needed
+sending off prediction to background worker for resampling and export
+done with LiTS_001
+E11 ok; conditions that changed the output: [True, True, True, True]
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+[1/2] LiTS_000: 3 lesions, 16 predictions, 11s
+[2/2] LiTS_001: 3 lesions, 16 predictions, 10s
+evaluate A0_s0 a1
+evaluate A0_s0 a0.75
+evaluate A0_s0 a0.5
+evaluate A0_s0 a0.25
+evaluate A1_s0 a1
+evaluate A1_s0 a0.75
+evaluate A1_s0 a0.5
+evaluate A1_s0 a0.25
+evaluate A6_s0 a1
+evaluate A6_s0 a0.75
+evaluate A6_s0 a0.5
+evaluate A6_s0 a0.25
+evaluate A7_s0 a1
+evaluate A7_s0 a0.75
+evaluate A7_s0 a0.5
+evaluate A7_s0 a0.25
+Recall (IoU>0.1, lesions ≥ 1 voxels, seed-averaged):
+alpha  0.25  0.50  0.75  1.00
+group                        
+A0      0.0   0.0   0.0   0.0
+A1      0.0   0.0   0.0   0.0
+A6      0.0   0.0   0.0   0.0
+A7      0.0   0.0   0.0   0.0
+
+Interaction (positive = B loses recall more slowly than A):
+comparison  alpha  recall_drop_B  recall_drop_A  interaction  ci_lo  ci_hi
+   A6 - A1   0.75            0.0            0.0          0.0    0.0    0.0
+   A6 - A1   0.50            0.0            0.0          0.0    0.0    0.0
+   A6 - A1   0.25            0.0            0.0          0.0    0.0    0.0
+   A6 - A0   0.75            0.0            0.0          0.0    0.0    0.0
+   A6 - A0   0.50            0.0            0.0          0.0    0.0    0.0
+   A6 - A0   0.25            0.0            0.0          0.0    0.0    0.0
+   A1 - A0   0.75            0.0            0.0          0.0    0.0    0.0
+   A1 - A0   0.50            0.0            0.0          0.0    0.0    0.0
+   A1 - A0   0.25            0.0            0.0          0.0    0.0    0.0
+
+Median realised CNR / baseline CNR: {'a1': 1.0, 'a0.75': 0.753413211268835, 'a0.5': 0.5064752936556007, 'a0.25': 0.25971701931111735}
+E12 ok; realised CNR / CNR: {'a1': 1.0, 'a0.75': 0.753413211268835, 'a0.5': 0.5064752936556007, 'a0.25': 0.25971701931111735}
+[self-test] route / PC statistics recover known values
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+perform_everything_on_gpu=True is only supported for cuda devices! Setting this to False
+[1/2] LiTS_000: 3 lesions, 8s
+[2/2] LiTS_001: 3 lesions, 7s
+# E13 mechanism analysis (V2 models)
+
+## Learned filters (mean over seeds)
+
+| group | level | scale | lambda_mean | lambda_sd | lambda_init | rel_shift | sigma | k | tanh_gamma |
+|---|---|---|---|---|---|---|---|---|---|
+| A6 | 0 | 0 | 3 | 0 | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 0 | 1 | 6.3 | 0 | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 0 | 2 | 13.23 | 0 | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A6 | 1 | 0 | 3 | 0 | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 1 | 1 | 6.3 | 0 | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 1 | 2 | 13.23 | 0 | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A6 | 2 | 0 | 3 | 0 | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 2 | 1 | 6.3 | 0 | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 2 | 2 | 13.23 | 0 | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A6 | 3 | 0 | 3 | 0 | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 3 | 1 | 6.3 | 0 | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A6 | 3 | 2 | 13.23 | 0 | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A7 | 0 | 0 | 3 | nan | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 0 | 1 | 6.3 | nan | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 0 | 2 | 13.23 | nan | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A7 | 1 | 0 | 3 | nan | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 1 | 1 | 6.3 | nan | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 1 | 2 | 13.23 | nan | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A7 | 2 | 0 | 3 | nan | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 2 | 1 | 6.3 | nan | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 2 | 2 | 13.23 | nan | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+| A7 | 3 | 0 | 3 | nan | 3 | 2.98e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 3 | 1 | 6.3 | nan | 6.3 | 3.427e-08 | 0.55 | 2 | 0.7616 |
+| A7 | 3 | 2 | 13.23 | nan | 13.23 | 1.416e-09 | 0.55 | 2 | 0.7616 |
+
+## PC on features: boundary vs liver ring, per level and CNR tertile
+
+| group | level | stratum | ratio | auc | shell_nonzero | n |
+|---|---|---|---|---|---|---|
+| A6 | 0 | high | 1.748 | 0.6859 | 0.79 | 3 |
+| A6 | 0 | mid | 1.588 | 0.6416 | 0.6711 | 3 |
+| A6 | 1 | high | 1.042 | 0.5087 | 0.6943 | 3 |
+| A6 | 1 | mid | 0.7714 | 0.4324 | 0.7114 | 3 |
+| A6 | 2 | high | 0.9081 | 0.3404 | 1 | 3 |
+| A6 | 2 | mid | 0.8907 | 0.3772 | 0.9956 | 3 |
+| A6 | 3 | high | 1.227 | 0.7848 | 1 | 3 |
+| A6 | 3 | mid | 1.037 | 0.5605 | 1 | 3 |
+| A7 | 0 | high | 1.963 | 0.6222 | 0.5924 | 3 |
+| A7 | 0 | mid | 1.772 | 0.5895 | 0.352 | 3 |
+| A7 | 1 | high | 1.07 | 0.5161 | 0.4505 | 3 |
+| A7 | 1 | mid | 0.6675 | 0.4379 | 0.4826 | 3 |
+| A7 | 2 | high | 0.9324 | 0.4119 | 1 | 3 |
+| A7 | 2 | mid | 0.9023 | 0.424 | 0.9912 | 3 |
+| A7 | 3 | high | 1.255 | 0.7728 | 1 | 3 |
+| A7 | 3 | mid | 1.114 | 0.6635 | 1 | 3 |
+
+## Route statistics per level
+
+| group | level | sel_mean_abs | sel_l1 | cv_mean | dist_budget_in | dist_budget_out | low_tumor | mid_tumor | high_tumor | low_liver | mid_liver | high_liver | low_bg | mid_bg | high_bg |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A6 | 0 | 0.01864 | 0.05593 | 0.1202 | 0.4877 | 0.5536 | 0.4439 | 0.2809 | 0.2753 | 0.4416 | 0.2829 | 0.2756 | 0.4198 | 0.2857 | 0.2945 |
+| A6 | 1 | 0.02924 | 0.08772 | 0.2337 | 0.5408 | 0.5067 | 0.4704 | 0.3144 | 0.2152 | 0.4519 | 0.3216 | 0.2265 | 0.4457 | 0.3579 | 0.1964 |
+| A6 | 2 | 0.03959 | 0.1188 | 0.1609 | 0.3518 | 0.7055 | 0.3713 | 0.3693 | 0.2594 | 0.3741 | 0.3674 | 0.2585 | 0.3423 | 0.3486 | 0.3091 |
+| A6 | 3 | 0.02552 | 0.07655 | 0.1029 | 0.2629 | 0.8386 | 0.2707 | 0.4502 | 0.279 | 0.2633 | 0.452 | 0.2847 | 0.2839 | 0.4136 | 0.3025 |
+| A7 | 0 | 0.002855 | 0.008565 | 0.1653 | 0.4288 | 0.5741 | 0.4144 | 0.3192 | 0.2664 | 0.4226 | 0.3184 | 0.259 | 0.4112 | 0.3182 | 0.2707 |
+| A7 | 1 | 0.01016 | 0.03047 | 0.1478 | 0.4805 | 0.5448 | 0.4402 | 0.3206 | 0.2392 | 0.4415 | 0.3159 | 0.2426 | 0.4251 | 0.324 | 0.251 |
+| A7 | 2 | 0.009621 | 0.02886 | 0.1487 | 0.2514 | 0.7541 | 0.3257 | 0.3367 | 0.3376 | 0.3254 | 0.3301 | 0.3445 | 0.3225 | 0.3267 | 0.3508 |
+| A7 | 3 | 0.01477 | 0.0443 | 0.08753 | 0.2701 | 0.7211 | 0.335 | 0.3638 | 0.3012 | 0.3398 | 0.3579 | 0.3024 | 0.3394 | 0.3443 | 0.3163 |
+
+## Prior head
+
+| group | prior_tumor | prior_bg |
+|---|---|---|
+| A6 | 0.5055 | 0.4761 |
+| A7 | 0.5132 | 0.4932 |
+
+E13 ok; 72 lesion x level rows, levels [0, 1, 2, 3]
+test_analysis: all checks passed
+
+SELFTEST_EXIT=0

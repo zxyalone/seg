@@ -9,6 +9,8 @@ python experiments/dashboard/server.py --port 6006
 
 网页每 5 秒刷新，调度器状态每 30 秒更新，GPU 每 15 秒采样。浏览器全部时间使用北京时间。AutoDL 的 6006「自定义服务」入口可访问；也可通过 SSH 转发 `ssh -L 6006:127.0.0.1:6006 <服务器连接参数>`，打开 `http://localhost:6006`。
 
+E11–E13 使用独立的 `analysis_state.json`（每 15 秒更新），看板展示预测文件 / 已处理病例数量、各 GPU 当前分析任务与分析日志；推理完成、统计汇总和完整分析完成分开标记。
+
 - 阶段 0–3 显示另一台服务器导入的历史证据，保留冒烟显存峰值未采集说明。
 - 阶段 4 / 5 / 6 来自实时 `_orchestration/state.json`、launcher 日志及 `eval_val/summary.json`。
 - 当前轮次和已完成轮次分开；训练结束后等待验证，只有调度器确认完成才记为完整 run。
