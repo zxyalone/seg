@@ -1,0 +1,276 @@
+{
+  "stage": "training_complete_analysis_pending",
+  "pid": 138632,
+  "jobs": {
+    "A6_s0": {
+      "gpu": 0,
+      "pid": 6588,
+      "status": "complete",
+      "started_at": "2026-10-09 21:21:04 CST",
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 04:06:10.077155: WARNING: non-finite gradient at epoch 181; skipping update",
+        "2026-10-10 04:42:45.933552: WARNING: non-finite gradient at epoch 197; skipping update",
+        "2026-10-10 04:46:39.471723: WARNING: non-finite gradient at epoch 199; skipping update"
+      ],
+      "ended_at": "2026-10-10 05:01:14 CST",
+      "completion_evidence": "final checkpoint + 200 epoch manifest + exact 21-case evaluation + no hard errors; non-finite warnings reported separately"
+    },
+    "A0_s0": {
+      "gpu": 1,
+      "pid": 6590,
+      "status": "complete",
+      "started_at": "2026-10-09 21:21:04 CST",
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 01:28:25.274168: WARNING: non-finite gradient at epoch 175; skipping update",
+        "2026-10-10 01:38:32.695537: WARNING: non-finite gradient at epoch 182; skipping update",
+        "2026-10-10 01:57:30.190417: WARNING: non-finite gradient at epoch 196; skipping update"
+      ],
+      "ended_at": "2026-10-10 02:09:59 CST",
+      "completion_evidence": "final checkpoint + 200 epoch manifest + exact 21-case evaluation + no hard errors; non-finite warnings reported separately"
+    },
+    "A1_s0": {
+      "gpu": 2,
+      "pid": 6591,
+      "status": "complete",
+      "started_at": "2026-10-09 21:21:04 CST",
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 01:33:03.007482: WARNING: non-finite gradient at epoch 168; skipping update",
+        "2026-10-10 01:52:33.658120: WARNING: non-finite gradient at epoch 181; skipping update",
+        "2026-10-10 02:15:53.274500: WARNING: non-finite gradient at epoch 197; skipping update"
+      ],
+      "ended_at": "2026-10-10 02:29:05 CST",
+      "completion_evidence": "final checkpoint + 200 epoch manifest + exact 21-case evaluation + no hard errors; non-finite warnings reported separately"
+    },
+    "A7_s0": {
+      "gpu": 0,
+      "status": "complete",
+      "started_at": "2026-10-10 05:01:34 CST",
+      "pid": 47702,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 11:38:08.791752: WARNING: non-finite gradient at epoch 176; skipping update",
+        "2026-10-10 12:19:15.971550: WARNING: non-finite gradient at epoch 194; skipping update",
+        "2026-10-10 12:22:21.237175: WARNING: non-finite gradient at epoch 195; skipping update"
+      ],
+      "ended_at": "2026-10-10 12:45:45 CST"
+    },
+    "A6_s1": {
+      "gpu": 1,
+      "status": "complete",
+      "started_at": "2026-10-10 05:01:34 CST",
+      "pid": 47703,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 11:25:44.299508: WARNING: non-finite gradient at epoch 172; skipping update",
+        "2026-10-10 11:41:30.032472: WARNING: non-finite gradient at epoch 179; skipping update",
+        "2026-10-10 12:03:08.617905: WARNING: non-finite gradient at epoch 188; skipping update"
+      ],
+      "ended_at": "2026-10-10 12:41:50 CST"
+    },
+    "A0_s1": {
+      "gpu": 2,
+      "status": "complete",
+      "started_at": "2026-10-10 05:01:34 CST",
+      "pid": 47706,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 09:00:23.223983: WARNING: non-finite gradient at epoch 177; skipping update",
+        "2026-10-10 09:08:45.671875: WARNING: non-finite gradient at epoch 183; skipping update",
+        "2026-10-10 09:27:38.079890: WARNING: non-finite gradient at epoch 197; skipping update"
+      ],
+      "ended_at": "2026-10-10 09:39:20 CST"
+    },
+    "A1_s1": {
+      "gpu": 2,
+      "status": "complete",
+      "started_at": "2026-10-10 09:39:20 CST",
+      "pid": 69503,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 13:43:27.850694: WARNING: non-finite gradient at epoch 163; skipping update",
+        "2026-10-10 14:07:30.826214: WARNING: non-finite gradient at epoch 179; skipping update",
+        "2026-10-10 14:33:27.309168: WARNING: non-finite gradient at epoch 196; skipping update"
+      ],
+      "ended_at": "2026-10-10 14:48:53 CST"
+    },
+    "A6_s2": {
+      "gpu": 1,
+      "status": "complete",
+      "started_at": "2026-10-10 12:41:50 CST",
+      "pid": 91014,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 19:00:16.300936: WARNING: non-finite gradient at epoch 168; skipping update",
+        "2026-10-10 19:28:32.475167: WARNING: non-finite gradient at epoch 181; skipping update",
+        "2026-10-10 19:54:44.689967: WARNING: non-finite gradient at epoch 193; skipping update"
+      ],
+      "ended_at": "2026-10-10 20:23:28 CST"
+    },
+    "A0_s2": {
+      "gpu": 0,
+      "status": "complete",
+      "started_at": "2026-10-10 12:45:45 CST",
+      "pid": 96046,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 16:44:37.110645: WARNING: non-finite gradient at epoch 169; skipping update",
+        "2026-10-10 17:07:49.903658: WARNING: non-finite gradient at epoch 186; skipping update",
+        "2026-10-10 17:10:28.865560: WARNING: non-finite gradient at epoch 187; skipping update"
+      ],
+      "ended_at": "2026-10-10 17:35:07 CST"
+    },
+    "A1_s2": {
+      "gpu": 2,
+      "status": "complete",
+      "started_at": "2026-10-10 14:48:53 CST",
+      "pid": 109332,
+      "latest_epoch": "199",
+      "warnings": [
+        "2026-10-10 19:11:00.865065: WARNING: non-finite gradient at epoch 177; skipping update",
+        "2026-10-10 19:24:39.079656: WARNING: non-finite gradient at epoch 186; skipping update",
+        "2026-10-10 19:36:45.557883: WARNING: non-finite gradient at epoch 194; skipping update"
+      ],
+      "ended_at": "2026-10-10 19:54:46 CST"
+    },
+    "A8_s0": {
+      "gpu": 0,
+      "status": "cancelled",
+      "started_at": "2026-10-10 17:35:07 CST",
+      "pid": 133223,
+      "latest_epoch": "40",
+      "warnings": [
+        "2026-10-10 17:50:38.200353: WARNING: non-finite gradient at epoch 6; skipping update",
+        "2026-10-10 18:24:33.490144: WARNING: non-finite gradient at epoch 21; skipping update",
+        "2026-10-10 19:03:33.136116: WARNING: non-finite gradient at epoch 39; skipping update"
+      ],
+      "ended_at": "2026-10-10 19:05:46 CST",
+      "cancellation_reason": "用户明确取消 A8 正式训练，不再纳入阶段 6 或最终比较。"
+    },
+    "E16_cost": {
+      "gpu": 0,
+      "status": "complete",
+      "started_at": "2026-10-10 19:05:58 CST",
+      "pid": 138640,
+      "ended_at": "2026-10-10 19:06:09 CST"
+    }
+  },
+  "repo": "/root/autodl-tmp/Downstream_2",
+  "results_root": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2",
+  "git_commit": "ed5e86e4b2580f6db04538ad0e9123033648abf7",
+  "gate_rule": "A6-A1 tumor_dice > 0 AND (lesion_f1@0.1 > 0 OR fp_per_scan@0.1 < 0), Tumor cohort; otherwise branch B",
+  "stage4_lanes": {
+    "0": [
+      "A6:0"
+    ],
+    "1": [
+      "A0:0"
+    ],
+    "2": [
+      "A1:0"
+    ]
+  },
+  "resources": {
+    "nnUNet_n_proc_DA": 6,
+    "nnUNet_def_n_proc": 4,
+    "OMP_NUM_THREADS": 1
+  },
+  "test_set": "locked: no stage7 command is scheduled",
+  "updated_at": "2026-10-10 20:23:28 CST",
+  "controller": "tmux shared GPU queue",
+  "adopted_at": "2026-10-10 01:48:08 CST",
+  "stage6_policy": "FIFO checklist order; next available GPU takes the next ready job",
+  "gate_document_sha256": "7229f869642f611baff919a85ea640edd1f6766e46c1951fb677ff8f6476fe43",
+  "gpu_snapshot": [
+    {
+      "gpu": 0,
+      "memory_mib": 1,
+      "util_percent": 0
+    },
+    {
+      "gpu": 1,
+      "memory_mib": 1,
+      "util_percent": 0
+    },
+    {
+      "gpu": 2,
+      "memory_mib": 1,
+      "util_percent": 0
+    }
+  ],
+  "nonfinite_policy": "report counts only; continue automatically when outputs are complete",
+  "nonfinite_audit": {
+    "status": "complete",
+    "exit_code": 0,
+    "report": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_orchestration/stage4_nonfinite_audit.log",
+    "finished_at": "2026-10-10 05:01:14 CST",
+    "policy": "non-finite counts are informational; complete outputs proceed automatically"
+  },
+  "gate": {
+    "branch": "B",
+    "delta_dice": 0.021183704321790862,
+    "delta_f1": -0.030878552971576267,
+    "delta_fp_per_scan": 0.22222222222222188,
+    "decided_at": "2026-10-10 05:01:34 CST"
+  },
+  "stage6_queue": [
+    "A6:1",
+    "A0:1",
+    "A1:1",
+    "A6:2",
+    "A0:2",
+    "A1:2",
+    "A7:0",
+    "Cost:0"
+  ],
+  "stage6_optional": [],
+  "stage6_priority_reason": "Match three seeds for A0/A1/A6 before pending controls; preserve already-running A7",
+  "stage6_updated_at": "2026-10-10 19:05:58 CST",
+  "stage6_adopted": [
+    "A6_s2",
+    "A1_s2"
+  ],
+  "suspended_controller": {
+    "pid": 56081,
+    "status": "retired",
+    "retired_at": "2026-10-10 20:23:28 CST"
+  },
+  "stage6_pending_queue": [],
+  "stage6_exclusions": {
+    "A8_s0": {
+      "run": "A8_s0",
+      "status": "cancelled",
+      "reason": "用户明确取消 A8 正式训练，不再纳入阶段 6 或最终比较。",
+      "cancelled_at": "2026-10-10 19:05:46 CST",
+      "last_epoch_index": "40",
+      "gpu": 0,
+      "stopped_pids": [
+        133223,
+        133234,
+        133235,
+        133364,
+        133551,
+        133553,
+        133555,
+        133557,
+        133559,
+        133561,
+        133726,
+        133728,
+        133730
+      ],
+      "partial_outputs_preserved": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A8_s0",
+      "gate_unchanged": true
+    }
+  },
+  "pending_checklist": [
+    "E10 postprocessing selection",
+    "E11 interventions",
+    "E12 contrast degradation",
+    "E13 trained mechanism analysis",
+    "E14 external cohort",
+    "stage7 protocol freeze and one-time test"
+  ]
+}
