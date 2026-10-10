@@ -1,0 +1,37 @@
+{
+  "recorded_at": "2026-10-10T22:53:32.158857+08:00",
+  "reserved_gpu": 0,
+  "active_analysis_gpus": [
+    1,
+    2
+  ],
+  "reason": "User requested a GPU for other training; do not reclaim until user releases it",
+  "paused_task": "E11_shard2",
+  "retired_controller_pid": 161504,
+  "terminated_gpu0_analysis_pid": 164428,
+  "original_gpu1_gpu2_jobs_exited_during_controller_switch": [
+    161512,
+    161513
+  ],
+  "resumed_jobs": {
+    "E11_shard0": {
+      "gpu": 1,
+      "pid": 168118,
+      "started_at": "2026-10-10 22:51:24 CST"
+    },
+    "E11_shard1": {
+      "gpu": 2,
+      "pid": 168119,
+      "started_at": "2026-10-10 22:51:24 CST"
+    }
+  },
+  "controller_pid": 168112,
+  "pending_policy": "Resume E11 shard 2 on the next free GPU 1 or 2, then continue E12; preserve completed E13",
+  "resume_output_policy": "Original user scripts skip predictions with saved utility; conditions lacking saved utility are recomputed",
+  "verification": [
+    "GPU 0 has no E11/E12/E13 process",
+    "GPU reservation persisted in analysis_state.json",
+    "two-GPU queue simulation passed",
+    "dashboard API and JavaScript syntax passed"
+  ]
+}

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Share E11–E13 validation analyses across three GPUs; never run stage-7 tests."""
+"""Share E11–E13 across available GPUs; never run stage-7 tests."""
+import argparse
 import concurrent.futures
 import csv
 import fcntl
@@ -88,7 +89,17 @@ def monitor():
         STOP.wait(15)
 
 
-def execute(task, gpu):
+def job_alive(job):
+    pid = job.get('pid')
+    try:
+        stat = Path(f'/proc/{pid}/stat').read_text().split()
+        command = Path(f'/proc/{pid}/cmdline').read_bytes()
+        return stat[2] != 'Z' and b'experiments/analysis/' in command
+    except FileNotFoundError:
+        return False
+
+
+def execute(task, gpu, adopted=None):
     experiment, shard = task
     name = experiment if shard is None else f'{experiment}_shard{shard}'
     script = {'E11': 'e11_interventions.py', 'E12': 'e12_degradation.py', 'E13': 'e13_mechanism.py'}[experiment]
@@ -99,16 +110,24 @@ def execute(task, gpu):
     with LOCK:
         if STATE['items'][experiment]['status'] != 'failed':
             STATE['items'][experiment]['status'] = 'running'
-        STATE['jobs'][name] = dict(status='running', gpu=gpu, started_at=stamp(), command=command)
+        STATE['jobs'][name] = (dict(adopted, adopted_at=stamp()) if adopted else
+                               dict(status='running', gpu=gpu, started_at=stamp(), command=command))
         save()
-    log(f'START {name} GPU{gpu}')
+    log(f'{"ADOPT" if adopted else "START"} {name} GPU{gpu}')
     try:
-        with (HERE / f'analysis_{name}.log').open('a') as stream:
-            process = subprocess.Popen(command, cwd=REPO, env=env_for(gpu), stdout=stream, stderr=subprocess.STDOUT)
-            with LOCK:
-                STATE['jobs'][name]['pid'] = process.pid
-                save()
-            assert process.wait() == 0, name + ' command failed'
+        if adopted:
+            # The previous controller's children remain alive when it exits.
+            # Their exit codes are unavailable here; validate all outputs below.
+            while job_alive(adopted):
+                time.sleep(5)
+        else:
+            with (HERE / f'analysis_{name}.log').open('a') as stream:
+                process = subprocess.Popen(command, cwd=REPO, env=env_for(gpu), stdout=stream,
+                                           stderr=subprocess.STDOUT, start_new_session=True)
+                with LOCK:
+                    STATE['jobs'][name]['pid'] = process.pid
+                    save()
+                assert process.wait() == 0, name + ' command failed'
         if shard is not None:
             assert all(p.is_file() for p in expected_files(experiment, CASES[shard::3])), 'Missing predictions'
             detail = 'utility' if experiment == 'E11' else 'lesions'
@@ -127,7 +146,8 @@ def execute(task, gpu):
     except Exception as exc:
         good, error = False, repr(exc)
     with LOCK:
-        STATE['jobs'][name].update(status='complete' if good else 'failed', ended_at=stamp(), error=error)
+        STATE['jobs'][name].update(status='complete' if good else 'failed', ended_at=stamp(), error=error,
+                                  completion_check='output_coverage' if adopted else 'exit_code_and_output_coverage')
         if not good:
             STATE['items'][experiment].update(status='failed', error=error)
         elif experiment == 'E13':
@@ -199,16 +219,23 @@ def archive():
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--gpus', help='Comma-separated physical GPU indices; persists across resumes')
+    parser.add_argument('--resume', action='store_true', help='Retain completed tasks and adopt live analysis jobs')
+    args = parser.parse_args()
     HERE.mkdir(exist_ok=True)
     with (HERE / 'analysis_controller.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         prior = HERE / 'analysis_state.json'
-        if prior.exists():
-            for job in json.loads(prior.read_text()).get('jobs', {}).values():
-                pid = job.get('pid')
-                cmd = Path(f'/proc/{pid}/cmdline')
-                if job['status'] == 'running' and cmd.exists() and b'experiments/analysis/' in cmd.read_bytes():
-                    raise RuntimeError('An earlier analysis process is still running; refusing to duplicate it')
+        previous = json.loads(prior.read_text()) if prior.exists() else {}
+        active_gpus = ([int(g) for g in args.gpus.split(',')] if args.gpus is not None else
+                       previous.get('active_gpus', [0, 1, 2]))
+        assert active_gpus and len(set(active_gpus)) == len(active_gpus) and all(g in (0, 1, 2) for g in active_gpus)
+        for job in previous.get('jobs', {}).values():
+            if job['status'] == 'running' and job_alive(job):
+                if not args.resume:
+                    raise RuntimeError('An earlier analysis process is still running; use --resume to adopt it')
+                assert job['gpu'] in active_gpus, 'A live job occupies a reserved GPU; stop it before resuming'
         assert len(CASES) == len(set(CASES)) == 21
         STATE.update(pid=os.getpid(), phase='selftest', source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=REPO, text=True).strip(),
                      started_at=stamp(), jobs={}, items={'E11': {'status': 'pending', 'total_predictions': 630, 'completed_predictions': 0},
@@ -219,6 +246,18 @@ def main():
                      stochastic_baseline_policy='A7 reference difference recorded, no exact reproducibility assertion',
                      cnr_median_ratio_tolerance=.02,
                      stage7_prerequisites=['E10 postprocessing', 'fixed primary endpoint', 'E14 external cohort', 'E17 pretraining overlap', 'PROTOCOL_FROZEN'])
+        if args.resume:
+            assert previous, '--resume requires an existing analysis_state.json'
+            STATE.update(jobs=previous['jobs'], items=previous['items'], resumed_at=stamp(),
+                         started_at=previous['started_at'], previous_controller_pid=previous.get('pid'),
+                         reservation_reason=previous.get('reservation_reason'))
+            for job in STATE['jobs'].values():
+                if job['status'] == 'running' and not job_alive(job):
+                    job['status'] = 'pending'
+            for item in STATE['items'].values():
+                if item['status'] != 'complete':
+                    item.update(status='pending', error=None)
+        STATE.update(active_gpus=active_gpus, reserved_gpus=[g for g in range(3) if g not in active_gpus])
         save()
         deadline = time.time() + 1800
         while True:
@@ -232,27 +271,46 @@ def main():
             time.sleep(5)
         STATE.update(phase='running', selftest='passed', selftest_log=str(HERE / 'analysis_selftest.log'))
         save()
-        log('Self-test passed; starting shared E11-E13 GPU queue on validation cases only')
+        log(f'Self-test passed; E11-E13 validation queue on GPUs {active_gpus}; reserved {STATE["reserved_gpus"]}')
         threading.Thread(target=monitor, daemon=True).start()
         ready = queue.Queue()
-        for task in [('E13', None)] + [('E11', i) for i in range(3)] + [('E12', i) for i in range(3)]:
-            ready.put(task)
+        tasks = [('E13', None)] + [('E11', i) for i in range(3)] + [('E12', i) for i in range(3)]
+        adopted_by_gpu = {}
+        for task in tasks:
+            experiment, shard = task
+            name = experiment if shard is None else f'{experiment}_shard{shard}'
+            job = STATE['jobs'].get(name, {})
+            if job.get('status') == 'complete':
+                continue
+            if job.get('status') == 'running' and job_alive(job):
+                assert job['gpu'] not in adopted_by_gpu, 'More than one live analysis job on a GPU'
+                adopted_by_gpu[job['gpu']] = (task, dict(job))
+            else:
+                ready.put(task)
         summaries = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as cpu:
+            def maybe_summarize(experiment):
+                with LOCK:
+                    complete = all(STATE['jobs'].get(f'{experiment}_shard{i}', {}).get('status') == 'complete' for i in range(3))
+                    if experiment in ('E11', 'E12') and complete and STATE['items'][experiment]['status'] != 'complete' and experiment not in summaries:
+                        summaries[experiment] = cpu.submit(summarize, experiment)
+            for experiment in ('E11', 'E12'):
+                maybe_summarize(experiment)
             def worker(gpu):
+                if gpu in adopted_by_gpu:
+                    task, job = adopted_by_gpu[gpu]
+                    execute(task, gpu, adopted=job)
+                    maybe_summarize(task[0])
                 while True:
                     try:
                         task = ready.get_nowait()
                     except queue.Empty:
                         return
                     execute(task, gpu)
-                    experiment = task[0]
-                    with LOCK:
-                        if experiment in ('E11', 'E12') and STATE['items'][experiment]['status'] == 'predictions_complete' and experiment not in summaries:
-                            summaries[experiment] = cpu.submit(summarize, experiment)
+                    maybe_summarize(task[0])
                     ready.task_done()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as gpu:
-                list(gpu.map(worker, range(3)))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(active_gpus)) as gpu:
+                list(gpu.map(worker, active_gpus))
             for future in summaries.values():
                 future.result()
         STOP.set()
