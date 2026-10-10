@@ -17,11 +17,12 @@
 已拉取 main 上的 `6dd11f1`。附带 CPU 合成数据端到端自检全部通过，日志归档为 `results/server/analysis_selftest.log`；这些合成数据指标不属于论文实验结果。
 北京时间 21:47 由 `experiments/server_analysis.py` 启动：GPU0 E13，GPU1/2 E11 的前两个病例分片。
 共享队列随后派发第三个 E11 分片和三个 E12 分片；推理齐备后，在 CPU 上自动做评测、统计和基线核验。
-E11 none / E12 α=1 的 Tumor Dice 与原 eval_val 的绝对差容限为 1e-6；E12 realised CNR 中位比值与 α 的容差沿用附带测试的 0.02。
+实际 GPU 核验发现：LiTS_006 的 A6_s0 none 与原验证相差 102 个体素（占全卷约 7.51e-7），其中肿瘤标签只变 3 个体素，Tumor Dice 差 −1.698e-5；原生 FP16 导出复推仍相差 38 个体素，FP32 导出为 102 个体素。CPU 自检的逐体素一致不能直接当作 GPU 历史验证的精确复现要求。
+保留用户原分析脚本，仅将执行核查中的 A0/A1/A6 宏平均 Tumor Dice 绝对差容限设为 1e-4（0.01 pp），完整核查保存实际差值，不宣称逐体素一致。A7 的 PC 空间置换每次 forward 使用随机排列，历史验证不能精确复现，其差值只记录为随机对照参考。E12 realised CNR 中位比值与 α 的容差沿用附带测试的 0.02。
 核验失败会记录 failed，不把输出当作已完成分析。小结果归档到 `results/E11`、`results/E12`、`results/E13`，预测体数据留在服务器。
 
 实时进度：`$DATA/nnUNet_results_v2/_orchestration/analysis_state.json`；调度日志为 `analysis_scheduler.log`，各任务为 `analysis_<任务名>.log`。
-上述分析只读取 21 例验证集；阶段 7 的一次性测试须在协议前置条件完成后另行执行。
+上述分析只读取 21 例验证集；用户已明确暂不冻结阶段 7 终点，等待 E11–E13 结果，外部集尚未准备。阶段 7 的一次性测试须在协议前置条件完成后另行执行。
 
 ## 运行
 

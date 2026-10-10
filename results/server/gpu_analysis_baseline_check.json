@@ -1,0 +1,13 @@
+{
+  "case": "LiTS_006",
+  "run": "A6_s0",
+  "original_script_voxel_differences": 102,
+  "native_fp16_repeat_voxel_differences": 38,
+  "promoted_fp32_repeat_voxel_differences": 102,
+  "tumor_label_voxel_differences": 3,
+  "tumor_dice_delta": -1.6980440404767982e-05,
+  "macro_dice_audit_tolerance": 0.0001,
+  "original_analysis_scripts_modified": false,
+  "stochastic_A7": "record reference differences without enforcing exact reproducibility",
+  "stage7_policy": "user deferred freezing until E11-E13 results; external dataset unprepared"
+}
