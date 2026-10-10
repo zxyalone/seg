@@ -139,12 +139,12 @@ def filter_table(model: C.Model) -> list[dict]:
 # Patches
 # ---------------------------------------------------------------------------
 
-def centered_patch(arr: np.ndarray, center, size: int, fill):
-    """arr [..., Z, Y, X] -> patch of size^3 around center (padded with fill)."""
+def centered_patch(arr: np.ndarray, center, size, fill):
+    """arr [..., Z, Y, X] -> patch of shape `size` (3 ints) around center, padded with fill."""
     sp = arr.shape[-3:]
-    out = np.full(arr.shape[:-3] + (size,) * 3, fill, dtype=arr.dtype)
+    out = np.full(arr.shape[:-3] + tuple(size), fill, dtype=arr.dtype)
     src, dst = [], []
-    for c, n in zip(center, sp):
+    for c, n, size in zip(center, sp, size):
         lo = int(c) - size // 2
         a, b = max(lo, 0), min(lo + size, n)
         src.append(slice(a, b))
@@ -189,7 +189,7 @@ def main():
     ap.add_argument("--label-dir", default=str(C.RAW_DATASET / "labelsTr"))
     ap.add_argument("--cases-file", default=str(C.REPO / "experiments" / "eval" / "val_cases.txt"))
     ap.add_argument("--min-voxels", type=int, default=50)
-    ap.add_argument("--patch", type=int, default=None, help="default: plan patch size")
+    ap.add_argument("--patch", type=int, nargs=3, default=None, help="default: plan patch size (128 128 128)")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
     self_test()
@@ -201,7 +201,7 @@ def main():
     if not models:
         sys.exit("no PFCR runs given")
     ref = models[0].predictor
-    patch = args.patch or int(ref.configuration_manager.patch_size[0])
+    patch = tuple(args.patch or [int(v) for v in ref.configuration_manager.patch_size])
 
     filt = pd.DataFrame([r for m in models for r in filter_table(m)])
     out.mkdir(parents=True, exist_ok=True)
@@ -265,7 +265,7 @@ def main():
     pc_tab.to_csv(out / "pc_by_level_stratum.csv", index=False)
     route_tab.to_csv(out / "route_by_level.csv", index=False)
     filt_tab.to_csv(out / "filters_by_level.csv", index=False)
-    C.write_json({"runs": [m.name for m in models], "patch": patch, "min_voxels": args.min_voxels,
+    C.write_json({"runs": [m.name for m in models], "patch": list(patch), "min_voxels": args.min_voxels,
                   "n_lesion_patches": int(df.drop_duplicates(["case", "lesion"]).shape[0]),
                   "prior": prior_tab.to_dict() if not prior_tab.empty else None}, out / "summary.json")
     with open(out / "summary.md", "w") as f:
