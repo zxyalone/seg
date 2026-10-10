@@ -363,7 +363,7 @@ def execute(job, gpu):
     return good
 
 
-def stage6_plan(branch, include_a8=True):
+def stage6_plan(branch, include_a8=False):
     if branch == 'B':
         jobs = [('A6', 1), ('A0', 1), ('A1', 1), ('A6', 2), ('A0', 2), ('A1', 2), ('A7', 0)]
     else:
@@ -431,13 +431,13 @@ def adopt_stage6(old_controller, jobs):
                 ['git', '-C', str(REPO), 'rev-parse', 'HEAD'], text=True).strip(),
                 stage6_queue=[f'{group}:{seed}' for group, seed in jobs],
                 stage6_optional=['A8:0'] if ('A8', 0) in jobs else [],
-                stage6_priority_reason='Match three seeds for A0/A1/A6 before pending controls; preserve already-running A7',
+                stage6_priority_reason=old.get('stage6_priority_reason', 'Match three seeds for A0/A1/A6 before pending controls'),
                 stage6_updated_at=stamp(), stage6_adopted=[job_name(item['job']) for item in adopted.values()],
                 suspended_controller={'pid': old_controller, 'status': 'suspended_until_adopted_jobs_exit'})
             (HERE / 'scheduler.pid').write_text(str(os.getpid()) + '\n')
             save()
             committed = True
-            log('Stage6 handoff: preserved all running GPU jobs; prioritized matched A1 seeds; gate unchanged')
+            log('Stage6 handoff: preserved active GPU jobs; applied current queue and exclusions; gate unchanged')
             threading.Thread(target=monitor, daemon=True).start()
             return handle, adopted
         except Exception:
@@ -522,12 +522,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--old-controller', type=int, required=True)
     parser.add_argument('--resume-stage6', action='store_true', help='Adopt existing stage-6 jobs and update pending priorities')
-    parser.add_argument('--skip-a8', action='store_true', help='Omit the optional final A8 run')
+    parser.add_argument('--skip-a8', action='store_true', help='Compatibility flag: A8 is already excluded from the current plan')
     args = parser.parse_args()
     HERE.mkdir(exist_ok=True)
     if args.resume_stage6:
         old = json.loads((HERE / 'state.json').read_text())
-        jobs = stage6_plan(old['gate']['branch'], include_a8=not args.skip_a8)
+        jobs = stage6_plan(old['gate']['branch'])
         handle, adopted = adopt_stage6(args.old_controller, jobs)
         occupied = {job_name(item['job']) for item in adopted.values()}
         pending = [job for job in jobs if job_name(job) not in occupied and
@@ -547,7 +547,7 @@ def main():
             save()
             return
         branch = gate()
-        jobs = stage6_plan(branch, include_a8=not args.skip_a8)
+        jobs = stage6_plan(branch)
         STATE.update(stage='stage6', stage6_queue=[f'{group}:{seed}' for group, seed in jobs])
         save()
         outcomes = shared_queue(jobs)

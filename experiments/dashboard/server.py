@@ -85,7 +85,7 @@ def run_info(name, job):
     status = job.get('status', 'pending')
     if status == 'complete' and not is_cost:
         completed = total
-    phase = {'complete': '已完成', 'failed': '失败', 'pending': '待启动'}.get(status, '运行中')
+    phase = {'complete': '已完成', 'failed': '失败', 'pending': '待启动', 'cancelled': '用户取消'}.get(status, '运行中')
     if status == 'running' and not is_cost:
         phase = '验证 / 评测中' if completed >= total else '训练中'
     summary = read_json(fold / 'eval_val/summary.json', {})
@@ -97,7 +97,7 @@ def run_info(name, job):
         'epoch_seconds': statistics.median(durations[-10:]) + 1.5 if durations else None,
         'started_at': job.get('started_at'), 'ended_at': job.get('ended_at'),
         'gradient_skips': text.count('non-finite gradient'), 'nonfinite_losses': text.count('non-finite loss'),
-        'error': job.get('error'), 'history': history[-200:],
+        'error': job.get('error'), 'cancellation_reason': job.get('cancellation_reason'), 'history': history[-200:],
         'tumor_dice': cohort.get('tumor_dice_mean'), 'n_cases': summary.get('All', {}).get('n_cases'),
         'lesion_f1': cohort.get('lesion@0.1', {}).get('f1'),
         'process_alive': process_alive(job.get('pid')) if status == 'running' else None,
@@ -132,7 +132,7 @@ def stage_cards(state, runs):
                   'progress': round(sum(runs.get(n, {}).get('progress', 0) for n in queue) / len(queue), 1) if queue else 0,
                   'detail': f'训练 / 成本队列 {done} / {len(queue)} 完成；E10–E14 分析与外部数据准备待完成', 'source': '当前服务器'})
     frozen = (REPO / 'experiments/PROTOCOL_FROZEN').is_file()
-    test_runs = [name for name in runs if name != 'E16_cost']
+    test_runs = [name for name, row in runs.items() if name != 'E16_cost' and row['status'] != 'cancelled']
     tested = external = predictions = 0
     if frozen:
         for name in test_runs:
@@ -182,7 +182,7 @@ def estimates(state, runs):
     failed = any(r['status'] == 'failed' for r in runs.values())
     return {'core_seconds': round(max(finishes[n] for n in core)) if all(n in finishes for n in core) and not failed else None,
             'queue_seconds': round(max(lanes.values())) if state.get('stage6_queue') and not failed else None,
-            'projected': projected, 'basis': '最近 10 轮耗时中位数；每 run 预留 15 分钟验证；A8 参考 A6。仅估算训练 / 成本队列。'}
+            'projected': projected, 'basis': '最近 10 轮耗时中位数；每 run 预留 15 分钟验证。仅估算有效训练 / 成本队列，已取消任务不计入。'}
 
 
 def snapshot():
@@ -217,6 +217,7 @@ def snapshot():
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
+            'exclusions': state.get('stage6_exclusions', {}),
             'gate': state.get('gate'), 'attention': state.get('attention'),
             'audit_complete': state.get('nonfinite_audit', {}).get('status') == 'complete',
             'eta': estimates(state, runs),

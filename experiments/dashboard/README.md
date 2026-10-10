@@ -13,6 +13,7 @@ python experiments/dashboard/server.py --port 6006
 - 阶段 4 / 5 / 6 来自实时 `_orchestration/state.json`、launcher 日志及 `eval_val/summary.json`。
 - 当前轮次和已完成轮次分开；训练结束后等待验证，只有调度器确认完成才记为完整 run。
 - 阶段 6 训练队列与 E10–E14 分析分开展示；分析待完成不会误报整个阶段已完成。独立分析完成后应补充其状态来源。
+- 用户取消的 A8 保留历史进度与日志，显示「用户取消」，不计入有效任务总数、ETA 或测试清单；取消记录在 `results/server/a8_cancellation.json`。
 - 阶段 7 自动读取冻结标记与每个 run 的 `test_pred`、`eval_test`、`eval_external`，显示测试运行与评测数量；协议及结果完整性核验完成前不自动宣称整阶段完成。
 - ETA 根据近期每轮耗时和共享 FIFO 队列估算，仅包含训练、验证、成本测量；每 run 预留 15 分钟验证，A8 参考 A6，实际会有波动。
 - `/api/status` 返回看板数据，`/api/log?run=scheduler` 返回最近 100 行日志。只接受已知实验名称及核查日志，不开放任意文件读取。

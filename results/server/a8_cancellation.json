@@ -1,0 +1,25 @@
+{
+  "run": "A8_s0",
+  "status": "cancelled",
+  "reason": "用户明确取消 A8 正式训练，不再纳入阶段 6 或最终比较。",
+  "cancelled_at": "2026-10-10 19:05:46 CST",
+  "last_epoch_index": "40",
+  "gpu": 0,
+  "stopped_pids": [
+    133223,
+    133234,
+    133235,
+    133364,
+    133551,
+    133553,
+    133555,
+    133557,
+    133559,
+    133561,
+    133726,
+    133728,
+    133730
+  ],
+  "partial_outputs_preserved": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A8_s0",
+  "gate_unchanged": true
+}

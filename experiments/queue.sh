@@ -14,8 +14,8 @@ REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 case ${1:-} in
   stage1) JOBS=(A6:0 A0:0 A1:0) ;;
-  stage2) JOBS=(A7:0 A6:1 A0:1 A6:2 A0:2 A5:0 A8:0) ;;
-  stage2-b) JOBS=(A6:1 A0:1 A1:1 A6:2 A0:2 A1:2 A7:0 A8:0) ;;
+  stage2) JOBS=(A7:0 A6:1 A0:1 A6:2 A0:2 A5:0) ;;
+  stage2-b) JOBS=(A6:1 A0:1 A1:1 A6:2 A0:2 A1:2 A7:0) ;;
   smoke)  JOBS=(A0:0 A1:0 A5:0 A6:0 A7:0 A8:0); export EPOCHS=2
           export RESULTS_ROOT=${RESULTS_ROOT:-/root/autodl-tmp/nnUNet_data/nnUNet_results_smoke} ;;
   custom) shift; JOBS=("$@") ;;
