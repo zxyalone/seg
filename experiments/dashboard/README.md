@@ -21,3 +21,5 @@ E11–E13 使用独立的 `analysis_state.json`（每 15 秒更新），看板�
 - `/api/status` 返回看板数据，`/api/log?run=scheduler` 返回最近 100 行日志。只接受已知实验名称及核查日志，不开放任意文件读取。
 
 常驻服务放在独立 tmux 会话 `phaser-dashboard`，与训练调度会话分开。访问日志仅记录非成功请求。服务输出位于结果盘 `_orchestration/dashboard.log`。
+
+A9/A11/A12 的低 CNR pilot 独立读取 `_pilot_lowcnr/state.json` 和三组训练日志。首页优先展示这三组的轮次、首轮耗时、GPU 占用、loss 与预计收尾；旧队列保留历史记录。固定 4 mm 判据与 A1_s0 参照同步显示，全部完成后读取 pilot 工作树生成的指标、三组判定及推送状态。网页 5 秒刷新，pilot 控制器 15 秒更新。

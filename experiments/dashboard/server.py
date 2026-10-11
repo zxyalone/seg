@@ -17,11 +17,13 @@ from urllib.parse import parse_qs, urlsplit
 REPO = Path(__file__).resolve().parents[2]
 ROOT = Path(os.environ.get('RESULTS_ROOT', str(REPO.parent / 'nnUNet_data/nnUNet_results_v2')))
 HERE = ROOT / '_orchestration'
+PILOT = ROOT / '_pilot_lowcnr'
+PILOT_RUNS = ('A9_s0', 'A11_s0', 'A12_s0')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
 CST = timezone(timedelta(hours=8))
 HTML = Path(__file__).with_name('index.html')
-RUN_NAME = re.compile(r'(?:A[0-8]|ResEnc)_s[0-9]+|E16_cost')
+RUN_NAME = re.compile(r'(?:A(?:[0-9]|1[0-2])|ResEnc)_s[0-9]+|E16_cost')
 ANALYSIS_LOGS = {'analysis_scheduler': 'analysis_scheduler.log', 'analysis_selftest': 'analysis_selftest.log',
                  'E11_joint': 'analysis_E11_joint.log', 'E11_joint_summary': 'analysis_E11_joint_summary.log',
                  'analysis_followup': 'analysis_followup.log',
@@ -62,8 +64,38 @@ def name_for(entry):
     return 'E16_cost' if group == 'Cost' else f'{group}_s{seed}'
 
 
+def run_log(name):
+    return PILOT / f'{name.split("_s")[0]}.log' if name in PILOT_RUNS else ROOT / name / 'launcher.log'
+
+
+def pilot_info(now):
+    state = read_json(PILOT / 'state.json', {})
+    if not state:
+        return None, {}
+    state['controller_alive'] = process_alive(state.get('pid'))
+    state['age_seconds'] = round(now - (PILOT / 'state.json').stat().st_mtime)
+    jobs = {}
+    for name in PILOT_RUNS:
+        original = state.get('jobs', {}).get(name.split('_s')[0])
+        if original is None:
+            continue
+        job = dict(original)
+        job['status'] = {'training_and_evaluating': 'running'}.get(job.get('status'), job.get('status', 'pending'))
+        if state.get('phase') in ('failed', 'cancelled') and job['status'] == 'running':
+            job['status'] = state['phase']
+        job.setdefault('started_at', state.get('started_at'))
+        jobs[name] = job
+    # The controller writes final metrics in its immutable worktree, including
+    # the interval before its authorized publication updates the main branch.
+    results = Path(state.get('worktree', str(REPO))) / 'results/lowcnr_pilots'
+    state['metrics'] = read_json(results / 'summary_pp4mm.json', {})
+    state['decisions'] = read_json(results / 'decisions_pp4mm.json', {})
+    state['baseline'] = read_json(PILOT / 'preflight/baseline_pp4mm/summary_pp4mm.json', {}).get('A1_s0')
+    return state, jobs
+
+
 def run_info(name, job):
-    text = tail(ROOT / name / 'launcher.log')
+    text = tail(run_log(name))
     current = re.findall(r'\bEpoch (\d+)\b', text)
     durations = [float(v) for v in re.findall(r'Epoch time:\s*([\d.]+)\s*s', text)]
     history = []
@@ -100,6 +132,9 @@ def run_info(name, job):
         'current_epoch': latest, 'completed_epochs': completed, 'total_epochs': total,
         'progress': 100 if status == 'complete' else round(min(99, completed / total * 100), 1) if total else 0,
         'epoch_seconds': statistics.median(durations[-10:]) + 1.5 if durations else None,
+        'first_epoch_seconds': durations[0] if durations else None,
+        'validation_cases_written': job.get('validation_cases_written'),
+        'pilot': name in PILOT_RUNS,
         'started_at': job.get('started_at'), 'ended_at': job.get('ended_at'),
         'gradient_skips': text.count('non-finite gradient'), 'nonfinite_losses': text.count('non-finite loss'),
         'error': job.get('error'), 'cancellation_reason': job.get('cancellation_reason'), 'history': history[-200:],
@@ -204,7 +239,11 @@ def snapshot():
         state = read_json(HERE / 'state.json', {})
         names = list(state.get('jobs', {}))
         names += [name_for(e) for e in state.get('stage6_queue', [])]
-        runs = {name: run_info(name, state.get('jobs', {}).get(name, {})) for name in dict.fromkeys(names) if RUN_NAME.fullmatch(name)}
+        pilots, pilot_jobs = pilot_info(now)
+        jobs = dict(state.get('jobs', {}))
+        jobs.update(pilot_jobs)
+        names = list(pilot_jobs) + names
+        runs = {name: run_info(name, jobs.get(name, {})) for name in dict.fromkeys(names) if RUN_NAME.fullmatch(name)}
         if now - CACHE['gpu_time'] >= 15:
             try:
                 output = subprocess.check_output(['nvidia-smi', '--query-gpu=index,name,utilization.gpu,memory.used,memory.total,temperature.gpu', '--format=csv,noheader,nounits'], text=True, timeout=4)
@@ -240,18 +279,30 @@ def snapshot():
                     analysis['attention'] = followup.get('attention', 'E11 补充核验失败')
             for job in analysis.get('jobs', {}).values():
                 job['process_alive'] = process_alive(job.get('pid')) if job.get('status') == 'running' else None
+        stages = stage_cards(state, runs, analysis)
+        eta = estimates(state, runs)
+        if pilots:
+            pilot_rows = [runs[n] for n in PILOT_RUNS if n in runs]
+            phase = pilots.get('phase')
+            stages.append({'id': 'P', 'title': '低 CNR 三组 pilot',
+                           'status': 'complete' if phase == 'complete' else phase if phase in ('failed', 'cancelled') else 'running',
+                           'detail': f"A9 / A11 / A12 · {sum(r['status'] == 'complete' for r in pilot_rows)} / 3 完成；固定 4 mm 判据；全部报告",
+                           'source': '独立 pilot 控制器、训练日志与全卷验证',
+                           'progress': round(sum(r['progress'] for r in pilot_rows) / 3, 1)})
+            eta['pilot_seconds'] = round(max((max(0, r['total_epochs'] - r['completed_epochs']) * r['epoch_seconds'] + 900
+                                              for r in pilot_rows if r['status'] == 'running' and r['epoch_seconds']), default=0))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
-            'stages': stage_cards(state, runs, analysis), 'runs': list(runs.values()), 'analysis': analysis,
+            'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
             'exclusions': state.get('stage6_exclusions', {}),
             'gate': state.get('gate'), 'attention': state.get('attention'),
             'audit_complete': state.get('nonfinite_audit', {}).get('status') == 'complete',
-            'eta': estimates(state, runs),
+            'eta': eta,
         }
         CACHE['time'] = now
         return CACHE['data']
@@ -280,12 +331,14 @@ class Handler(BaseHTTPRequestHandler):
                 name = parse_qs(url.query).get('run', ['scheduler'])[0]
                 if name == 'scheduler':
                     path = HERE / 'scheduler.log'
+                elif name == 'pilot_controller':
+                    path = PILOT / 'controller.log'
                 elif name == 'audit':
                     path = HERE / 'stage4_nonfinite_audit.log'
                 elif name in ANALYSIS_LOGS:
                     path = HERE / ANALYSIS_LOGS[name]
                 elif RUN_NAME.fullmatch(name) and name in {r['name'] for r in snapshot()['runs']}:
-                    path = ROOT / name / 'launcher.log'
+                    path = run_log(name)
                 else:
                     self.respond(b'Unknown log', 'text/plain', 404)
                     return
