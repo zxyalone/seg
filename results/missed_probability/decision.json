@@ -1,0 +1,13 @@
+{
+  "A0": {
+    "n_missed_low_cnr_pairs": 39,
+    "q_near_boundary": 0.5128205128205128,
+    "recall_low_argmax_pp": 63.24786324786326,
+    "fp_argmax_pp": 1.634920634920635,
+    "best_rule_within_budget": "0.1_pp",
+    "recall_low_best": 64.1025641025641,
+    "fp_best": 1.9365079365079365,
+    "recall_low_gain_pp": 0.8547008547008517,
+    "verdict": "mixed"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "code_commit": "9385eef1236ef272f7ea2704cd5b1ae29dedd536",
+  "gpu0_authorized_by_user": true,
+  "gpu1_existing_work": "E11 joint-zero was stopped by the user in another operational task; 43/63 partial predictions retained. No E11/E12 controller was resumed by this diagnostic.",
+  "models": [
+    "A0_s0",
+    "A0_s1",
+    "A0_s2"
+  ],
+  "cases_file": "experiments/eval/val_cases.txt",
+  "n_validation_cases": 21,
+  "test_images_accessed": false,
+  "commands": [
+    "CUDA_VISIBLE_DEVICES=0 python -u experiments/analysis/missed_lesion_probability.py run --shard 0/3 --device cuda",
+    "CUDA_VISIBLE_DEVICES=1 python -u experiments/analysis/missed_lesion_probability.py run --shard 1/3 --device cuda",
+    "CUDA_VISIBLE_DEVICES=2 python -u experiments/analysis/missed_lesion_probability.py run --shard 2/3 --device cuda"
+  ],
+  "thread_environment": {
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "4",
+    "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "2"
+  },
+  "source_file_sha256": {
+    "docs/方法重设计_可检出性计划.md": "23b89428064673b00b00a2e29cf1c2c7493d50aa149bbc970a7566286e2432c4",
+    "experiments/analysis/missed_lesion_probability.py": "f57d53a422ede9ae42ff69a4b54f7cbf3f25686dd3f85d29eb0bfeeccec6eca1",
+    "experiments/analysis/common.py": "13c90c057af17fb439701bce11779c54deacb54a0fcdde93230725d85ced18e8",
+    "experiments/eval/evaluate.py": "fce7482abea9d5a3f25dfbfb7dbd8c28706f12334f47ec4dbb0f1a58fc141e96",
+    "experiments/eval/val_cases.txt": "d12cb623817bd2bb0131ddbd2e03aef20c51f6a44ac6216494bacb848f7ba8c1"
+  },
+  "checkpoint_sha256": {
+    "A0_s0": "017d1089d2c75e10f29f26f3168aa708bad1ab2dfb395b323f8f1f96f7e39d3d",
+    "A0_s1": "8b5a794f5d16e8459d41814085efd009d2a945e5b57305a509171a609ca935c4",
+    "A0_s2": "a7d8d16aaa6ea8223ce6fe89677bbbd2a6ad35bb7108047fd2aa95ddb26b0140"
+  },
+  "versions": {
+    "torch": "2.1.0+cu118",
+    "numpy": "1.26.4",
+    "scipy": "1.15.3",
+    "pandas": "2.3.3",
+    "SimpleITK": "2.5.6"
+  },
+  "synthetic_tests_passed": true,
+  "criteria_unchanged": true,
+  "initial_gpu_by_shard": {
+    "0/2": 0,
+    "1/2": 2
+  },
+  "physical_gpu_by_shard": {
+    "0/3": 0,
+    "1/3": 1,
+    "2/3": 2
+  },
+  "rescheduling_note": "Stopped initial two diagnostic workers after 3.6 min when GPU 1 became free; restarted with three disjoint shards, reusing completed per-case JSONs. GPU 1 became free because E11 was cancelled, not because E11 completed.",
+  "integrity_checks": {
+    "case_model_pairs": 63,
+    "cases_per_run": {
+      "A0_s0": 21,
+      "A0_s1": 21,
+      "A0_s2": 21
+    },
+    "lesions_per_run": {
+      "A0_s0": 92,
+      "A0_s1": 92,
+      "A0_s2": 92
+    },
+    "lesion_detection_mismatches": 0,
+    "fp_count_abs_difference": 0,
+    "argmax_voxel_abs_difference": 283,
+    "cnr_max_abs_difference": 4.440892098500626e-16,
+    "probability_statistics_valid": true,
+    "source_hashes_unchanged": true,
+    "worker_exit_codes": {
+      "gpu0": 0,
+      "gpu1": 0,
+      "gpu2": 0
+    },
+    "passed": true,
+    "summary_decision_verified": true,
+    "near_boundary_count": 20,
+    "missed_low_pairs": 39,
+    "missed_low_probability_medians": {
+      "p_max": 0.3516192138195038,
+      "p_q90": 0.000705927319359,
+      "p_mean": 0.0022053802385926,
+      "pl_mean": 0.9932731986045836,
+      "frac_tumor": 0.0,
+      "frac_liver": 0.9982847341337908,
+      "frac_bg": 0.0
+    }
+  },
+  "worker_processing_seconds": {
+    "gpu0": 3095,
+    "gpu1": 2482,
+    "gpu2": 3289
+  },
+  "completed": true,
+  "date_shanghai": "2026-10-11",
+  "summary_exit_code": 0,
+  "decision": {
+    "A0": {
+      "n_missed_low_cnr_pairs": 39,
+      "q_near_boundary": 0.5128205128205128,
+      "recall_low_argmax_pp": 63.24786324786326,
+      "fp_argmax_pp": 1.634920634920635,
+      "best_rule_within_budget": "0.1_pp",
+      "recall_low_best": 64.1025641025641,
+      "fp_best": 1.9365079365079365,
+      "recall_low_gain_pp": 0.8547008547008517,
+      "verdict": "mixed"
+    }
+  }
+}

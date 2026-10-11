@@ -1,0 +1,4 @@
+run,lesions_compared,lesion_detection_agree,cases_compared,fp_count_abs_diff
+A0_s0,92,1.0,21,0
+A0_s1,92,1.0,21,0
+A0_s2,92,1.0,21,0

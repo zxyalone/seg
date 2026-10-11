@@ -1,0 +1,109 @@
+{
+  "n_gt": 0,
+  "has_tumor": false,
+  "lesions": [],
+  "rules": {
+    "argmax": {
+      "fp": 8,
+      "n_pred": 8,
+      "tp_vox": 0,
+      "fp_vox": 220455,
+      "fn_vox": 0
+    },
+    "argmax_pp": {
+      "fp": 4,
+      "n_pred": 4,
+      "tp_vox": 0,
+      "fp_vox": 220414,
+      "fn_vox": 0
+    },
+    "0.5": {
+      "fp": 8,
+      "n_pred": 8,
+      "tp_vox": 0,
+      "fp_vox": 216130,
+      "fn_vox": 0
+    },
+    "0.5_pp": {
+      "fp": 4,
+      "n_pred": 4,
+      "tp_vox": 0,
+      "fp_vox": 216097,
+      "fn_vox": 0
+    },
+    "0.4": {
+      "fp": 8,
+      "n_pred": 8,
+      "tp_vox": 0,
+      "fp_vox": 227697,
+      "fn_vox": 0
+    },
+    "0.4_pp": {
+      "fp": 3,
+      "n_pred": 3,
+      "tp_vox": 0,
+      "fp_vox": 227673,
+      "fn_vox": 0
+    },
+    "0.3": {
+      "fp": 11,
+      "n_pred": 11,
+      "tp_vox": 0,
+      "fp_vox": 240880,
+      "fn_vox": 0
+    },
+    "0.3_pp": {
+      "fp": 3,
+      "n_pred": 3,
+      "tp_vox": 0,
+      "fp_vox": 240839,
+      "fn_vox": 0
+    },
+    "0.2": {
+      "fp": 13,
+      "n_pred": 13,
+      "tp_vox": 0,
+      "fp_vox": 258071,
+      "fn_vox": 0
+    },
+    "0.2_pp": {
+      "fp": 4,
+      "n_pred": 4,
+      "tp_vox": 0,
+      "fp_vox": 257981,
+      "fn_vox": 0
+    },
+    "0.1": {
+      "fp": 15,
+      "n_pred": 15,
+      "tp_vox": 0,
+      "fp_vox": 285551,
+      "fn_vox": 0
+    },
+    "0.1_pp": {
+      "fp": 5,
+      "n_pred": 5,
+      "tp_vox": 0,
+      "fp_vox": 285505,
+      "fn_vox": 0
+    },
+    "0.05": {
+      "fp": 11,
+      "n_pred": 11,
+      "tp_vox": 0,
+      "fp_vox": 313171,
+      "fn_vox": 0
+    },
+    "0.05_pp": {
+      "fp": 6,
+      "n_pred": 6,
+      "tp_vox": 0,
+      "fp_vox": 313115,
+      "fn_vox": 0
+    }
+  },
+  "case": "LiTS_034",
+  "run": "A0_s1",
+  "group": "A0",
+  "seed": 1
+}

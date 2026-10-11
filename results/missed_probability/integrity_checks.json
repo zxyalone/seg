@@ -1,0 +1,37 @@
+{
+  "case_model_pairs": 63,
+  "cases_per_run": {
+    "A0_s0": 21,
+    "A0_s1": 21,
+    "A0_s2": 21
+  },
+  "lesions_per_run": {
+    "A0_s0": 92,
+    "A0_s1": 92,
+    "A0_s2": 92
+  },
+  "lesion_detection_mismatches": 0,
+  "fp_count_abs_difference": 0,
+  "argmax_voxel_abs_difference": 283,
+  "cnr_max_abs_difference": 4.440892098500626e-16,
+  "probability_statistics_valid": true,
+  "source_hashes_unchanged": true,
+  "worker_exit_codes": {
+    "gpu0": 0,
+    "gpu1": 0,
+    "gpu2": 0
+  },
+  "passed": true,
+  "summary_decision_verified": true,
+  "near_boundary_count": 20,
+  "missed_low_pairs": 39,
+  "missed_low_probability_medians": {
+    "p_max": 0.3516192138195038,
+    "p_q90": 0.000705927319359,
+    "p_mean": 0.0022053802385926,
+    "pl_mean": 0.9932731986045836,
+    "frac_tumor": 0.0,
+    "frac_liver": 0.9982847341337908,
+    "frac_bg": 0.0
+  }
+}
