@@ -26,6 +26,11 @@ export nnUNet_preprocessed="$DATA/nnUNet_preprocessed"
 export nnUNet_results="$RESULTS_ROOT/$RUN"
 export PYTHONPATH="$REPO/nnUNet${PYTHONPATH:+:$PYTHONPATH}"
 export CUDA_VISIBLE_DEVICES=$GPU
+export VOCOMNI_NNUNET_CKPT=${VOCOMNI_NNUNET_CKPT-$REPO/VoComni_nnunet.pt}
+if [[ -n $VOCOMNI_NNUNET_CKPT && ! -f $VOCOMNI_NNUNET_CKPT ]]; then
+  echo "pretrained checkpoint not found: $VOCOMNI_NNUNET_CKPT" >&2
+  exit 1
+fi
 
 # Clean PhASER environment, then the group config, then the seed.
 for v in $(env | grep -o '^PHASER_[A-Z0-9_]*'); do unset "$v"; done
@@ -56,5 +61,6 @@ fi
   --gt-dir "$nnUNet_raw/Dataset102_LiTS/labelsTr" \
   --image-dir "$nnUNet_raw/Dataset102_LiTS/imagesTr" \
   --cases-file "$REPO/experiments/eval/val_cases.txt" \
+  --workers "${EVAL_WORKERS:-4}" \
   --out-dir "$FOLD_DIR/eval_val" 2>&1 | tee -a "$LOG"
 echo "[$(date '+%F %T')] $RUN done" | tee -a "$LOG"
