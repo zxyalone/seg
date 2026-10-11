@@ -1,0 +1,16 @@
+{
+  "case": "LiTS_105",
+  "lesions": [],
+  "loss": {
+    "none": [],
+    "pc_zero@0": [],
+    "pc_zero@1": [],
+    "pc_zero@2": [],
+    "pc_zero@3": [],
+    "pc_zero@4": [],
+    "pc_zero@all": [],
+    "route_uniform": [],
+    "prior_zero": [],
+    "gate_zero": []
+  }
+}

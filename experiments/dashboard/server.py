@@ -23,6 +23,8 @@ CST = timezone(timedelta(hours=8))
 HTML = Path(__file__).with_name('index.html')
 RUN_NAME = re.compile(r'(?:A[0-8]|ResEnc)_s[0-9]+|E16_cost')
 ANALYSIS_LOGS = {'analysis_scheduler': 'analysis_scheduler.log', 'analysis_selftest': 'analysis_selftest.log',
+                 'E11_joint': 'analysis_E11_joint.log', 'E11_joint_summary': 'analysis_E11_joint_summary.log',
+                 'analysis_followup': 'analysis_followup.log',
                  'E13': 'analysis_E13.log', 'E11_summary': 'analysis_E11_summary.log', 'E12_summary': 'analysis_E12_summary.log',
                  **{f'{e}_shard{i}': f'analysis_{e}_shard{i}.log' for e in ('E11', 'E12') for i in range(3)}}
 LOCK = threading.Lock()
@@ -139,7 +141,7 @@ def stage_cards(state, runs, analysis=None):
         count = sum(item.get('status') == 'complete' for item in items.values())
         phase = analysis.get('phase')
         cards[-1]['status'] = 'running' if phase in ('selftest', 'running') else 'failed' if phase == 'analysis_failed' else 'analysis_pending'
-        cards[-1]['detail'] = f'训练 / 成本队列 {done} / {len(queue)} 完成；E11–E13 分析 {count}/3 完成；E10 / E14 / E17 待完成'
+        cards[-1]['detail'] = f'训练 / 成本队列 {done} / {len(queue)} 完成；验证分析及补充 {count}/{len(items)} 完成；E10 / E14 / E17 待完成'
     frozen = (REPO / 'experiments/PROTOCOL_FROZEN').is_file()
     test_runs = [name for name, row in runs.items() if name != 'E16_cost' and row['status'] != 'cancelled']
     tested = external = predictions = 0
@@ -222,6 +224,20 @@ def snapshot():
         if analysis:
             analysis['controller_alive'] = process_alive(analysis.get('pid'))
             analysis['age_seconds'] = round(now - (HERE / 'analysis_state.json').stat().st_mtime)
+            followup = read_json(HERE / 'analysis_followup_state.json', {})
+            if followup:
+                analysis.setdefault('items', {}).update(followup.get('items', {}))
+                analysis.setdefault('jobs', {}).update(followup.get('jobs', {}))
+                analysis['followup'] = followup
+                if followup.get('phase') in ('waiting_for_gpu', 'running', 'summarizing'):
+                    analysis['phase'] = 'running'
+                    alive = process_alive(followup.get('pid'))
+                    analysis['controller_alive'] |= alive
+                    analysis['age_seconds'] = min(analysis['age_seconds'], round(now - (HERE / 'analysis_followup_state.json').stat().st_mtime))
+                    if not alive:
+                        analysis['attention'] = 'E11 补充核验调度进程未运行'
+                elif followup.get('phase') in ('failed', 'publish_failed'):
+                    analysis['attention'] = followup.get('attention', 'E11 补充核验失败')
             for job in analysis.get('jobs', {}).values():
                 job['process_alive'] = process_alive(job.get('pid')) if job.get('status') == 'running' else None
         CACHE['data'] = {

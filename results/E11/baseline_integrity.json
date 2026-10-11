@@ -1,0 +1,17 @@
+[
+  {
+    "run": "A6_s0",
+    "abs_tumor_dice_diff": 8.398673451592842e-06,
+    "policy": "macro_dice_tolerance_1e-4"
+  },
+  {
+    "run": "A6_s1",
+    "abs_tumor_dice_diff": 5.347708941894069e-06,
+    "policy": "macro_dice_tolerance_1e-4"
+  },
+  {
+    "run": "A6_s2",
+    "abs_tumor_dice_diff": 1.052245531707463e-06,
+    "policy": "macro_dice_tolerance_1e-4"
+  }
+]

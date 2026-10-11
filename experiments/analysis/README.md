@@ -78,6 +78,34 @@ CUDA_VISIBLE_DEVICES=0 $PY experiments/analysis/e13_mechanism.py | tee e13.log
 
 ## 需要提交回仓库的文件
 
+### E11 补充核验（2026-10-11）
+
+原 E11 已于 08:21 完成；`results/E11` 保存原始评测 CSV/JSON、utility、配对比较和基线核查。
+`e11_detection_metrics.py` 从已有 `cases.csv` 导出 FP/scan、精确率、F1、召回率，包含 Tumor（18 例）
+和 All（21 例，含 3 例阴性）队列，以及 IoU > 0.1 / 0.5 两个阈值。先按病例平均 seed 计数，再汇总
+计算比例；同时提供每个 seed 的指标和逐病例整数 TP/FP/FN，便于复算。
+
+新增 `e11_joint_zero.py` 将路由器的两个输入通道（PC、prior）同时置零，保留所有模型参数。
+路由器为 3×3×3 conv + ReLU + 1×1×1 conv，其输入仅为 PC/prior。零输入后的频带比例为
+`softmax(W2 * ReLU(b1) + b2)`，每个 seed、每层分别固定；残差仍处理该病例的特征。
+脚本在真实推理中核查 15 个路由器的空间恒定性，并保存比例与 tanh(γ)。
+CPU 自检验证联合置零与显式 PC=0/prior=0 一致、清除钩子后恢复正常推理、权重不变。
+
+联合干预只增加 63 次验证集推理；基线预测/评测通过符号链接复用，utility 单独复制，
+输出放在服务器 `_analysis/E11_followup`，完成后归档到 `results/E11_followup`。
+`server_e11_followup.py` 等待 GPU 1 或 2 空闲，不中断 E12，不使用预留的 GPU 0；
+自动汇总、导出检测指标并以普通 push 推送 main，远端冲突时记录失败，不强制覆盖。
+
+此检查为看过原结果后新增的验证分析，单独报告，不加入原九组比较的 Holm 校正。
+相近的点估计本身不能证明统计等价；固定路由也不等于整个 PFCR 输出固定，滤波器、残差门控
+与输入特征仍保留。FP/scan 未上升只能按病例级不确定性判断该验证集对机制的支持程度。
+
+```bash
+PYTHONPATH=nnUNet python experiments/analysis/test_e11_joint_zero.py
+python experiments/analysis/e11_detection_metrics.py --source "$RESULTS_ROOT/_analysis/E11" --out results/E11
+python experiments/server_e11_followup.py
+```
+
 各脚本输出目录里的 CSV、MD、JSON 和 PNG 都很小，复制到 `results/E11`、`results/E12`、`results/E13` 后提交。`pred/` 下的预测体数据留在服务器上。
 
 ## 测试
