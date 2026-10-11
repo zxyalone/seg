@@ -1,0 +1,88 @@
+{
+  "date_shanghai": "2026-10-11",
+  "analysis_code_commit": "9076343ce0607ee466d54c2d0a3444e84ba7b084",
+  "analysis_script_sha256": "b0cda175c5b235aa0e3d04e4e96626602bb9634a5107aa5fadca0b91c33b1a56",
+  "analysis_device": "cpu",
+  "analysis_command": "/root/autodl-tmp/envs/mamba/bin/python -u step2_mechanism/scripts/s46_detectability_probe.py --cohort train",
+  "montage_command": "/root/autodl-tmp/envs/mamba/bin/python -u step2_mechanism/scripts/s46_detectability_probe.py --cases LiTS_039 LiTS_094 --montage",
+  "thread_environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS": "1"
+  },
+  "split_counts": {
+    "train": 83,
+    "val": 21,
+    "test": 27
+  },
+  "splits_mutually_disjoint": true,
+  "montage_cases_validation_only": true,
+  "spacing_zyx_mm": [
+    1.0,
+    0.7791720032691956,
+    0.7791720032691956
+  ],
+  "split_file_sha256": {
+    "splits_final.json": "f981cc2d6979228503cc9ac7e699b88dfed0db7a06a36f5ac19f4aecb67159ec",
+    "test_set.json": "ecb59957b71d6426c53d54702e4126ea74ea322579a361d19febca2c766e5e4a",
+    "nnUNetPlans.json": "c9b3f6dd258fb3c3a18288b83db2d136bf71f5e9bf4eaa10f424293ba43ab88c"
+  },
+  "versions": {
+    "numpy": "1.26.4",
+    "scipy": "1.15.3",
+    "SimpleITK": "2.5.6",
+    "matplotlib": "3.10.9",
+    "cupy-cuda11x": "13.6.0"
+  },
+  "cpu_selftest": {
+    "passed": true,
+    "E1": true,
+    "E2": true,
+    "E3": true,
+    "max_affine_delta_D": 0.000557,
+    "max_affine_delta_T": 6.1e-05
+  },
+  "gpu_selftest": {
+    "passed": true,
+    "device": "cuda:2",
+    "E1": true,
+    "E2": true,
+    "E3": true,
+    "max_affine_delta_D": 0.00101,
+    "max_affine_delta_T": 0.000231
+  },
+  "test_case_rejection_check": {
+    "passed": true,
+    "message": "测试集病例保持锁定，拒绝运行"
+  },
+  "gpu_backend_evidence": "s46_backend_check.json",
+  "gpu_switch_decision": "Continue the already-running CPU cohort: measured real-case total speedup was approximately 12%, and restarting the full cohort on GPU would take longer.",
+  "pre_registered_predictions_changed": false,
+  "result_checks": {
+    "passed": true,
+    "cohort_cases": 83,
+    "lesion_bearing_cases": 75,
+    "lesions": 518,
+    "low_cnr_lesions": 173,
+    "training_only": true,
+    "summary_matches_csv": true,
+    "pre_registered_decision_matches": true,
+    "s42_cnr_max_abs_diff": 0.0,
+    "nonfinite_main_auc": [
+      {
+        "case": "LiTS_046",
+        "voxels": 192,
+        "features": [
+          "Ims",
+          "D",
+          "T",
+          "DT"
+        ]
+      }
+    ],
+    "nonfinite_handling": "Original script: nanmedian for AUC; hit=False for nonfinite lesion medians; no post-hoc threshold or inclusion change."
+  },
+  "analysis_exit_code": 0,
+  "cohort_elapsed_seconds_rounded": 2942
+}

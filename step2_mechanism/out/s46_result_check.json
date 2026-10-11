@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "cohort_cases": 83,
+  "lesion_bearing_cases": 75,
+  "lesions": 518,
+  "low_cnr_lesions": 173,
+  "training_only": true,
+  "summary_matches_csv": true,
+  "pre_registered_decision_matches": true,
+  "s42_cnr_max_abs_diff": 0.0,
+  "nonfinite_main_auc": [
+    {
+      "case": "LiTS_046",
+      "voxels": 192,
+      "features": [
+        "Ims",
+        "D",
+        "T",
+        "DT"
+      ]
+    }
+  ],
+  "nonfinite_handling": "Original script: nanmedian for AUC; hit=False for nonfinite lesion medians; no post-hoc threshold or inclusion change."
+}

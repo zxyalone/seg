@@ -1,0 +1,5 @@
+[device] cuda:2; CuPy 13.6.0; Gaussian filters on GPU
+{'case': 'synthetic_hetero3HU', 'n_lesions': 5, 'timings_seconds': {'cpu': 12.924799937056378, 'cuda:2': 11.337120549986139}, 'max_auc_abs_diff': 5.585000000030149e-06, 'hits_match': True, 'properties_match': True, 'passed': True}
+[device] cuda:2; CuPy 13.6.0; Gaussian filters on GPU
+{'case': 'LiTS_001', 'n_lesions': 12, 'timings_seconds': {'cpu': 26.47603301797062, 'cuda:2': 23.566844667075202}, 'max_auc_abs_diff': 2.0175438597558326e-06, 'hits_match': True, 'properties_match': True, 'passed': True}
+[write] /root/autodl-tmp/Downstream_2/step2_mechanism/out/s46_backend_check.json
