@@ -140,8 +140,10 @@ def check_group(group: str, args) -> bool:
     from nnunetv2.training.nnUNetTrainer import nnUNetTrainer_phaser as trainer_mod
     original_aug = trainer_mod.lesion_contrast_augment
     original_cc = trainer_mod.component_dicece_loss
+    original_cons = trainer_mod.contrast_consistency_loss
     paths = dict(augmentation_calls=0, augmented_samples=0, changed_batches=0,
-                 component_loss_calls=0, positive_component_losses=0)
+                 component_loss_calls=0, positive_component_losses=0,
+                 consistency_calls=0, positive_consistency_losses=0)
 
     def checked_aug(data, *a, **kw):
         result, applied = original_aug(data, *a, **kw)
@@ -158,8 +160,17 @@ def check_group(group: str, args) -> bool:
         paths['positive_component_losses'] += int(loss.detach() > 0)
         return loss
 
+    def checked_cons(*a, **kw):
+        loss = original_cons(*a, **kw)
+        if not torch.isfinite(loss) or not loss.requires_grad:
+            raise RuntimeError('Consistency loss must be finite and retain its gradient path')
+        paths['consistency_calls'] += 1
+        paths['positive_consistency_losses'] += int(loss.detach() > 0)
+        return loss
+
     trainer_mod.lesion_contrast_augment = checked_aug
     trainer_mod.component_dicece_loss = checked_cc
+    trainer_mod.contrast_consistency_loss = checked_cons
     env = read_env(group)
     saved = {k: os.environ.get(k) for k in env}
     for k in list(os.environ):
@@ -223,6 +234,9 @@ def check_group(group: str, args) -> bool:
         if env.get('PHASER_CC_LOSS') == '1' and not (
                 paths['component_loss_calls'] == args.steps and paths['positive_component_losses'] > 0):
             bad.append('A12: component loss path not exercised')
+        if float(env.get('PHASER_LCA_CONS_WEIGHT', '0')) > 0 and not (
+                paths['consistency_calls'] > 0 and paths['positive_consistency_losses'] > 0):
+            bad.append('A13b: consistency loss path not exercised')
         weak = [n for n, _ in named if got_grad[n] and max_grad[n] < 1e-6]
         groups = [(len(g["params"]), g["lr"], g["weight_decay"]) for g in tr.optimizer.param_groups]
         print(f"\n[{group}] {len(named)} PhASER tensors, loss {losses[0]:.3f} -> {losses[-1]:.3f}")
@@ -249,6 +263,7 @@ def check_group(group: str, args) -> bool:
     finally:
         trainer_mod.lesion_contrast_augment = original_aug
         trainer_mod.component_dicece_loss = original_cc
+        trainer_mod.contrast_consistency_loss = original_cons
         for k in list(os.environ):
             if k.startswith("PHASER_"):
                 del os.environ[k]

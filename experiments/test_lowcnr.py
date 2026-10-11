@@ -15,7 +15,8 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nnUNet"))
 from nnunetv2.training.nnUNetTrainer.phaser.lowcnr import (  # noqa: E402
-    component_dicece_loss, lesion_contrast_augment, voronoi_partition)
+    LOW_CNR_QUANTILES, component_dicece_loss, contrast_consistency_loss, lesion_contrast_augment,
+    sample_target_cnr, voronoi_partition)
 
 SHAPE = (48, 64, 64)
 
@@ -113,6 +114,103 @@ def test_boundary_and_nearby_lesions():
     print("✓ A11 boundary protection and nearby-lesion texture preservation")
 
 
+def ring_cnr(x, m, lab):
+    d6 = F.max_pool3d(m.float()[None, None], 13, 1, 6)[0, 0] > 0
+    d1 = F.max_pool3d(m.float()[None, None], 3, 1, 1)[0, 0] > 0
+    r = x[d6 & ~d1 & (lab == 1)]
+    return ((x[m].mean() - r.mean()).abs() / r.std(unbiased=False)).item()
+
+
+def test_target_cnr():
+    g = torch.Generator().manual_seed(0)
+    t = torch.tensor([sample_target_cnr(g) for _ in range(20000)])
+    q = torch.tensor(LOW_CNR_QUANTILES)
+    emp = torch.quantile(t, torch.tensor([0.1, 0.5, 0.9]))
+    print(f"  target CNR draws: range [{t.min():.3f}, {t.max():.3f}], deciles 10/50/90 "
+          f"{emp[0]:.3f}/{emp[1]:.3f}/{emp[2]:.3f} vs table {q[2]:.3f}/{q[10]:.3f}/{q[18]:.3f}")
+    assert t.min() >= q[0] and t.max() <= q[-1]
+    assert (emp - q[[2, 10, 18]]).abs().max() < 0.02
+    x, lab, big, small = volume()
+    c_big, c_small = ring_cnr(x[0, 0], big, lab[0, 0]), ring_cnr(x[0, 0], small, lab[0, 0])
+    after = {"big": [], "small": []}
+    for seed in range(8):
+        region = torch.zeros_like(lab, dtype=torch.float32)
+        y, applied = lesion_contrast_augment(x, lab, p=1.0, target_cnr=True, region_out=region,
+                                             generator=torch.Generator().manual_seed(seed))
+        assert len(applied) == 1 and 0 < applied[0][1] < 1
+        after["big"].append(ring_cnr(y[0, 0], big, lab[0, 0]))
+        after["small"].append(ring_cnr(y[0, 0], small, lab[0, 0]))
+        assert region[0, 0][big | small].min() == 1 and region.sum() > 2 * (big | small).sum()
+        assert region[0, 0][:, :, :3].sum() == 0               # far from both lesions
+        assert torch.equal(y[0, 0][lab[0, 0] == 0], x[0, 0][lab[0, 0] == 0])
+    for name, c0 in (("big", c_big), ("small", c_small)):
+        a = torch.tensor(after[name])
+        print(f"  {name}: CNR {c0:.2f} -> {a.min():.2f}..{a.max():.2f} over 8 draws")
+        assert c0 > 1.5 and a.max() < 1.2785 + 0.1
+    # Lesions already fainter than every target are left untouched.
+    faint = x.clone()
+    faint[0, 0][big] += 0.5 - 0.004
+    faint[0, 0][small] += 0.4 - 0.004
+    y, applied = lesion_contrast_augment(faint, lab, p=1.0, target_cnr=True)
+    assert applied == [] and torch.equal(y, faint)
+    print("✓ A13a target-CNR attenuation")
+
+
+def test_consistency():
+    torch.manual_seed(0)
+    region = torch.zeros((2, 1, 16, 16, 16))
+    region[0, 0, 4:10, 4:10, 4:10] = 1
+    t = [torch.randn(2, 8, 16, 16, 16), torch.randn(2, 16, 8, 8, 8), torch.randn(2, 32, 4, 4, 4)]
+    same = [f.clone().requires_grad_() for f in t]
+    assert contrast_consistency_loss(same, t, region).abs().item() < 1e-5
+    s = [torch.randn_like(f).requires_grad_() for f in t]
+    loss = contrast_consistency_loss(s, t, region)
+    loss.backward()
+    assert 0.5 < loss.item() < 1.5
+    assert s[0].grad[1].abs().sum() == 0 and s[0].grad[0].abs().sum() > 0      # only inside region
+    assert s[2].grad is None or s[2].grad.abs().sum() == 0                     # third stage unused
+    scaled = [(3.0 * f).detach().requires_grad_() for f in t]
+    assert contrast_consistency_loss(scaled, t, region).abs().item() < 1e-5     # scale-free
+    assert contrast_consistency_loss(s, t, torch.zeros_like(region)).item() == 0.0
+    print(f"  random features: loss {loss.item():.3f}; identical / rescaled features: 0")
+    print("✓ A13b contrast consistency loss")
+
+
+def test_consistency_through_network():
+    """A13b inside PhaserUNet: teacher pass without gradient, student pass with
+    every decoder stage kept in the graph (as the trainer sets it); the loss must
+    reach the encoder."""
+    import torch.nn as nn
+    from dynamic_network_architectures.architectures.unet import PlainConvUNet
+    from nnunetv2.training.nnUNetTrainer.phaser.unet import PhaserUNet
+    torch.manual_seed(0)
+    base = PlainConvUNet(
+        input_channels=1, n_stages=4, features_per_stage=[8, 16, 32, 32], conv_op=nn.Conv3d,
+        kernel_sizes=[[3, 3, 3]] * 4, strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2]],
+        n_conv_per_stage=[1, 1, 1, 1], num_classes=3, n_conv_per_stage_decoder=[1, 1, 1],
+        conv_bias=True, norm_op=nn.InstanceNorm3d, norm_op_kwargs={"eps": 1e-5, "affine": True},
+        nonlin=nn.LeakyReLU, nonlin_kwargs={"inplace": True}, deep_supervision=True)
+    net = PhaserUNet(base, [8, 16, 32, 32]).train()
+    x, lab, big, small = volume()
+    region = torch.zeros_like(lab, dtype=torch.float32)
+    y, applied = lesion_contrast_augment(x, lab, p=1.0, target_cnr=True, region_out=region,
+                                         generator=torch.Generator().manual_seed(0))
+    assert applied
+    net._spectral_grad_scales = 10 ** 6
+    with torch.no_grad():
+        net(x)
+    teacher = [f.detach() for f in net._last_dec_features[:2]]
+    net(y)
+    student = net._last_dec_features[:2]
+    assert student[0].shape[2:] == x.shape[2:] and all(f.requires_grad for f in student)
+    loss = contrast_consistency_loss(student, teacher, region, 2)
+    loss.backward()
+    g = net.encoder.stages[0][0].convs[0].conv.weight.grad
+    print(f"  PhaserUNet: consistency loss {loss.item():.4f}, encoder stage-0 |grad| {g.abs().max().item():.2e}")
+    assert loss.item() > 0 and g.abs().max() > 0
+    print("✓ A13b gradient reaches the encoder through the finest decoder features")
+
+
 def test_speed():
     lab = torch.zeros((2, 1, 128, 128, 128), dtype=torch.long)
     lab[:, :, 10:118, 10:118, 10:118] = 1
@@ -129,5 +227,8 @@ if __name__ == "__main__":
     test_augment()
     test_boundary_and_nearby_lesions()
     test_cc_loss()
+    test_target_cnr()
+    test_consistency()
+    test_consistency_through_network()
     test_speed()
     print("全部通过")

@@ -12,6 +12,22 @@ lesion_contrast_augment  (A11)
     Works on the normalised network input; nnU-Net's CT normalisation is a
     global affine map, so CNR is unchanged by it.
 
+Target-CNR mode  (A13a, plan §6c)
+    Same operator, but each lesion gets its own alpha = min(1, t / CNR0), where
+    CNR0 = |mu_lesion - mu_ring| / sd_ring is measured in the patch and the
+    target t is drawn from the empirical CNR distribution of the low-CNR tier of
+    the 518 training lesions (LOW_CNR_QUANTILES; tier bound 1.2785 = frozen
+    tertile). Lesions already below t are left unchanged. Every attenuated
+    lesion therefore lands in the CNR range where the baseline fails, instead
+    of the mild average attenuation of a uniform alpha. No parameter is chosen
+    on validation data.
+
+contrast_consistency_loss  (A13b, plan §6c)
+    Feature-level contrast invariance: the decoder features of the attenuated
+    patch (with gradient) are pulled towards those of the original patch (same
+    network, no gradient) by 1 - cosine similarity, inside the attenuated
+    lesions dilated by 6 voxels, at the two finest decoder resolutions.
+
 component_dicece_loss  (A12)
     Component-wise DiceCE in the spirit of CC-DiceCE (Bouteille et al., ISBI
     2026, arXiv 2511.17146): every voxel is assigned to its nearest ground-truth
@@ -29,6 +45,23 @@ import torch.nn.functional as F
 from scipy import ndimage as ndi
 
 _STRUCT26 = ndi.generate_binary_structure(3, 3)
+
+
+# CNR quantiles (0, 5, ..., 100 %) of the 173 training lesions in the low tier
+# (CNR < 1.2785) of step2_mechanism/out/s46_lesions.csv (518 training lesions,
+# s42 / evaluate.py CNR definition). Used as an inverse CDF (linear
+# interpolation) to draw A13 target CNRs.
+LOW_CNR_QUANTILES = (0.0223, 0.1985, 0.3378, 0.4206, 0.4786, 0.5271, 0.5882, 0.6487, 0.7108,
+                     0.7638, 0.8089, 0.872, 0.9263, 0.971, 1.0284, 1.086, 1.1446, 1.1772,
+                     1.2278, 1.2545, 1.2777)
+
+
+def sample_target_cnr(generator: torch.Generator = None) -> float:
+    q = LOW_CNR_QUANTILES
+    u = torch.rand(1, generator=generator).item() * (len(q) - 1)
+    i = min(int(u), len(q) - 2)
+    f = u - i
+    return q[i] * (1.0 - f) + q[i + 1] * f
 
 
 def _components(mask: np.ndarray):
@@ -57,9 +90,18 @@ def _soften(m: torch.Tensor, sigma: float = 1.0) -> torch.Tensor:
 @torch.no_grad()
 def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float = 0.5,
                             alpha_min: float = 0.3, min_voxels: int = 20,
-                            ring=(2, 6), generator: torch.Generator = None):
+                            ring=(2, 6), generator: torch.Generator = None,
+                            target_cnr: bool = False, region_out: torch.Tensor = None,
+                            region_dilate: int = 6):
     """data [B, 1, D, H, W] (modified copy returned); target [B, 1, D, H, W] labels.
-    Returns (augmented data, list of applied (sample, alpha) pairs)."""
+    Returns (augmented data, list of applied (sample, alpha) pairs).
+
+    target_cnr=False (A11): one alpha ~ U(alpha_min, 1) per sample.
+    target_cnr=True (A13a): one alpha = min(1, t / CNR0) per lesion; the pair
+    records the mean alpha of the attenuated lesions, and only samples with at
+    least one attenuated lesion are listed.
+    region_out: optional float tensor shaped like target; set to 1 inside every
+    attenuated lesion dilated by `region_dilate` voxels (for A13b)."""
     if data.dim() != 5:
         return data, []
     out = data.clone()
@@ -68,7 +110,9 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
     for b in range(data.shape[0]):
         if torch.rand(1, generator=generator).item() >= p or not (lab_np[b] == 2).any():
             continue
-        alpha = alpha_min + (1.0 - alpha_min) * torch.rand(1, generator=generator).item()
+        if not target_cnr:
+            alpha = alpha_min + (1.0 - alpha_min) * torch.rand(1, generator=generator).item()
+        alphas = []
         comp, n = _components(lab_np[b] == 2)
         if n == 0:
             continue
@@ -93,15 +137,47 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
             xb = x[box]
             mu_l = (xb * m).sum() / m.sum()
             mu_r = (xb * ring_m).sum() / ring_m.sum()
+            if target_cnr:
+                sd_r = (((xb - mu_r) ** 2 * ring_m).sum() / ring_m.sum()).sqrt()
+                cnr0 = ((mu_l - mu_r).abs() / (sd_r + 1e-8)).item()
+                alpha = min(1.0, sample_target_cnr(generator) / max(cnr0, 1e-8))
+                if alpha >= 1.0:
+                    continue
             # Preserve tissue outside the liver and every other tumor component.
             # Otherwise smoothing a boundary lesion modifies background, and
             # overlapping tails can change the texture of a neighboring lesion.
             allowed = (target[b:b + 1][box] > 0) & ~(others > 0)
             weight = _soften(m) * allowed
             x[box] = xb - (1.0 - alpha) * (mu_l - mu_r) * weight
+            alphas.append(alpha)
+            if region_out is not None:
+                r = region_out[b:b + 1][box]
+                region_out[b:b + 1][box] = torch.maximum(r, _dilate(m, region_dilate).to(r.dtype))
         out[b:b + 1] = x.to(out.dtype)
-        applied.append((b, alpha))
+        if not target_cnr:
+            applied.append((b, alpha))
+        elif alphas:
+            applied.append((b, float(np.mean(alphas))))
     return out, applied
+
+
+def contrast_consistency_loss(student: list, teacher: list, region: torch.Tensor,
+                              n_stages: int = 2) -> torch.Tensor:
+    """student / teacher: decoder features, finest first ([B, C, ...] each);
+    teacher is detached. region: [B, 1, D, H, W] at full resolution (0/1).
+    Mean over stages of the region-averaged 1 - cosine similarity."""
+    losses = []
+    for s_f, t_f in list(zip(student, teacher))[:n_stages]:
+        m = region.float()
+        if m.shape[2:] != s_f.shape[2:]:
+            m = F.adaptive_max_pool3d(m, s_f.shape[2:])
+        if m.sum() == 0:
+            continue
+        cos = F.cosine_similarity(s_f.float(), t_f.detach().float(), dim=1, eps=1e-6)
+        losses.append(((1.0 - cos) * m[:, 0]).sum() / m.sum())
+    if not losses:
+        return student[0].new_tensor(0.0, dtype=torch.float32)
+    return torch.stack(losses).mean()
 
 
 def voronoi_partition(target: torch.Tensor, factor: int = 2):

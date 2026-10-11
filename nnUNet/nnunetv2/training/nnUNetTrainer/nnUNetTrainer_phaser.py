@@ -94,7 +94,7 @@ from dynamic_network_architectures.architectures.unet import PlainConvUNet
 from dynamic_network_architectures.building_blocks.helper import convert_dim_to_conv_op, get_matching_instancenorm
 
 from .phaser.unet import PhaserUNet, load_pretrained_weights
-from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss
+from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss, contrast_consistency_loss
 from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
     compute_lesion_importance_map, lesion_weighted_loss, \
     gate_supervision_loss, inside_liver_penalty_loss, boundary_weighted_dice_loss, \
@@ -261,6 +261,15 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.enable_lca = os.environ.get('PHASER_LCA', '0') == '1'
         self.lca_p = float(os.environ.get('PHASER_LCA_P', '0.5'))
         self.lca_alpha_min = float(os.environ.get('PHASER_LCA_ALPHA_MIN', '0.3'))
+        # A13a: per-lesion target CNR from the training low-CNR tier ('cnr');
+        # A13b: + decoder-feature contrast consistency (weight, finest stages).
+        self.lca_target = os.environ.get('PHASER_LCA_TARGET', 'uniform')
+        self.lca_cons_weight = float(os.environ.get('PHASER_LCA_CONS_WEIGHT', '0.0'))
+        self.lca_cons_stages = int(os.environ.get('PHASER_LCA_CONS_STAGES', '2'))
+        if self.lca_target not in ('uniform', 'cnr'):
+            raise ValueError(f"PHASER_LCA_TARGET must be 'uniform' or 'cnr', got {self.lca_target!r}")
+        if self.lca_cons_weight > 0 and not self.enable_lca:
+            raise ValueError('PHASER_LCA_CONS_WEIGHT > 0 requires PHASER_LCA=1')
         self.enable_cc_loss = os.environ.get('PHASER_CC_LOSS', '0') == '1'
         self.cc_weight = float(os.environ.get('PHASER_CC_WEIGHT', '1.0'))
         if self.pfcr_use_prior:
@@ -335,7 +344,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Small-Tumor Head: {self.enable_small_head}\n"
             f"  LMC contrast gate: {self.enable_lmc} (shuffle={self.lmc_shuffle}, "
             f"liver head w={self.lmc_liver_weight}, spacing={list(self.configuration_manager.spacing)})\n"
-            f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min})\n"
+            f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min}, "
+            f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages})\n"
             f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
             f"  Spectral loss: {self.enable_spectral_loss} (w={self.spectral_weight})\n"
@@ -630,10 +640,25 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
 
         self.optimizer.zero_grad(set_to_none=True)
 
+        cons_region, cons_teacher = None, None
         if self.enable_lca:
             full_target = target[0] if isinstance(target, list) else target
+            clean = data
+            if self.lca_cons_weight > 0:
+                cons_region = torch.zeros(full_target.shape, device=data.device, dtype=torch.float32)
             data, _ = lesion_contrast_augment(data, full_target, p=self.lca_p,
-                                              alpha_min=self.lca_alpha_min)
+                                              alpha_min=self.lca_alpha_min,
+                                              target_cnr=self.lca_target == 'cnr',
+                                              region_out=cons_region)
+            # A13b teacher: same network on the original patch, no gradient. Run
+            # before the student pass so the cached features are the student's.
+            if cons_region is not None and bool(cons_region.any()):
+                net_c = self.network.module if self.is_ddp else self.network
+                net_c._spectral_grad_scales = 10 ** 6   # keep every decoder stage in the graph
+                with torch.no_grad():
+                    with autocast(self.device.type, enabled=self.use_amp) if self.device.type == 'cuda' else dummy_context():
+                        self.network(clean)
+                cons_teacher = [f.detach() for f in net_c._last_dec_features[:self.lca_cons_stages]]
 
         with autocast(self.device.type, enabled=self.use_amp) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
@@ -756,6 +781,15 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             # Component-wise DiceCE (A12), full resolution output only.
             if self.enable_cc_loss and self.cc_weight > 0:
                 aux_loss = aux_loss + self.cc_weight * component_dicece_loss(main_output, main_target)
+
+            # Contrast consistency (A13b): attenuated vs original decoder features.
+            if cons_teacher is not None:
+                net_c = self.network.module if self.is_ddp else self.network
+                student = net_c._last_dec_features[:self.lca_cons_stages]
+                if not all(f.requires_grad for f in student):
+                    raise RuntimeError('A13b: student decoder features carry no gradient')
+                aux_loss = aux_loss + self.lca_cons_weight * self._v2_ramp() * \
+                    contrast_consistency_loss(student, cons_teacher, cons_region, self.lca_cons_stages)
 
             # LMC liver head: BCE against liver (label > 0), from epoch 0.
             if self.enable_lmc and self.lmc_liver_weight > 0:
