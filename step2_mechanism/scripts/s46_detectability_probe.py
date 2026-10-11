@@ -486,9 +486,10 @@ def main():
         sys.exit(selftest())
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from common import FIGS, OUT, banner, load_raw_resampled, preprocessed_spacing, save_json, splits  # noqa: E402
+    from common import FIGS, OUT, PLAN_SPACING_SITK, banner, load_raw_resampled, save_json, splits  # noqa: E402
 
-    sp = preprocessed_spacing()                      # (z, y, x) mm
+    # load_raw_resampled uses SimpleITK (x, y, z); its numpy arrays are (z, y, x).
+    sp = tuple(reversed(PLAN_SPACING_SITK))           # (z, y, x) mm
     tr, va, te = splits()
     rng = np.random.default_rng(0)
     if args.cases:
