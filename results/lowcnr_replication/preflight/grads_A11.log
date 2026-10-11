@@ -1,0 +1,7 @@
+
+[A11] 0 PhASER tensors, loss 0.942 -> -0.362
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05)]
+   encoder max|grad|=7.84e-02; code paths: {'augmentation_calls': 50, 'augmented_samples': 59, 'changed_batches': 45, 'component_loss_calls': 0, 'positive_component_losses': 0, 'consistency_calls': 0, 'positive_consistency_losses': 0}
+   PASS (0 ok, 0 weak, 0 dead)
+
+SUMMARY: A11=PASS

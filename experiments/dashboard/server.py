@@ -19,11 +19,13 @@ ROOT = Path(os.environ.get('RESULTS_ROOT', str(REPO.parent / 'nnUNet_data/nnUNet
 HERE = ROOT / '_orchestration'
 PILOT = ROOT / '_pilot_lowcnr'
 PILOT_RUNS = ('A9_s0', 'A11_s0', 'A12_s0')
+REPLICATION = ROOT / '_lowcnr_replication'
+REPLICATION_RUNS = tuple(f'{g}_s{s}' for g, seeds in [('A13b', range(3)), ('A13a', range(3)), ('A11', (1, 2))] for s in seeds)
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
 CST = timezone(timedelta(hours=8))
 HTML = Path(__file__).with_name('index.html')
-RUN_NAME = re.compile(r'(?:A(?:[0-9]|1[0-2])|ResEnc)_s[0-9]+|E16_cost')
+RUN_NAME = re.compile(r'(?:A(?:[0-9]|1[0-2]|13[ab])|ResEnc)_s[0-9]+|E16_cost')
 ANALYSIS_LOGS = {'analysis_scheduler': 'analysis_scheduler.log', 'analysis_selftest': 'analysis_selftest.log',
                  'E11_joint': 'analysis_E11_joint.log', 'E11_joint_summary': 'analysis_E11_joint_summary.log',
                  'analysis_followup': 'analysis_followup.log',
@@ -65,7 +67,33 @@ def name_for(entry):
 
 
 def run_log(name):
+    if name in REPLICATION_RUNS:
+        return REPLICATION / f'{name}.log'
     return PILOT / f'{name.split("_s")[0]}.log' if name in PILOT_RUNS else ROOT / name / 'launcher.log'
+
+
+def replication_info(now):
+    state = read_json(REPLICATION / 'state.json', {})
+    if not state:
+        return None, {}
+    state['controller_alive'] = process_alive(state.get('pid'))
+    state['age_seconds'] = round(now - (REPLICATION / 'state.json').stat().st_mtime)
+    jobs = {}
+    for run in REPLICATION_RUNS:
+        if run not in state.get('jobs', {}):
+            continue
+        jobs[run] = dict(state['jobs'][run])
+        if state.get('phase') in ('failed', 'cancelled') and jobs[run]['status'] == 'running':
+            jobs[run]['status'] = state['phase']
+    result = Path(state.get('worktree', str(REPO))) / 'results/lowcnr_replication'
+    state['metrics'] = read_json(result / 'summary_pp4mm.json', {})
+    state['decisions'] = read_json(result / 'replication_decisions.json', {})
+    if state.get('phase') == 'fixed_4mm_metrics':
+        state['metric_cases_completed'] = tail(REPLICATION/'post4mm.log').count('fixed 4-mm metrics complete')
+        state['metric_cases_total'] = 12 * 21
+    for job in state.get('analysis_jobs', {}).values():
+        job['process_alive'] = process_alive(job.get('pid'))
+    return state, jobs
 
 
 def pilot_info(now):
@@ -135,6 +163,7 @@ def run_info(name, job):
         'first_epoch_seconds': durations[0] if durations else None,
         'validation_cases_written': job.get('validation_cases_written'),
         'pilot': name in PILOT_RUNS,
+        'replication': name in REPLICATION_RUNS,
         'started_at': job.get('started_at'), 'ended_at': job.get('ended_at'),
         'gradient_skips': text.count('non-finite gradient'), 'nonfinite_losses': text.count('non-finite loss'),
         'error': job.get('error'), 'cancellation_reason': job.get('cancellation_reason'), 'history': history[-200:],
@@ -240,9 +269,11 @@ def snapshot():
         names = list(state.get('jobs', {}))
         names += [name_for(e) for e in state.get('stage6_queue', [])]
         pilots, pilot_jobs = pilot_info(now)
+        replication, replication_jobs = replication_info(now)
         jobs = dict(state.get('jobs', {}))
         jobs.update(pilot_jobs)
-        names = list(pilot_jobs) + names
+        jobs.update(replication_jobs)
+        names = list(replication_jobs) + list(pilot_jobs) + names
         runs = {name: run_info(name, jobs.get(name, {})) for name in dict.fromkeys(names) if RUN_NAME.fullmatch(name)}
         if now - CACHE['gpu_time'] >= 15:
             try:
@@ -291,11 +322,31 @@ def snapshot():
                            'progress': round(sum(r['progress'] for r in pilot_rows) / 3, 1)})
             eta['pilot_seconds'] = round(max((max(0, r['total_epochs'] - r['completed_epochs']) * r['epoch_seconds'] + 900
                                               for r in pilot_rows if r['status'] == 'running' and r['epoch_seconds']), default=0))
+        if replication:
+            phase = replication.get('phase')
+            rr = [runs[n] for n in REPLICATION_RUNS if n in runs]
+            stages.append({'id': 'R', 'title': 'A13 / A11 多 seed 复现',
+                           'status': 'complete' if phase == 'complete' else phase if phase in ('failed', 'cancelled') else 'running',
+                           'detail': f"{sum(r['status'] == 'complete' for r in rr)} / 8 训练与验证完成；固定 4 mm 核验及阈值曲线另计",
+                           'source': '独立三卡队列；§6c 固定顺序与复现条件',
+                           'progress': round(sum(r['progress'] for r in rr)/8,1)})
+            lanes = []
+            active_rates = [r['epoch_seconds'] for r in rr if r['status'] == 'running' and r['epoch_seconds']]
+            for queue in replication.get('queues', {}).values():
+                duration = 0
+                for n in queue:
+                    row = runs.get(n)
+                    if row and row['status'] in ('pending', 'running'):
+                        default = 95.29*1.4 if n.startswith('A13b_') else 95.29
+                        rate = row['epoch_seconds'] or (statistics.median(active_rates) if n.startswith('A13b_') and active_rates else default)
+                        duration += max(0,200-row['completed_epochs'])*rate+900
+                lanes.append(duration)
+            eta['replication_seconds'] = round(max(lanes, default=0))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
-            'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots,
+            'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -333,6 +384,12 @@ class Handler(BaseHTTPRequestHandler):
                     path = HERE / 'scheduler.log'
                 elif name == 'pilot_controller':
                     path = PILOT / 'controller.log'
+                elif name == 'replication_controller':
+                    path = REPLICATION / 'controller.log'
+                elif name == 'replication_metrics':
+                    path = REPLICATION / 'post4mm.log'
+                elif name in ('curves_shard0', 'curves_shard1', 'curves_shard2'):
+                    path = REPLICATION / f'{name}.log'
                 elif name == 'audit':
                     path = HERE / 'stage4_nonfinite_audit.log'
                 elif name in ANALYSIS_LOGS:

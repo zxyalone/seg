@@ -1,0 +1,19 @@
+{
+  "model_source": "4f50d74",
+  "execution_source": "1e75c124933cf5f200ebc27f9db571a301abc077",
+  "training_started_at": "2026-10-11T20:40:41+08:00",
+  "training_only_cnr_table": {
+    "lesions": 518,
+    "low_cnr_lesions": 173,
+    "max_quantile_rounding_error": 4.818275404017136e-05,
+    "training_csv_sha256": "829f495ce4c26f07d02ec19d2050321f7fa78bea8f5cf6cb3f6f0631ffa5c239"
+  },
+  "checks": {
+    "A11_fp32": "PASS",
+    "A13a_fp32": "PASS",
+    "A13b_fp32": "OOM; retained",
+    "A13b_amp": "PASS; 41 positive consistency calls in 50 steps; allocated7.31GiB/reserved10.39GiB"
+  },
+  "protocol_changes": false,
+  "test_inference": false
+}

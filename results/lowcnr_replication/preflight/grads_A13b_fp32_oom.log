@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/root/autodl-tmp/Downstream_2/experiments/check_grads.py", line 298, in <module>
+    main()
+  File "/root/autodl-tmp/Downstream_2/experiments/check_grads.py", line 289, in main
+    ok.append(check_group(group, args))
+  File "/root/autodl-tmp/Downstream_2/experiments/check_grads.py", line 221, in check_group
+    out = tr.train_step(batch)
+  File "/root/autodl-tmp/Downstream_2/nnUNet/nnunetv2/training/nnUNetTrainer/nnUNetTrainer_phaser.py", line 829, in train_step
+    total_loss.backward()
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/torch/_tensor.py", line 492, in backward
+    torch.autograd.backward(
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/torch/autograd/__init__.py", line 251, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacty of 11.63 GiB of which 473.44 MiB is free. Including non-PyTorch memory, this process has 11.16 GiB memory in use. Of the allocated memory 9.95 GiB is allocated by PyTorch, and 923.22 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

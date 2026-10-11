@@ -1,0 +1,16 @@
+  big: contrast -0.499 -> -0.319 (ratio 0.640, alpha 0.640); texture sd 0.200 -> 0.200
+  small: contrast -0.400 -> -0.256 (ratio 0.640, alpha 0.640); texture sd 0.202 -> 0.202
+✓ A11 lesion contrast augmentation
+✓ A11 boundary protection and nearby-lesion texture preservation
+  perfect 0.000; small lesion missed: component loss 0.525 vs global Dice loss 0.058
+✓ A12 component-wise DiceCE
+  target CNR draws: range [0.023, 1.278], deciles 10/50/90 0.335/0.812/1.228 vs table 0.338/0.809/1.228
+  big: CNR 2.51 -> 0.35..1.11 over 8 draws
+  small: CNR 2.00 -> 0.31..1.27 over 8 draws
+✓ A13a target-CNR attenuation
+  random features: loss 0.998; identical / rescaled features: 0
+✓ A13b contrast consistency loss
+  PhaserUNet: consistency loss 0.0088, encoder stage-0 |grad| 3.49e-02
+✓ A13b gradient reaches the encoder through the finest decoder features
+  CPU, 2 x 128^3, 3 lesions: augmentation 0.78s, component loss 0.70s
+全部通过
