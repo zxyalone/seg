@@ -1,0 +1,222 @@
+{
+  "pid": 168112,
+  "phase": "complete_with_cancellation_stage7_prerequisites_pending",
+  "source_commit": "40b6485795d9eac7fe7f8770a270db0b346f4e87",
+  "started_at": "2026-10-10 22:00:58 CST",
+  "jobs": {
+    "E13": {
+      "status": "complete",
+      "gpu": 0,
+      "started_at": "2026-10-10 22:00:58 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e13_mechanism.py",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E13",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 161511,
+      "ended_at": "2026-10-10 22:33:22 CST",
+      "error": null
+    },
+    "E11_shard0": {
+      "status": "complete",
+      "gpu": 1,
+      "started_at": "2026-10-10 22:51:24 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e11_interventions.py",
+        "run",
+        "--shard",
+        "0/3",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E11",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 168118,
+      "ended_at": "2026-10-11 02:53:23 CST",
+      "error": null,
+      "completion_check": "exit_code_and_output_coverage"
+    },
+    "E11_shard1": {
+      "status": "complete",
+      "gpu": 2,
+      "started_at": "2026-10-10 22:51:24 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e11_interventions.py",
+        "run",
+        "--shard",
+        "1/3",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E11",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 168119,
+      "ended_at": "2026-10-11 02:13:35 CST",
+      "error": null,
+      "completion_check": "exit_code_and_output_coverage"
+    },
+    "E11_shard2": {
+      "status": "complete",
+      "gpu": 2,
+      "started_at": "2026-10-11 02:13:35 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e11_interventions.py",
+        "run",
+        "--shard",
+        "2/3",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E11",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 212803,
+      "ended_at": "2026-10-11 07:18:25 CST",
+      "error": null,
+      "completion_check": "exit_code_and_output_coverage"
+    },
+    "E12_shard0": {
+      "status": "complete",
+      "gpu": 1,
+      "started_at": "2026-10-11 02:53:23 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e12_degradation.py",
+        "run",
+        "--shard",
+        "0/3",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E12",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 219444,
+      "ended_at": "2026-10-11 08:59:46 CST",
+      "error": null,
+      "completion_check": "exit_code_and_output_coverage"
+    },
+    "E12_shard1": {
+      "status": "cancelled",
+      "gpu": 2,
+      "started_at": "2026-10-11 07:18:25 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e12_degradation.py",
+        "run",
+        "--shard",
+        "1/3",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E12",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 245561,
+      "ended_at": "2026-10-11 11:47:26 CST",
+      "cancellation_reason": "User explicitly stopped E12; preserve partial outputs and do not resume or summarize automatically"
+    },
+    "E12_shard2": {
+      "status": "cancelled",
+      "gpu": 1,
+      "started_at": "2026-10-11 08:59:46 CST",
+      "command": [
+        "/root/autodl-tmp/envs/mamba/bin/python",
+        "-u",
+        "/root/autodl-tmp/Downstream_2/experiments/analysis/e12_degradation.py",
+        "run",
+        "--shard",
+        "2/3",
+        "--device",
+        "cuda",
+        "--out",
+        "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/E12",
+        "--cases-file",
+        "/root/autodl-tmp/Downstream_2/experiments/eval/val_cases.txt"
+      ],
+      "pid": 257402,
+      "ended_at": "2026-10-11 11:47:26 CST",
+      "cancellation_reason": "User explicitly stopped E12; preserve partial outputs and do not resume or summarize automatically"
+    }
+  },
+  "items": {
+    "E11": {
+      "status": "complete",
+      "total_predictions": 630,
+      "completed_predictions": 630,
+      "error": null
+    },
+    "E12": {
+      "status": "cancelled",
+      "total_predictions": 840,
+      "completed_predictions": 687,
+      "error": null,
+      "cancelled_at": "2026-10-11 11:47:26 CST",
+      "cancellation_reason": "User explicitly stopped E12; preserve partial outputs and do not resume or summarize automatically"
+    },
+    "E13": {
+      "status": "complete",
+      "total_cases": 21,
+      "completed_cases": 21
+    }
+  },
+  "script_sha256": {
+    "common.py": "13c90c057af17fb439701bce11779c54deacb54a0fcdde93230725d85ced18e8",
+    "e11_interventions.py": "4f62a4df17223bf2be1ff351ac6f6043be6fd59a17dddee408b398f6886c27b2",
+    "e12_degradation.py": "dc6929c392b8ce628b52711b167fa2711962abbb9ba250d04f6b26cd42638092",
+    "e13_mechanism.py": "ba14fb8a47b73002d590dc2e737fcf4609068eea27a8d6f32aa26eb7ac088c1d",
+    "test_analysis.py": "c6270baea7d23bf706523c8991901edd151e892e9fc1a5ddb924a3dd5c91a226"
+  },
+  "test_set": "locked; user deferred stage7 until analysis results; external cohort unprepared",
+  "baseline_tumor_dice_tolerance": 0.0001,
+  "stochastic_baseline_policy": "A7 reference difference recorded, no exact reproducibility assertion",
+  "cnr_median_ratio_tolerance": 0.02,
+  "stage7_prerequisites": [
+    "E10 postprocessing",
+    "fixed primary endpoint",
+    "E14 external cohort",
+    "E17 pretraining overlap",
+    "PROTOCOL_FROZEN"
+  ],
+  "resumed_at": "2026-10-10 22:51:24 CST",
+  "previous_controller_pid": 161504,
+  "reservation_reason": "User requested one GPU for other training",
+  "active_gpus": [
+    1,
+    2
+  ],
+  "reserved_gpus": [
+    0
+  ],
+  "updated_at": "2026-10-11 11:47:26 CST",
+  "selftest": "passed",
+  "selftest_log": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_orchestration/analysis_selftest.log",
+  "ended_at": "2026-10-11 11:47:26 CST",
+  "cancelled_experiments": {
+    "E12": {
+      "cancelled_at": "2026-10-11 11:47:26 CST",
+      "reason": "User explicitly stopped E12; preserve partial outputs and do not resume or summarize automatically"
+    }
+  }
+}

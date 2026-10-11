@@ -1,0 +1,6 @@
+{
+  "E12": {
+    "cancelled_at": "2026-10-11 11:47:26 CST",
+    "reason": "User explicitly stopped E12; preserve partial outputs and do not resume or summarize automatically"
+  }
+}

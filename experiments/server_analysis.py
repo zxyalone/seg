@@ -228,6 +228,10 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         prior = HERE / 'analysis_state.json'
         previous = json.loads(prior.read_text()) if prior.exists() else {}
+        cancellations = {}
+        for path in (REPO / 'experiments/analysis/cancellations.json', HERE / 'analysis_cancellations.json'):
+            if path.exists():
+                cancellations.update(json.loads(path.read_text()))
         active_gpus = ([int(g) for g in args.gpus.split(',')] if args.gpus is not None else
                        previous.get('active_gpus', [0, 1, 2]))
         assert active_gpus and len(set(active_gpus)) == len(active_gpus) and all(g in (0, 1, 2) for g in active_gpus)
@@ -258,6 +262,14 @@ def main():
                 if item['status'] != 'complete':
                     item.update(status='pending', error=None)
         STATE.update(active_gpus=active_gpus, reserved_gpus=[g for g in range(3) if g not in active_gpus])
+        STATE['cancelled_experiments'] = cancellations
+        for experiment, record in cancellations.items():
+            if experiment in STATE['items']:
+                STATE['items'][experiment].update(status='cancelled', cancellation_reason=record['reason'],
+                                                  cancelled_at=record['cancelled_at'], error=None)
+                for name, job in STATE['jobs'].items():
+                    if name.startswith(experiment + '_') and job['status'] != 'complete':
+                        job.update(status='cancelled', cancellation_reason=record['reason'])
         save()
         deadline = time.time() + 1800
         while True:
@@ -278,6 +290,8 @@ def main():
         adopted_by_gpu = {}
         for task in tasks:
             experiment, shard = task
+            if experiment in cancellations:
+                continue
             name = experiment if shard is None else f'{experiment}_shard{shard}'
             job = STATE['jobs'].get(name, {})
             if job.get('status') == 'complete':
@@ -291,6 +305,8 @@ def main():
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as cpu:
             def maybe_summarize(experiment):
                 with LOCK:
+                    if experiment in cancellations:
+                        return
                     complete = all(STATE['jobs'].get(f'{experiment}_shard{i}', {}).get('status') == 'complete' for i in range(3))
                     if experiment in ('E11', 'E12') and complete and STATE['items'][experiment]['status'] != 'complete' and experiment not in summaries:
                         summaries[experiment] = cpu.submit(summarize, experiment)
@@ -315,7 +331,10 @@ def main():
                 future.result()
         STOP.set()
         update_progress()
-        STATE.update(phase='complete_stage7_prerequisites_pending' if all(r['status'] == 'complete' for r in STATE['items'].values()) else 'analysis_failed', ended_at=stamp())
+        finished = all(r['status'] in ('complete', 'cancelled') for r in STATE['items'].values())
+        phase = ('complete_with_cancellation_stage7_prerequisites_pending' if cancellations else
+                 'complete_stage7_prerequisites_pending') if finished else 'analysis_failed'
+        STATE.update(phase=phase, ended_at=stamp())
         save()
         archive()
         log('Validation analysis queue finished; stage-7 prerequisites still apply; test set remains locked')

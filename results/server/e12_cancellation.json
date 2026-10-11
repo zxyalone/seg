@@ -1,0 +1,16 @@
+{
+  "cancelled_at": "2026-10-11 11:47:26 CST",
+  "experiment": "E12",
+  "reason": "User explicitly stopped E12; preserve partial outputs and do not resume or summarize automatically",
+  "terminated_controller_pid": 168112,
+  "terminated_prediction_pids": [
+    245561,
+    257402
+  ],
+  "prediction_files_present": 687,
+  "expected_prediction_files": 840,
+  "original_E11_and_E13_status": "complete; unchanged",
+  "E11_joint_followup": "continues independently",
+  "gpu0_reservation": "unchanged",
+  "raw_output_policy": "retained on server; no deletion; incomplete cohort not summarized as complete"
+}
