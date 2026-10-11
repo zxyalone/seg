@@ -68,6 +68,32 @@ BACKGROUND_GAP_MM = 15.0
 MIN_LIVER_FRACTION = 0.3              # 窗口内肝脏占比低于此值视为无效
 MAX_SAMPLES = 20000
 FEATURES = ("I", "Ims", "D", "T", "DT")
+_GPU = None
+_GPU_NDI = None
+
+
+def configure_device(device):
+    """Keep statistics on CPU; optionally offload Gaussian filters to one GPU."""
+    global _GPU, _GPU_NDI
+    _GPU = _GPU_NDI = None
+    if device == "cpu":
+        return
+    if not device.startswith("cuda:") or not device[5:].isdigit():
+        raise ValueError("device must be cpu or cuda:<GPU index>")
+    import cupy as cp
+    from cupyx.scipy import ndimage as cndi
+    cp.cuda.Device(int(device[5:])).use()
+    # Fail here if CUDA is unavailable, rather than silently changing backends.
+    cp.zeros(1).get()
+    _GPU, _GPU_NDI = cp, cndi
+    print(f"[device] {device}; CuPy {cp.__version__}; Gaussian filters on GPU", flush=True)
+
+
+def gaussian_filter(a, sigma, **kwargs):
+    if _GPU is None:
+        return ndi.gaussian_filter(a, sigma, **kwargs)
+    # Transfer one filter at a time to bound VRAM, retaining scipy's dtype/modes.
+    return _GPU.asnumpy(_GPU_NDI.gaussian_filter(_GPU.asarray(a), sigma, **kwargs))
 
 
 # ----------------------------------------------------------------------------
@@ -107,7 +133,7 @@ def upsample(a, f, shape):
 
 
 def masked_smooth(x, m, sigma_vox):
-    return ndi.gaussian_filter(x * m, sigma_vox) / np.maximum(ndi.gaussian_filter(m, sigma_vox), 1e-6)
+    return gaussian_filter(x * m, sigma_vox) / np.maximum(gaussian_filter(m, sigma_vox), 1e-6)
 
 
 def scale_maps(img, liver, hp2, spacing, sigma_mm):
@@ -120,8 +146,8 @@ def scale_maps(img, liver, hp2, spacing, sigma_mm):
     sc = [s / f for s in sc_n]
     ss = [s / f for s in ss_n]
     k = float(np.prod([a / b for a, b in zip(sc_n, ss_n)]))
-    gc = [ndi.gaussian_filter(a, sc, mode="constant", truncate=3.0) for a in stacks]
-    gs = [ndi.gaussian_filter(a, ss, mode="constant", truncate=3.0) for a in stacks]
+    gc = [gaussian_filter(a, sc, mode="constant", truncate=3.0) for a in stacks]
+    gs = [gaussian_filter(a, ss, mode="constant", truncate=3.0) for a in stacks]
     ga = [(s - k * c) / (1 - k) for s, c in zip(gs, gc)]
     wc, wa = np.maximum(gc[0], 1e-6), np.maximum(ga[0], 1e-6)
     mu_c, mu_a = gc[1] / wc, ga[1] / wa
@@ -481,7 +507,9 @@ def main():
     ap.add_argument("--cases", nargs="*", default=None)
     ap.add_argument("--montage", action="store_true")
     ap.add_argument("--max-cases", type=int, default=None)
+    ap.add_argument("--device", default="cpu", help="cpu (default) or cuda:<GPU index>; CUDA needs CuPy")
     args = ap.parse_args()
+    configure_device(args.device)
     if args.selftest:
         sys.exit(selftest())
 
@@ -524,7 +552,9 @@ def main():
     s["protocol"] = dict(cohort="fold0 train", n_cases=len(cases), scales_mm=SCALES_MM,
                          surround_ratio=SURROUND_RATIO, highpass_mm=HIGHPASS_MM, cnr_tertiles=CNR_TERTILES,
                          local_ring_mm=LOCAL_RING_MM, background_gap_mm=BACKGROUND_GAP_MM,
-                         min_lesion_voxels=MIN_LESION, spacing_zyx_mm=sp)
+                         min_lesion_voxels=MIN_LESION, spacing_zyx_mm=sp, device=args.device,
+                         cupy_version=None if _GPU is None else _GPU.__version__,
+                         elapsed_seconds=time.time() - t0)
     save_json(s, "s46_detectability_probe.json")
     write_csv(recs, OUT / "s46_lesions.csv")
     plot_summary(recs, FIGS / "fig46_detectability.png")
