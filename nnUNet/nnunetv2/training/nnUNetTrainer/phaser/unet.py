@@ -32,6 +32,8 @@ from .modules import (
     LiverPriorBranch,
     LiverAwareContextGating,
     SmallTumorDetailHead,
+    LiverReferencedContrast,
+    ContrastSkipGate,
 )
 from .dim_utils import spatial_mean, interpolate_nd, interp_mode
 
@@ -89,6 +91,10 @@ class PhaserUNet(nn.Module):
         legacy: bool = False,
         pc_spacing=None,
         pc_noise_rel_kappa: float = 0.0,
+        enable_lmc: bool = False,
+        lmc_spacing=None,
+        lmc_shuffle: bool = False,
+        lmc_intervene: str = 'none',
     ):
         super().__init__()
         self.base_model = base_model
@@ -110,6 +116,8 @@ class PhaserUNet(nn.Module):
         self._last_small_logits = None
         self._last_pc_maps = []
         self._last_pfcr_routes = []
+        self._last_lmc_liver_logits = None
+        self._last_lmc_maps = None
         # Number of deepest decoder scales whose features keep gradient for the
         # spectral consistency loss. Must match max_scales in
         # spectral_consistency_loss (default 3). Deepest scales are smallest in
@@ -191,6 +199,22 @@ class PhaserUNet(nn.Module):
                 for i in range(n_skips)
             ])
 
+        # --- LMC: liver-referenced multi-scale contrast skip gating (v0) ---
+        # A light liver head (supervised with liver labels by the trainer) gives
+        # the soft liver mask; contrast maps are computed from the input CT
+        # inside that mask and gate every skip in the A1 gate form.
+        self.enable_lmc = enable_lmc
+        if enable_lmc:
+            if lmc_spacing is None:
+                raise ValueError("enable_lmc needs the voxel spacing (mm per axis)")
+            self.lmc_liver_branch = LiverPriorBranch(feature_channels, dims=self.dims)
+            self.lmc = LiverReferencedContrast(
+                lmc_spacing, dims=self.dims,
+                intervene='shuffle' if lmc_shuffle else lmc_intervene)
+            self.lmc_gates = nn.ModuleList([
+                ContrastSkipGate(self.lmc.n_maps, dims=self.dims) for _ in range(n_skips)
+            ])
+
         # --- CFF: fuse original encoder features with enhanced ---
         self.fusion_mode = fusion_mode
         has_enhance = (enable_lwfd or enable_pcsf or t_raf_mode != 'none')
@@ -263,6 +287,17 @@ class PhaserUNet(nn.Module):
         if self.fusion_mode != 'none':
             orig_skips = [s.clone() for s in skips[:-1]]
 
+        # 1b. LMC: liver mask from the raw skips, contrast maps from the input.
+        lmc_maps = None
+        if self.enable_lmc:
+            liver_logits = self.lmc_liver_branch(skips)
+            liver_prob = torch.sigmoid(liver_logits.float()).detach()
+            if liver_prob.shape[2:] != x.shape[2:]:
+                liver_prob = interpolate_nd(self.dims, liver_prob, size=x.shape[2:])
+            lmc_maps = self.lmc(x, liver_prob)
+            self._last_lmc_liver_logits = liver_logits if self.training else None
+            self._last_lmc_maps = None if self.training else lmc_maps
+
         # 2. Generate tumor prior from shallow features (before T-RAF).
         small_logits = None
         tumor_prior = None
@@ -315,6 +350,11 @@ class PhaserUNet(nn.Module):
                 skips[i] = self.pcsf_modules[i](skips[i])
             if self.pcsf_mode == 'pc':
                 self._last_pc_maps = [m._last_pc for m in self.pcsf_modules]
+
+        # 6b. LMC skip gating.
+        if self.enable_lmc:
+            for i in range(len(skips) - 1):
+                skips[i] = self.lmc_gates[i](skips[i], lmc_maps)
 
         # 6. LA-ACG: liver prior prediction
         if self.enable_la_acg:
@@ -444,6 +484,9 @@ class PhaserUNet(nn.Module):
             params.extend(self.cff_modules.parameters())
         if self.enable_small_head:
             params.extend(self.small_head.parameters())
+        if self.enable_lmc:
+            params.extend(self.lmc_liver_branch.parameters())
+            params.extend(self.lmc_gates.parameters())
         return params
 
 

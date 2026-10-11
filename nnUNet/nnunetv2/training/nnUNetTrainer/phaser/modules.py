@@ -13,6 +13,7 @@ from typing import List
 
 from nnunetv2.training.nnUNetTrainer.phaser.dim_utils import (
     conv_nd,
+    conv_nd_fn,
     instancenorm_nd,
     interpolate_nd,
     spatial_gradient_magnitude,
@@ -1236,3 +1237,168 @@ class SmallTumorDetailHead(nn.Module):
         e1 = self.proj_e1(enc_skips[1])
         e1 = interpolate_nd(self.dims, e1, size=e0.shape[2:])
         return self.head(torch.cat([e0, e1], dim=1))
+
+
+# ---------------------------------------------------------------------------
+# Liver-referenced multi-scale contrast gating (LMC, v0 of the detectability
+# redesign; docs/方法重设计_可检出性计划.md §2.2 as simplified in §11)
+# ---------------------------------------------------------------------------
+
+def _gauss_kernel_1d(sigma: float, truncate: float = 3.0, device=None, dtype=torch.float32):
+    r = max(int(math.ceil(truncate * sigma)), 1)
+    t = torch.arange(-r, r + 1, device=device, dtype=dtype)
+    k = torch.exp(-0.5 * (t / sigma) ** 2)
+    return k / k.sum()
+
+
+def _separable_gauss(x: torch.Tensor, sigmas, dims: int, truncate: float = 3.0) -> torch.Tensor:
+    """Zero-padded separable Gaussian filter, applied channel-wise."""
+    c = x.shape[1]
+    for ax, s in enumerate(sigmas):
+        if s <= 0:
+            continue
+        k = _gauss_kernel_1d(s, truncate, x.device, x.dtype)
+        shape = [1] * dims
+        shape[ax] = k.numel()
+        w = k.view(1, 1, *shape).repeat(c, 1, *([1] * dims))
+        pad = [0] * dims
+        pad[ax] = k.numel() // 2
+        x = conv_nd_fn(dims, x, w, padding=tuple(pad), groups=c)
+    return x
+
+
+class LiverReferencedContrast(nn.Module):
+    """Multi-scale intensity contrast of the input CT relative to the liver.
+
+    No learnable parameters. For each centre scale sigma_c (mm) and a surround
+    sigma_s = 3 sigma_c, masked normalised convolution inside a soft liver mask m
+    gives the centre mean mu_c and the annulus mean mu_a, with the annulus kernel
+    A = (G_s - k G_c) / (1 - k), k = prod(sigma_c / sigma_s), so A(0) = 0, A >= 0.
+    Two signed maps per scale, each standardised per sample with the median and
+    1.4826 * MAD over voxels with m > 0.5 (the liver as its own reference):
+        z(mu_c)            multi-scale intensity (probe feature 'Ims')
+        z(mu_c - mu_a)     centre-surround contrast
+    The Welch variance term and the texture branch of the original design are
+    dropped: on 518 training lesions neither added to plain multi-scale intensity
+    (probe s46, P3 and P4 not met). Maps are 0 where less than 30 % of a window
+    lies in the liver (centre-surround map: less than 10 % of the annulus, since
+    coarse annuli extend beyond a training patch). Output: [B, 2 * len(scales_mm), *spatial] at input size.
+
+    intervene: 'none' | 'zero' (all maps 0) | 'shuffle' (one random spatial
+    permutation per sample, shared by all channels: same value distribution, no
+    spatial correspondence; the capacity control analogous to A7).
+    """
+
+    def __init__(self, spacing, dims: int = 3, scales_mm=(1.0, 2.0, 4.0, 8.0, 16.0),
+                 surround_ratio: float = 3.0, min_fraction: float = 0.3,
+                 min_annulus_fraction: float = 0.1,
+                 clamp: float = 8.0, intervene: str = 'none'):
+        super().__init__()
+        self.dims = dims
+        self.spacing = [float(s) for s in spacing]
+        self.scales_mm = tuple(float(s) for s in scales_mm)
+        self.surround_ratio = float(surround_ratio)
+        self.min_fraction = float(min_fraction)
+        self.min_annulus_fraction = float(min_annulus_fraction)
+        self.clamp = float(clamp)
+        self.intervene = intervene
+        self.n_maps = 2 * len(self.scales_mm)
+
+    def _scale(self, x, m, sigma_mm):
+        dims = self.dims
+        spatial = x.shape[2:]
+        sc = [sigma_mm / sp for sp in self.spacing]
+        ss = [self.surround_ratio * s for s in sc]
+        k = float(torch.tensor([a / b for a, b in zip(sc, ss)]).prod())
+        f = int(2 ** max(0, int(math.floor(math.log2(max(min(sc), 1.0))))))
+        pad = []
+        for n in reversed(spatial):
+            pad += [0, (-n) % f]
+        stack = torch.cat([m, x * m], dim=1)
+        if f > 1:
+            stack = F.pad(stack, pad)
+            pool = F.avg_pool2d if dims == 2 else F.avg_pool3d
+            stack = pool(stack, f)
+        gc = _separable_gauss(stack, [s / f for s in sc], dims)
+        gs = _separable_gauss(stack, [s / f for s in ss], dims)
+        ga = (gs - k * gc) / (1.0 - k)
+        mu_c = gc[:, 1:2] / gc[:, 0:1].clamp(min=1e-6)
+        mu_a = ga[:, 1:2] / ga[:, 0:1].clamp(min=1e-6)
+        # mu_c needs enough liver in the centre window; the annulus of the
+        # coarse scales often reaches beyond a 128^3 patch, so the
+        # centre-surround map only asks for a smaller annulus share.
+        valid_c = (gc[:, 0:1] >= self.min_fraction).float()
+        valid_a = valid_c * (ga[:, 0:1] >= self.min_annulus_fraction).float()
+        out = torch.cat([mu_c, mu_c - mu_a, valid_c, valid_a], dim=1)
+        if f > 1:
+            full = [n + (-n) % f for n in spatial]
+            out = interpolate_nd(dims, out, size=full)
+            out = out[(slice(None), slice(None)) + tuple(slice(0, n) for n in spatial)]
+        return out[:, 0:1], out[:, 1:2], out[:, 2:3] > 0.5, out[:, 3:4] > 0.5
+
+    @staticmethod
+    def _robust_z(a, ref):
+        flat, sel = a.flatten(), ref.flatten()
+        vals = flat[sel]
+        if vals.numel() < 500:
+            return None
+        step = max(1, vals.numel() // 200_000)
+        vals = vals[::step]
+        med = vals.median()
+        mad = (vals - med).abs().median() * 1.4826
+        if mad <= 1e-6:
+            return None
+        return (a - med) / mad
+
+    @torch.no_grad()
+    def forward(self, x: torch.Tensor, liver_prob: torch.Tensor) -> torch.Tensor:
+        # Statistics in fp32 regardless of the surrounding AMP context.
+        with torch.autocast(device_type=x.device.type, enabled=False):
+            return self._forward(x.float(), liver_prob.float())
+
+    def _forward(self, x: torch.Tensor, m: torch.Tensor) -> torch.Tensor:
+        b = x.shape[0]
+        maps = x.new_zeros((b, self.n_maps) + tuple(x.shape[2:]))
+        if self.intervene == 'zero':
+            return maps
+        liver = m > 0.5
+        for j, s in enumerate(self.scales_mm):
+            mu, dog, valid_c, valid_a = self._scale(x, m, s)
+            for i in range(b):
+                for c, src, valid in ((2 * j, mu, valid_c), (2 * j + 1, dog, valid_a)):
+                    z = self._robust_z(src[i, 0], liver[i, 0] & valid[i, 0])
+                    if z is not None:
+                        maps[i, c] = torch.where(valid[i, 0], z.clamp(-self.clamp, self.clamp),
+                                                 torch.zeros_like(z))
+        if self.intervene == 'shuffle':
+            for i in range(b):
+                flat = maps[i].flatten(1)
+                maps[i] = flat[:, torch.randperm(flat.shape[1], device=flat.device)].view_as(maps[i])
+        return maps
+
+
+class ContrastSkipGate(nn.Module):
+    """Skip gate driven by the LMC maps, in the same form as the A1 gate:
+
+        out = x * (1 + tanh(gamma) * sigmoid(w . maps + b)),   gamma = 0 at init.
+
+    The maps are area-averaged to the skip resolution. w starts at -0.25 on every
+    map (darker than the liver -> larger gate, matching the mostly hypodense LiTS
+    lesions); training is free to change the sign. With gamma = 0 the module is
+    an exact identity, as for every other PhASER module."""
+
+    def __init__(self, n_maps: int, dims: int = 3, w_init: float = -0.25):
+        super().__init__()
+        self.dims = dims
+        self.mix = conv_nd(dims, n_maps, 1, 1, bias=True)
+        nn.init.constant_(self.mix.weight, w_init)
+        nn.init.zeros_(self.mix.bias)
+        self.gamma = nn.Parameter(torch.tensor(0.0))
+        self._last_attention = None
+
+    def forward(self, skip: torch.Tensor, maps: torch.Tensor) -> torch.Tensor:
+        if maps.shape[2:] != skip.shape[2:]:
+            maps = F.interpolate(maps, size=skip.shape[2:], mode='area')
+        att = torch.sigmoid(self.mix(maps.to(skip.dtype)))
+        self._last_attention = None if self.training else att.detach()
+        return skip * (1.0 + torch.tanh(self.gamma) * att)

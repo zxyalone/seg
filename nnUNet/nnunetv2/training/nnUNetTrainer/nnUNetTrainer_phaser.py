@@ -249,6 +249,12 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.t_raf_mode = os.environ.get('PHASER_T_RAF', 'none')
         self.enable_la_acg = os.environ.get('PHASER_LA_ACG', '0') == '1'
         self.enable_small_head = os.environ.get('PHASER_SMALL_HEAD', '0') == '1'
+        # LMC (v0 of the detectability redesign): liver-referenced multi-scale
+        # contrast skip gating. Its liver head is trained with BCE on liver labels
+        # (label > 0), weight PHASER_LMC_LIVER_WEIGHT, shared V2 ramp, epoch 0 on.
+        self.enable_lmc = os.environ.get('PHASER_LMC', '0') == '1'
+        self.lmc_shuffle = os.environ.get('PHASER_LMC_SHUFFLE', '0') == '1'
+        self.lmc_liver_weight = float(os.environ.get('PHASER_LMC_LIVER_WEIGHT', '0.1'))
         if self.pfcr_use_prior:
             self.enable_small_head = True
         # Tier-1 frequency-paper ablation modules (new, independent switches)
@@ -319,6 +325,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  ACG:  {self.enable_acg}\n"
             f"  LA-ACG: {self.enable_la_acg}\n"
             f"  Small-Tumor Head: {self.enable_small_head}\n"
+            f"  LMC contrast gate: {self.enable_lmc} (shuffle={self.lmc_shuffle}, "
+            f"liver head w={self.lmc_liver_weight}, spacing={list(self.configuration_manager.spacing)})\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
             f"  Spectral loss: {self.enable_spectral_loss} (w={self.spectral_weight})\n"
             f"  Boundary loss: {self.enable_boundary_loss} (w={self.boundary_weight})\n"
@@ -413,6 +421,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         levels_env = os.environ.get('PHASER_INTERVENE_LEVELS', '').strip()
         pfcr_intervene_levels = [int(v) for v in levels_env.split(',')] if levels_env else None
         legacy = os.environ.get('PHASER_LEGACY', '0') == '1'
+        enable_lmc = os.environ.get('PHASER_LMC', '0') == '1'
+        lmc_shuffle = os.environ.get('PHASER_LMC_SHUFFLE', '0') == '1'
+        lmc_intervene = os.environ.get('PHASER_LMC_INTERVENE', 'none')
         # Tier-1 ablation module switches
         # T-RAF prior mode requires small head for tumor prior generation
         if (t_raf_mode in ('prior',) or (pfcr_use_prior and enable_pfcr)) and not enable_small_head:
@@ -453,6 +464,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             legacy=legacy,
             pc_spacing=pc_spacing,
             pc_noise_rel_kappa=pc_noise_rel_kappa,
+            enable_lmc=enable_lmc,
+            lmc_spacing=[float(v) for v in configuration_manager.spacing],
+            lmc_shuffle=lmc_shuffle,
+            lmc_intervene=lmc_intervene,
         )
 
         return model
@@ -722,6 +737,18 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 sh_loss = F.cross_entropy(small_logits.float(), tumor_target, reduction='none')
                 sh_loss = (sh_loss * tumor_weight).mean()
                 aux_loss = aux_loss + self.prior_weight * self._v2_ramp() * sh_loss
+
+            # LMC liver head: BCE against liver (label > 0), from epoch 0.
+            if self.enable_lmc and self.lmc_liver_weight > 0:
+                net_lmc = self.network.module if self.is_ddp else self.network
+                liver_logits = getattr(net_lmc, '_last_lmc_liver_logits', None)
+                if liver_logits is not None:
+                    t4d = main_target.squeeze(1).long() if main_target.dim() == 5 else main_target.long()
+                    liver_gt = (t4d > 0).float().unsqueeze(1)
+                    if liver_logits.shape[2:] != liver_gt.shape[2:]:
+                        liver_gt = F.interpolate(liver_gt, size=liver_logits.shape[2:], mode='nearest')
+                    lmc_l = F.binary_cross_entropy_with_logits(liver_logits.float(), liver_gt)
+                    aux_loss = aux_loss + self.lmc_liver_weight * self._v2_ramp() * lmc_l
 
             total_loss = seg_loss + aux_loss
 
