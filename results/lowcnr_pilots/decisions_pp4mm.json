@@ -1,0 +1,17 @@
+{
+  "A9_s0": {
+    "low_cnr_gain_pp": 0.0,
+    "fp_per_scan_delta": -0.09523809523809512,
+    "passed": false
+  },
+  "A11_s0": {
+    "low_cnr_gain_pp": 7.692307692307708,
+    "fp_per_scan_delta": 0.23809523809523814,
+    "passed": true
+  },
+  "A12_s0": {
+    "low_cnr_gain_pp": 10.256410256410277,
+    "fp_per_scan_delta": 1.3333333333333335,
+    "passed": false
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "A1_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 66.66666666666666,
+    "recall_pct": 76.08695652173914,
+    "fp_per_scan": 1.5238095238095237,
+    "tumor_dice_pct": 66.50628606285602,
+    "f1_pct": 72.16494845360825,
+    "raw_consistency_passed": true
+  }
+}

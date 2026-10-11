@@ -1,0 +1,8 @@
+  big: contrast -0.499 -> -0.319 (ratio 0.640, alpha 0.640); texture sd 0.200 -> 0.200
+  small: contrast -0.400 -> -0.256 (ratio 0.640, alpha 0.640); texture sd 0.202 -> 0.202
+✓ A11 lesion contrast augmentation
+✓ A11 boundary protection and nearby-lesion texture preservation
+  perfect 0.000; small lesion missed: component loss 0.525 vs global Dice loss 0.058
+✓ A12 component-wise DiceCE
+  CPU, 2 x 128^3, 3 lesions: augmentation 0.77s, component loss 0.39s
+全部通过

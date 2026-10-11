@@ -1,0 +1,61 @@
+{
+  "phase": "complete",
+  "pid": 321040,
+  "started_at": "2026-10-11T14:41:48+08:00",
+  "jobs": {
+    "A9": {
+      "pid": 321043,
+      "gpu": 0,
+      "status": "complete",
+      "logfile": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_pilot_lowcnr/A9.log",
+      "latest_epoch": 199,
+      "completed_epoch_times": 200,
+      "validation_cases_written": 21,
+      "first_epoch_seconds": 98.45,
+      "last_epoch_seconds": 90.04,
+      "mean_recent_epoch_seconds": 90.46199999999999,
+      "estimated_remaining_training_hours": 0.0,
+      "exit_code": 0,
+      "ended_at": "2026-10-11T20:04:48+08:00"
+    },
+    "A11": {
+      "pid": 321044,
+      "gpu": 1,
+      "status": "complete",
+      "logfile": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_pilot_lowcnr/A11.log",
+      "latest_epoch": 199,
+      "completed_epoch_times": 200,
+      "validation_cases_written": 21,
+      "first_epoch_seconds": 95.29,
+      "last_epoch_seconds": 91.78,
+      "mean_recent_epoch_seconds": 86.28699999999999,
+      "estimated_remaining_training_hours": 0.0,
+      "first_epoch_slow_relative_to_A0": false,
+      "exit_code": 0,
+      "ended_at": "2026-10-11T19:45:00+08:00"
+    },
+    "A12": {
+      "pid": 321046,
+      "gpu": 2,
+      "status": "complete",
+      "logfile": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_pilot_lowcnr/A12.log",
+      "latest_epoch": 199,
+      "completed_epoch_times": 200,
+      "validation_cases_written": 21,
+      "first_epoch_seconds": 99.39,
+      "last_epoch_seconds": 90.25,
+      "mean_recent_epoch_seconds": 91.268,
+      "estimated_remaining_training_hours": 0.0,
+      "exit_code": 0
+    }
+  },
+  "source_commit": "c2065b27adc37a83ad69d756a3632e66f7cbb981",
+  "worktree": "/root/autodl-tmp/Downstream_2_lowcnr_pilots",
+  "control_root": "/root/autodl-tmp/Downstream_2",
+  "pretrained_path": "/root/autodl-tmp/Downstream_2/VoComni_nnunet.pt",
+  "pretrained_sha256": "0d921e0fd153028042531d9967cd6d6f8b80970345b914208965a3b6e0c0caea",
+  "scope": "A9/A11/A12 seed 0, 200 epochs, fold0; A10 preflight only; no test-set evaluation",
+  "stop_markers_before_start_retained": true,
+  "publish_status": "pending",
+  "updated_at": "2026-10-11T20:18:44+08:00"
+}

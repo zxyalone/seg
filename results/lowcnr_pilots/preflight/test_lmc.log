@@ -1,0 +1,9 @@
+  z(mu_c) median: 4 mm inside -8.00, liver +0.01; 1 mm inside -2.37; 4 mm centre-surround inside -8.00
+  affine invariance: max |Δ| = 1.61e-03
+✓ 1 contrast maps
+  identity at init: max |Δ logits| = 0.00e+00
+  step 0 grads: gamma ['4.9e-03', '1.7e-03', '6.1e-05'], mix max 0.0e+00, liver head 1.5e-01
+  gamma = 0.5: mix grads ['7.3e-04', '3.6e-05', '6.1e-06']
+  LMC parameters: 21781
+✓ 2 PhaserUNet integration
+全部通过

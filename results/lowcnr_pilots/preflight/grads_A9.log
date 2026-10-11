@@ -1,0 +1,21 @@
+
+[A9] 27 PhASER tensors, loss 0.959 -> -0.327
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (22, 0.005, 3e-05), (5, 0.005, 0.0)]
+   encoder max|grad|=8.22e-02; code paths: {'augmentation_calls': 0, 'augmented_samples': 0, 'changed_batches': 0, 'component_loss_calls': 0, 'positive_component_losses': 0}
+   lmc_liver_branch.fuser.3.bias                 max|grad|=3.48e-02 max|delta|=1.54e-01
+   lmc_gates.0.gamma                             max|grad|=1.33e-02 max|delta|=1.37e-02
+   lmc_gates.0.mix.bias                          max|grad|=3.07e-05 max|delta|=1.01e-05
+   lmc_gates.1.gamma                             max|grad|=1.84e-02 max|delta|=2.59e-02
+   lmc_gates.1.mix.bias                          max|grad|=2.11e-05 max|delta|=2.61e-06
+   lmc_gates.2.gamma                             max|grad|=1.19e-02 max|delta|=1.03e-02
+   lmc_gates.2.mix.bias                          max|grad|=4.82e-06 max|delta|=4.67e-06
+   lmc_gates.3.gamma                             max|grad|=8.06e-03 max|delta|=1.53e-02
+   lmc_gates.3.mix.bias                          max|grad|=6.46e-06 max|delta|=7.81e-06
+   lmc_gates.4.gamma                             max|grad|=7.67e-05 max|delta|=1.87e-04
+   lmc_gates.4.mix.bias                          max|grad|=1.46e-09 max|delta|=2.01e-09
+   WARN lmc_liver_branch.fuser.0.bias: max|grad|=2.2e-09 moved=yes
+   WARN lmc_gates.4.mix.weight: max|grad|=1.8e-09 moved=yes
+   WARN lmc_gates.4.mix.bias: max|grad|=1.5e-09 moved=yes
+   PASS (24 ok, 3 weak, 0 dead)
+
+SUMMARY: A9=PASS

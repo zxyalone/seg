@@ -1,0 +1,46 @@
+{
+  "A1_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 66.66666666666666,
+    "recall_pct": 76.08695652173914,
+    "fp_per_scan": 1.5238095238095237,
+    "tumor_dice_pct": 66.50628606285602,
+    "f1_pct": 72.16494845360825,
+    "raw_consistency_passed": true
+  },
+  "A9_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 66.66666666666666,
+    "recall_pct": 77.17391304347827,
+    "fp_per_scan": 1.4285714285714286,
+    "tumor_dice_pct": 63.89093375773807,
+    "f1_pct": 73.57512953367876,
+    "raw_consistency_passed": true
+  },
+  "A11_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 74.35897435897436,
+    "recall_pct": 81.52173913043478,
+    "fp_per_scan": 1.7619047619047619,
+    "tumor_dice_pct": 69.01687699196718,
+    "f1_pct": 73.52941176470588,
+    "raw_consistency_passed": true
+  },
+  "A12_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 76.92307692307693,
+    "recall_pct": 82.6086956521739,
+    "fp_per_scan": 2.857142857142857,
+    "tumor_dice_pct": 70.53441051587119,
+    "f1_pct": 66.66666666666667,
+    "raw_consistency_passed": true
+  }
+}
