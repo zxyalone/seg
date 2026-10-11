@@ -94,6 +94,7 @@ from dynamic_network_architectures.architectures.unet import PlainConvUNet
 from dynamic_network_architectures.building_blocks.helper import convert_dim_to_conv_op, get_matching_instancenorm
 
 from .phaser.unet import PhaserUNet, load_pretrained_weights
+from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss
 from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
     compute_lesion_importance_map, lesion_weighted_loss, \
     gate_supervision_loss, inside_liver_penalty_loss, boundary_weighted_dice_loss, \
@@ -255,6 +256,13 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.enable_lmc = os.environ.get('PHASER_LMC', '0') == '1'
         self.lmc_shuffle = os.environ.get('PHASER_LMC_SHUFFLE', '0') == '1'
         self.lmc_liver_weight = float(os.environ.get('PHASER_LMC_LIVER_WEIGHT', '0.1'))
+        # Low-CNR training tools (plan §5b): lesion contrast augmentation (A11) and
+        # component-wise DiceCE (A12). Both are training-only.
+        self.enable_lca = os.environ.get('PHASER_LCA', '0') == '1'
+        self.lca_p = float(os.environ.get('PHASER_LCA_P', '0.5'))
+        self.lca_alpha_min = float(os.environ.get('PHASER_LCA_ALPHA_MIN', '0.3'))
+        self.enable_cc_loss = os.environ.get('PHASER_CC_LOSS', '0') == '1'
+        self.cc_weight = float(os.environ.get('PHASER_CC_WEIGHT', '1.0'))
         if self.pfcr_use_prior:
             self.enable_small_head = True
         # Tier-1 frequency-paper ablation modules (new, independent switches)
@@ -327,6 +335,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Small-Tumor Head: {self.enable_small_head}\n"
             f"  LMC contrast gate: {self.enable_lmc} (shuffle={self.lmc_shuffle}, "
             f"liver head w={self.lmc_liver_weight}, spacing={list(self.configuration_manager.spacing)})\n"
+            f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min})\n"
+            f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
             f"  Spectral loss: {self.enable_spectral_loss} (w={self.spectral_weight})\n"
             f"  Boundary loss: {self.enable_boundary_loss} (w={self.boundary_weight})\n"
@@ -620,6 +630,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
 
         self.optimizer.zero_grad(set_to_none=True)
 
+        if self.enable_lca:
+            full_target = target[0] if isinstance(target, list) else target
+            data, _ = lesion_contrast_augment(data, full_target, p=self.lca_p,
+                                              alpha_min=self.lca_alpha_min)
+
         with autocast(self.device.type, enabled=self.use_amp) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
 
@@ -737,6 +752,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 sh_loss = F.cross_entropy(small_logits.float(), tumor_target, reduction='none')
                 sh_loss = (sh_loss * tumor_weight).mean()
                 aux_loss = aux_loss + self.prior_weight * self._v2_ramp() * sh_loss
+
+            # Component-wise DiceCE (A12), full resolution output only.
+            if self.enable_cc_loss and self.cc_weight > 0:
+                aux_loss = aux_loss + self.cc_weight * component_dicece_loss(main_output, main_target)
 
             # LMC liver head: BCE against liver (label > 0), from epoch 0.
             if self.enable_lmc and self.lmc_liver_weight > 0:
