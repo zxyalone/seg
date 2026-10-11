@@ -6,8 +6,8 @@ lesion_contrast_augment  (A11)
     intensities towards the mean of its liver ring:
         x' = x - (1 - alpha) * (mu_lesion - mu_ring) * w,   alpha ~ U(alpha_min, 1)
     w = max(G_1 * mask, mask) softens the lesion border (the E12 operator). The
-    shift keeps the lesion texture and the ring statistics, so the lesion CNR
-    becomes alpha * CNR. The ring is liver (label 1) within 2..6 voxels
+    shift keeps each lesion's texture; soft boundary tails can slightly change
+    the ring statistics, so its CNR is approximately alpha * CNR. The ring is liver (label 1) within 2..6 voxels
     (Chebyshev, by max-pooling) outside the lesion and outside other lesions.
     Works on the normalised network input; nnU-Net's CT normalisation is a
     global affine map, so CNR is unchanged by it.
@@ -93,7 +93,12 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
             xb = x[box]
             mu_l = (xb * m).sum() / m.sum()
             mu_r = (xb * ring_m).sum() / ring_m.sum()
-            x[box] = xb - (1.0 - alpha) * (mu_l - mu_r) * _soften(m)
+            # Preserve tissue outside the liver and every other tumor component.
+            # Otherwise smoothing a boundary lesion modifies background, and
+            # overlapping tails can change the texture of a neighboring lesion.
+            allowed = (target[b:b + 1][box] > 0) & ~(others > 0)
+            weight = _soften(m) * allowed
+            x[box] = xb - (1.0 - alpha) * (mu_l - mu_r) * weight
         out[b:b + 1] = x.to(out.dtype)
         applied.append((b, alpha))
     return out, applied

@@ -89,6 +89,30 @@ def test_cc_loss():
     print("✓ A12 component-wise DiceCE")
 
 
+def test_boundary_and_nearby_lesions():
+    lab = torch.zeros(SHAPE, dtype=torch.long)
+    lab[4:44, 6:58, 6:58] = 1
+    first = ball((24, 30, 6), 5) & (lab == 1)
+    second = ball((24, 30, 18), 5) & (lab == 1)
+    lab[first | second] = 2
+    g = torch.Generator().manual_seed(0)
+    x = 1 + .2 * torch.randn(SHAPE, generator=g)
+    x[lab == 0] = -1
+    x[first] -= .5
+    x[second] -= .4
+    torch.manual_seed(1)
+    y, applied = lesion_contrast_augment(x[None, None], lab[None, None], p=1.0)
+    assert applied
+    y = y[0, 0]
+    assert torch.equal(y[lab == 0], x[lab == 0])
+    for m in (first, second):
+        # A uniform shift must preserve every relative voxel intensity, including
+        # when another component's smoothing kernel reaches this component.
+        delta = (y - x)[m]
+        assert (delta.max() - delta.min()).item() < 1e-6
+    print("✓ A11 boundary protection and nearby-lesion texture preservation")
+
+
 def test_speed():
     lab = torch.zeros((2, 1, 128, 128, 128), dtype=torch.long)
     lab[:, :, 10:118, 10:118, 10:118] = 1
@@ -103,6 +127,7 @@ def test_speed():
 
 if __name__ == "__main__":
     test_augment()
+    test_boundary_and_nearby_lesions()
     test_cc_loss()
     test_speed()
     print("全部通过")

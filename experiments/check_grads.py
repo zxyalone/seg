@@ -25,6 +25,7 @@ exact switches the training queue uses.
 from __future__ import annotations
 
 import argparse
+import gc
 import os
 import sys
 from pathlib import Path
@@ -98,6 +99,7 @@ def make_trainer(patch: int, device: torch.device, n_stages: int):
         n_conv_per_stage_decoder=[2] * (n_stages - 1),
         batch_dice=False,
         patch_size=[patch] * 3,
+        spacing=[1.0, 0.7791720032691956, 0.7791720032691956],
     )
     lm = SimpleNamespace(has_regions=False, ignore_label=None, has_ignore_label=False,
                          foreground_labels=[1, 2], num_segmentation_heads=3)
@@ -135,6 +137,29 @@ def make_trainer(patch: int, device: torch.device, n_stages: int):
 
 
 def check_group(group: str, args) -> bool:
+    from nnunetv2.training.nnUNetTrainer import nnUNetTrainer_phaser as trainer_mod
+    original_aug = trainer_mod.lesion_contrast_augment
+    original_cc = trainer_mod.component_dicece_loss
+    paths = dict(augmentation_calls=0, augmented_samples=0, changed_batches=0,
+                 component_loss_calls=0, positive_component_losses=0)
+
+    def checked_aug(data, *a, **kw):
+        result, applied = original_aug(data, *a, **kw)
+        paths['augmentation_calls'] += 1
+        paths['augmented_samples'] += len(applied)
+        paths['changed_batches'] += int(not torch.equal(result, data))
+        return result, applied
+
+    def checked_cc(*a, **kw):
+        loss = original_cc(*a, **kw)
+        if not torch.isfinite(loss) or not loss.requires_grad:
+            raise RuntimeError('Component loss must be finite and retain its gradient path')
+        paths['component_loss_calls'] += 1
+        paths['positive_component_losses'] += int(loss.detach() > 0)
+        return loss
+
+    trainer_mod.lesion_contrast_augment = checked_aug
+    trainer_mod.component_dicece_loss = checked_cc
     env = read_env(group)
     saved = {k: os.environ.get(k) for k in env}
     for k in list(os.environ):
@@ -153,6 +178,9 @@ def check_group(group: str, args) -> bool:
         init = {n: p.detach().clone() for n, p in named}
         got_grad = {n: False for n, _ in named}
         max_grad = {n: 0.0 for n, _ in named}
+        base_name, base_param = next(net.encoder.named_parameters())
+        base_initial = base_param.detach().clone()
+        base_grad = 0.0
 
         rng = np.random.default_rng(0)
         scales = tr._get_deep_supervision_scales()
@@ -165,7 +193,14 @@ def check_group(group: str, args) -> bool:
             orig_step = tr.optimizer.step
 
             def recording_step(*a, **k):
+                nonlocal base_grad
+                if base_param.grad is not None:
+                    if not torch.isfinite(base_param.grad).all():
+                        raise RuntimeError(f'Non-finite encoder gradient: {base_name}')
+                    base_grad = max(base_grad, float(base_param.grad.abs().max()))
                 for n, p in named:
+                    if p.grad is not None and not torch.isfinite(p.grad).all():
+                        raise RuntimeError(f'Non-finite gradient: {n}')
                     if p.grad is not None and torch.count_nonzero(p.grad) > 0:
                         got_grad[n] = True
                         max_grad[n] = max(max_grad[n], float(p.grad.abs().max()))
@@ -175,13 +210,24 @@ def check_group(group: str, args) -> bool:
             out = tr.train_step(batch)
             tr.optimizer.step = orig_step
             losses.append(float(out["loss"]))
+            if not np.isfinite(losses[-1]):
+                raise RuntimeError(f'Non-finite training loss at step {step}')
 
         moved = {n: not torch.equal(init[n], p.detach()) for n, p in named}
         bad = [n for n, _ in named if not got_grad[n]]
+        if base_grad == 0 or torch.equal(base_initial, base_param.detach()):
+            bad.append('encoder: no non-zero gradient or parameter update')
+        if env.get('PHASER_LCA') == '1' and not (
+                paths['augmentation_calls'] == args.steps and paths['changed_batches'] > 0):
+            bad.append('A11: augmentation path not exercised')
+        if env.get('PHASER_CC_LOSS') == '1' and not (
+                paths['component_loss_calls'] == args.steps and paths['positive_component_losses'] > 0):
+            bad.append('A12: component loss path not exercised')
         weak = [n for n, _ in named if got_grad[n] and max_grad[n] < 1e-6]
         groups = [(len(g["params"]), g["lr"], g["weight_decay"]) for g in tr.optimizer.param_groups]
         print(f"\n[{group}] {len(named)} PhASER tensors, loss {losses[0]:.3f} -> {losses[-1]:.3f}")
         print(f"   optimizer groups (n, lr, wd): {groups}")
+        print(f"   encoder max|grad|={base_grad:.2e}; code paths: {paths}")
         if hasattr(net, "pfcr_modules"):
             for i, m in enumerate(net.pfcr_modules):
                 pc = m._last_pc
@@ -201,6 +247,8 @@ def check_group(group: str, args) -> bool:
               f"{len(weak)} weak, {len(bad)} dead)")
         return not bad
     finally:
+        trainer_mod.lesion_contrast_augment = original_aug
+        trainer_mod.component_dicece_loss = original_cc
         for k in list(os.environ):
             if k.startswith("PHASER_"):
                 del os.environ[k]
@@ -221,7 +269,12 @@ def main():
     ap.add_argument("--verbose", action="store_true", help="print grad/update size of small tensors")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
-    ok = [check_group(g, args) for g in args.groups]
+    ok = []
+    for group in args.groups:
+        ok.append(check_group(group, args))
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     print("\nSUMMARY:", ", ".join(f"{g}={'PASS' if o else 'FAIL'}" for g, o in zip(args.groups, ok)))
     sys.exit(0 if all(ok) else 1)
 
