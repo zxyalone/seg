@@ -84,7 +84,7 @@ def synthetic_batch(n: int, patch: int, rng: np.random.Generator, deep_scales):
     return {"data": data, "target": targets}
 
 
-def make_trainer(patch: int, device: torch.device, n_stages: int):
+def make_trainer(patch: int, device: torch.device, n_stages: int, amp: bool = False):
     """Instantiate nnUNetTrainer_phaser without plans/dataset files."""
     from nnunetv2.training.nnUNetTrainer import nnUNetTrainer_phaser as mod
     from nnunetv2.training.nnUNetTrainer.nnUNetTrainer import nnUNetTrainer
@@ -131,8 +131,8 @@ def make_trainer(patch: int, device: torch.device, n_stages: int):
         pm, {}, cm, 1, enable_deep_supervision=True).to(device)
     tr.loss = tr._build_loss()
     tr.optimizer, tr.lr_scheduler = tr.configure_optimizers()
-    tr.grad_scaler = None
-    tr.use_amp = False
+    tr.grad_scaler = torch.cuda.amp.GradScaler() if amp else None
+    tr.use_amp = amp
     return tr
 
 
@@ -182,7 +182,11 @@ def check_group(group: str, args) -> bool:
     try:
         torch.manual_seed(0)
         device = torch.device(args.device)
-        tr = make_trainer(args.patch, device, args.stages)
+        if args.amp and device.type != 'cuda':
+            raise ValueError('--amp requires a CUDA device')
+        if device.type == 'cuda':
+            torch.cuda.reset_peak_memory_stats(device)
+        tr = make_trainer(args.patch, device, args.stages, args.amp)
         net = tr.network
         phaser_ids = {id(p) for p in net.get_phaser_params()}
         named = [(n, p) for n, p in net.named_parameters() if id(p) in phaser_ids]
@@ -242,6 +246,10 @@ def check_group(group: str, args) -> bool:
         print(f"\n[{group}] {len(named)} PhASER tensors, loss {losses[0]:.3f} -> {losses[-1]:.3f}")
         print(f"   optimizer groups (n, lr, wd): {groups}")
         print(f"   encoder max|grad|={base_grad:.2e}; code paths: {paths}")
+        if device.type == 'cuda':
+            print(f"   AMP={args.amp}; peak CUDA allocated="
+                  f"{torch.cuda.max_memory_allocated(device)/2**30:.2f} GiB; reserved="
+                  f"{torch.cuda.max_memory_reserved(device)/2**30:.2f} GiB")
         if hasattr(net, "pfcr_modules"):
             for i, m in enumerate(net.pfcr_modules):
                 pc = m._last_pc
@@ -282,6 +290,7 @@ def main():
     ap.add_argument("--epochs-per-step", type=int, default=1,
                     help="advance current_epoch per step so the aux-loss ramp is exercised")
     ap.add_argument("--verbose", action="store_true", help="print grad/update size of small tensors")
+    ap.add_argument("--amp", action="store_true", help="use the same mixed precision and GradScaler as real CUDA training")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
     ok = []
