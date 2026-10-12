@@ -26,6 +26,26 @@ import pandas as pd
 from lowcnr_pilot_metrics import metrics
 
 
+def run_rows(run, args, cases):
+    _, saved_c, saved_l = metrics(run, args, cases)       # saved masks, fixed 4-mm filter
+    saved_c = saved_c.set_index('case'); saved_l = saved_l.set_index(['case', 'lesion'])
+    ev_c = pd.read_csv(Path(args.eval_root) / run / 'eval_val/cases.csv').set_index('case')
+    ev_l = pd.read_csv(Path(args.eval_root) / run / 'eval_val/lesions.csv').set_index(['case', 'lesion'])
+    rows = []
+    for case in cases:
+        d = json.loads((Path(args.curves) / run / f'{case}.json').read_text())
+        les = {l['lesion']: l for l in d['lesions']}
+        raw_det = all(les[i]['det@argmax'] == bool(ev_l.loc[(case, i), 'detected@0.1']) for i in les)
+        pp_det = all(les[i]['det_pp@argmax'] == bool(saved_l.loc[(case, i), 'detected']) for i in les)
+        raw_fp_diff = d['rules']['argmax']['fp'] - int(ev_c.loc[case, 'les_fp@0.1'])
+        pp_fp_diff = d['rules']['argmax_pp']['fp'] - int(saved_c.loc[case, 'fp'])
+        rows.append(dict(run=run, case=case, n_lesions=len(les), raw_detections_agree=raw_det,
+                         pp_detections_agree=pp_det, raw_fp_diff=raw_fp_diff, pp_fp_diff=pp_fp_diff,
+                         export_logits_dtype=d.get('export_logits_dtype', 'unrecorded')))
+    print(f'{run}: parity rows written', flush=True)
+    return rows
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--curves', required=True, help='cases/ folder written by missed_lesion_probability.py run')
@@ -35,26 +55,17 @@ def main():
     p.add_argument('--cases-file', default=str(Path(__file__).resolve().parents[1] / 'eval/val_cases.txt'))
     p.add_argument('--eval-root', default=str(Path(__file__).resolve().parents[2] / 'results'))
     p.add_argument('--out', required=True)
+    p.add_argument('--jobs', type=int, default=1, help='runs checked in parallel processes')
     args = p.parse_args()
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     cases = Path(args.cases_file).read_text().split()
-    rows = []
-    for run in args.runs:
-        _, saved_c, saved_l = metrics(run, args, cases)       # saved masks, fixed 4-mm filter
-        saved_c = saved_c.set_index('case'); saved_l = saved_l.set_index(['case', 'lesion'])
-        ev_c = pd.read_csv(Path(args.eval_root) / run / 'eval_val/cases.csv').set_index('case')
-        ev_l = pd.read_csv(Path(args.eval_root) / run / 'eval_val/lesions.csv').set_index(['case', 'lesion'])
-        for case in cases:
-            d = json.loads((Path(args.curves) / run / f'{case}.json').read_text())
-            les = {l['lesion']: l for l in d['lesions']}
-            raw_det = all(les[i]['det@argmax'] == bool(ev_l.loc[(case, i), 'detected@0.1']) for i in les)
-            pp_det = all(les[i]['det_pp@argmax'] == bool(saved_l.loc[(case, i), 'detected']) for i in les)
-            raw_fp_diff = d['rules']['argmax']['fp'] - int(ev_c.loc[case, 'les_fp@0.1'])
-            pp_fp_diff = d['rules']['argmax_pp']['fp'] - int(saved_c.loc[case, 'fp'])
-            rows.append(dict(run=run, case=case, n_lesions=len(les), raw_detections_agree=raw_det,
-                             pp_detections_agree=pp_det, raw_fp_diff=raw_fp_diff, pp_fp_diff=pp_fp_diff,
-                             export_logits_dtype=d.get('export_logits_dtype', 'unrecorded')))
-        print(f'{run}: parity rows written', flush=True)
+    if args.jobs > 1:
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor(max_workers=args.jobs) as ex:
+            parts = list(ex.map(run_rows, args.runs, [args] * len(args.runs), [cases] * len(args.runs)))
+    else:
+        parts = [run_rows(run, args, cases) for run in args.runs]
+    rows = [r for part in parts for r in part]
     T = pd.DataFrame(rows)
     T['passed'] = T.raw_detections_agree & T.pp_detections_agree & (T.pp_fp_diff == 0) & (T.raw_fp_diff.abs() <= 1)
     T.to_csv(out / 'curve_parity_cases.csv', index=False)
