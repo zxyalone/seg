@@ -1,0 +1,51 @@
+{
+  "baseline_A1_mean": {
+    "recall_low_pct": 65.8119658119658,
+    "fp_per_scan": 1.5555555555555556
+  },
+  "priority": [
+    "A13b",
+    "A13a",
+    "A11"
+  ],
+  "groups": {
+    "A13b": {
+      "mean_low_cnr_recall_pct": 73.50427350427351,
+      "mean_fp_per_scan": 1.7619047619047619,
+      "gain_low_cnr_pp": 7.692307692307708,
+      "fp_per_scan_delta": 0.20634920634920628,
+      "seeds_passing_against_A1_mean": [
+        1,
+        2
+      ],
+      "passed": true
+    },
+    "A13a": {
+      "mean_low_cnr_recall_pct": 76.92307692307693,
+      "mean_fp_per_scan": 1.5555555555555556,
+      "gain_low_cnr_pp": 11.111111111111128,
+      "fp_per_scan_delta": 0.0,
+      "seeds_passing_against_A1_mean": [
+        0,
+        1,
+        2
+      ],
+      "passed": true
+    },
+    "A11": {
+      "mean_low_cnr_recall_pct": 75.21367521367522,
+      "mean_fp_per_scan": 1.650793650793651,
+      "gain_low_cnr_pp": 9.401709401709411,
+      "fp_per_scan_delta": 0.09523809523809534,
+      "seeds_passing_against_A1_mean": [
+        0,
+        1,
+        2
+      ],
+      "passed": true
+    }
+  },
+  "first_eligible_group": "A13b",
+  "test_set_evaluated": false,
+  "scope": "Validation replication only; test protocol must be frozen separately by the user."
+}

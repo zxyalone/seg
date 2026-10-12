@@ -1,0 +1,134 @@
+{
+  "A1_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 66.66666666666666,
+    "recall_pct": 76.08695652173914,
+    "fp_per_scan": 1.5238095238095237,
+    "tumor_dice_pct": 66.50628606285602,
+    "f1_pct": 72.16494845360825,
+    "raw_consistency_passed": true
+  },
+  "A1_s1": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 69.23076923076923,
+    "recall_pct": 79.34782608695652,
+    "fp_per_scan": 1.6666666666666667,
+    "tumor_dice_pct": 70.23795593557084,
+    "f1_pct": 73.0,
+    "raw_consistency_passed": true
+  },
+  "A1_s2": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 61.53846153846154,
+    "recall_pct": 76.08695652173914,
+    "fp_per_scan": 1.4761904761904763,
+    "tumor_dice_pct": 67.52115844219878,
+    "f1_pct": 72.53886010362694,
+    "raw_consistency_passed": true
+  },
+  "A11_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 74.35897435897436,
+    "recall_pct": 81.52173913043478,
+    "fp_per_scan": 1.7619047619047619,
+    "tumor_dice_pct": 69.01687699196718,
+    "f1_pct": 73.52941176470588,
+    "raw_consistency_passed": true
+  },
+  "A11_s1": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 76.92307692307693,
+    "recall_pct": 81.52173913043478,
+    "fp_per_scan": 1.6666666666666667,
+    "tumor_dice_pct": 75.5677022991041,
+    "f1_pct": 74.25742574257426,
+    "raw_consistency_passed": true
+  },
+  "A11_s2": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 74.35897435897436,
+    "recall_pct": 82.6086956521739,
+    "fp_per_scan": 1.5238095238095237,
+    "tumor_dice_pct": 69.9129317023012,
+    "f1_pct": 76.0,
+    "raw_consistency_passed": true
+  },
+  "A13a_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 79.48717948717949,
+    "recall_pct": 82.6086956521739,
+    "fp_per_scan": 1.6666666666666667,
+    "tumor_dice_pct": 73.61753764678745,
+    "f1_pct": 74.8768472906404,
+    "raw_consistency_passed": true
+  },
+  "A13a_s1": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 74.35897435897436,
+    "recall_pct": 82.6086956521739,
+    "fp_per_scan": 1.7142857142857142,
+    "tumor_dice_pct": 72.5714757586362,
+    "f1_pct": 74.50980392156863,
+    "raw_consistency_passed": true
+  },
+  "A13a_s2": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 76.92307692307693,
+    "recall_pct": 82.6086956521739,
+    "fp_per_scan": 1.2857142857142858,
+    "tumor_dice_pct": 74.5393926413915,
+    "f1_pct": 77.94871794871794,
+    "raw_consistency_passed": true
+  },
+  "A13b_s0": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 74.35897435897436,
+    "recall_pct": 81.52173913043478,
+    "fp_per_scan": 1.8571428571428572,
+    "tumor_dice_pct": 71.9700677999545,
+    "f1_pct": 72.81553398058253,
+    "raw_consistency_passed": true
+  },
+  "A13b_s1": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 71.7948717948718,
+    "recall_pct": 79.34782608695652,
+    "fp_per_scan": 1.7619047619047619,
+    "tumor_dice_pct": 72.78669699749831,
+    "f1_pct": 72.27722772277228,
+    "raw_consistency_passed": true
+  },
+  "A13b_s2": {
+    "n_cases": 21,
+    "n_lesions": 92,
+    "n_low_cnr": 39,
+    "recall_low_pct": 74.35897435897436,
+    "recall_pct": 81.52173913043478,
+    "fp_per_scan": 1.6666666666666667,
+    "tumor_dice_pct": 69.7793750780194,
+    "f1_pct": 74.25742574257426,
+    "raw_consistency_passed": true
+  }
+}
