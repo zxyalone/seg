@@ -149,16 +149,18 @@ def cmd_run(args):
         raw, props, _ = C.read_raw(ref, case, image_dir, None)
         data, _, props_pp = C.preprocess(ref, raw, props)
         for m in todo:
-            logits = C.predict_logits(m, data)
+            logits = C.predict_logits(m, data, preserve_dtype=True)
             seg, probs = convert_predicted_logits_to_segmentation_with_correct_shape(
                 logits, m.predictor.plans_manager, m.predictor.configuration_manager,
                 m.predictor.label_manager, props_pp, return_probabilities=True)
+            export_dtype = str(logits.dtype)
             del logits
             if seg.shape != gt.shape:
                 raise RuntimeError(f"{case}: prediction {seg.shape} vs reference {gt.shape}")
             res = analyse_case(probs[2].astype(np.float32), probs[1].astype(np.float32), seg, gt, spacing_zyx, cnr)
             del probs
-            res.update(case=case, run=m.name, group=m.group, seed=m.seed)
+            res.update(case=case, run=m.name, group=m.group, seed=m.seed,
+                       export_logits_dtype=export_dtype, export_dtype_policy='native_validation')
             C.write_json(res, out / "cases" / m.name / f"{case}.json")
         print(f"[{ci + 1}/{len(cases)}] {case}: {n_gt} lesions, {len(todo)} models, {time.time() - t0:.0f}s",
               flush=True)

@@ -153,12 +153,15 @@ def preprocess(predictor, data, props, seg=None):
     return d, s, props
 
 
-def predict_logits(model: Model, data: np.ndarray) -> torch.Tensor:
+def predict_logits(model: Model, data: np.ndarray, preserve_dtype: bool = False) -> torch.Tensor:
     """Sliding-window logits in preprocessed space (no TTA)."""
     pred = model.predictor
     with torch.no_grad():
         logits = pred.predict_sliding_window_return_logits(torch.from_numpy(data))
-    return logits.float().cpu()
+    # End-of-training validation exports prediction.cpu() without promotion
+    # (FP16 logits, resampled and cast back to FP16). Preserve its dtype when
+    # the export should follow the validation path.
+    return logits.cpu() if preserve_dtype else logits.float().cpu()
 
 
 def export_seg(model: Model, logits: torch.Tensor, props: dict, out_file: Path) -> None:
