@@ -1,0 +1,392 @@
+{
+  "IRCADb_01": {
+    "source": "3Dircadb1.1.zip",
+    "size": [
+      512,
+      512,
+      129
+    ],
+    "spacing": [
+      0.57,
+      0.57,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor01",
+      "livertumor02",
+      "livertumor03",
+      "livertumor04",
+      "livertumor05",
+      "livertumor06",
+      "livertumor07"
+    ],
+    "other_lesion_folders": [
+      "liverkyst"
+    ],
+    "liver_voxels": 2865131,
+    "tumor_voxels": 214268
+  },
+  "IRCADb_02": {
+    "source": "3Dircadb1.2.zip",
+    "size": [
+      512,
+      512,
+      172
+    ],
+    "spacing": [
+      0.782,
+      0.782,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 1648024,
+    "tumor_voxels": 14062
+  },
+  "IRCADb_03": {
+    "source": "3Dircadb1.3.zip",
+    "size": [
+      512,
+      512,
+      200
+    ],
+    "spacing": [
+      0.625,
+      0.625,
+      1.25
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 2375079,
+    "tumor_voxels": 14252
+  },
+  "IRCADb_04": {
+    "source": "3Dircadb1.4.zip",
+    "size": [
+      512,
+      512,
+      91
+    ],
+    "spacing": [
+      0.7422,
+      0.7422,
+      2.0
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 1132432,
+    "tumor_voxels": 6736
+  },
+  "IRCADb_05": {
+    "source": "3Dircadb1.5.zip",
+    "size": [
+      512,
+      512,
+      139
+    ],
+    "spacing": [
+      0.782,
+      0.782,
+      1.6
+    ],
+    "tumor_folders": [],
+    "other_lesion_folders": [
+      "leftsurretumor",
+      "rightsurretumor"
+    ],
+    "liver_voxels": 2124505,
+    "tumor_voxels": 0
+  },
+  "IRCADb_06": {
+    "source": "3Dircadb1.6.zip",
+    "size": [
+      512,
+      512,
+      135
+    ],
+    "spacing": [
+      0.782,
+      0.782,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 1828493,
+    "tumor_voxels": 434721
+  },
+  "IRCADb_07": {
+    "source": "3Dircadb1.7.zip",
+    "size": [
+      512,
+      512,
+      151
+    ],
+    "spacing": [
+      0.782,
+      0.782,
+      1.6
+    ],
+    "tumor_folders": [],
+    "other_lesion_folders": [
+      "tumor"
+    ],
+    "liver_voxels": 1461944,
+    "tumor_voxels": 0
+  },
+  "IRCADb_08": {
+    "source": "3Dircadb1.8.zip",
+    "size": [
+      512,
+      512,
+      124
+    ],
+    "spacing": [
+      0.561,
+      0.561,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor01",
+      "livertumor02",
+      "livertumor03"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 3215090,
+    "tumor_voxels": 20318
+  },
+  "IRCADb_09": {
+    "source": "3Dircadb1.9.zip",
+    "size": [
+      512,
+      512,
+      111
+    ],
+    "spacing": [
+      0.873,
+      0.873,
+      2.0
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [
+      "liverkyste"
+    ],
+    "liver_voxels": 1265420,
+    "tumor_voxels": 39484
+  },
+  "IRCADb_10": {
+    "source": "3Dircadb1.10.zip",
+    "size": [
+      512,
+      512,
+      122
+    ],
+    "spacing": [
+      0.736,
+      0.736,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 1872022,
+    "tumor_voxels": 14981
+  },
+  "IRCADb_11": {
+    "source": "3Dircadb1.11.zip",
+    "size": [
+      512,
+      512,
+      132
+    ],
+    "spacing": [
+      0.72,
+      0.72,
+      1.6
+    ],
+    "tumor_folders": [],
+    "other_lesion_folders": [],
+    "liver_voxels": 1692716,
+    "tumor_voxels": 0
+  },
+  "IRCADb_12": {
+    "source": "3Dircadb1.12.zip",
+    "size": [
+      512,
+      512,
+      260
+    ],
+    "spacing": [
+      0.6797,
+      0.6797,
+      1.0
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 3341433,
+    "tumor_voxels": 348986
+  },
+  "IRCADb_13": {
+    "source": "3Dircadb1.13.zip",
+    "size": [
+      512,
+      512,
+      122
+    ],
+    "spacing": [
+      0.671,
+      0.671,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 2063109,
+    "tumor_voxels": 122480
+  },
+  "IRCADb_14": {
+    "source": "3Dircadb1.14.zip",
+    "size": [
+      512,
+      512,
+      113
+    ],
+    "spacing": [
+      0.72,
+      0.72,
+      1.6
+    ],
+    "tumor_folders": [],
+    "other_lesion_folders": [],
+    "liver_voxels": 1633641,
+    "tumor_voxels": 0
+  },
+  "IRCADb_15": {
+    "source": "3Dircadb1.15.zip",
+    "size": [
+      512,
+      512,
+      125
+    ],
+    "spacing": [
+      0.782,
+      0.782,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 1389572,
+    "tumor_voxels": 1638
+  },
+  "IRCADb_16": {
+    "source": "3Dircadb1.16.zip",
+    "size": [
+      512,
+      512,
+      155
+    ],
+    "spacing": [
+      0.698,
+      0.698,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 2717185,
+    "tumor_voxels": 7337
+  },
+  "IRCADb_17": {
+    "source": "3Dircadb1.17.zip",
+    "size": [
+      512,
+      512,
+      119
+    ],
+    "spacing": [
+      0.743,
+      0.743,
+      1.6
+    ],
+    "tumor_folders": [
+      "livertumor1",
+      "livertumor2"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 2106497,
+    "tumor_voxels": 185990
+  },
+  "IRCADb_18": {
+    "source": "3Dircadb1.18.zip",
+    "size": [
+      512,
+      512,
+      74
+    ],
+    "spacing": [
+      0.7422,
+      0.7422,
+      2.5
+    ],
+    "tumor_folders": [
+      "livertumor"
+    ],
+    "other_lesion_folders": [],
+    "liver_voxels": 1220564,
+    "tumor_voxels": 4539
+  },
+  "IRCADb_19": {
+    "source": "3Dircadb1.19.zip",
+    "size": [
+      512,
+      512,
+      124
+    ],
+    "spacing": [
+      0.7031,
+      0.7031,
+      4.0
+    ],
+    "tumor_folders": [
+      "livertumors"
+    ],
+    "other_lesion_folders": [
+      "livercyst"
+    ],
+    "liver_voxels": 583208,
+    "tumor_voxels": 41416
+  },
+  "IRCADb_20": {
+    "source": "3Dircadb1.20.zip",
+    "size": [
+      512,
+      512,
+      225
+    ],
+    "spacing": [
+      0.8086,
+      0.8086,
+      2.0
+    ],
+    "tumor_folders": [],
+    "other_lesion_folders": [],
+    "liver_voxels": 1359697,
+    "tumor_voxels": 0
+  }
+}
