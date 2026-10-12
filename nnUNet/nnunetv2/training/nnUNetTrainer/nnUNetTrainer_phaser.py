@@ -94,6 +94,7 @@ from dynamic_network_architectures.architectures.unet import PlainConvUNet
 from dynamic_network_architectures.building_blocks.helper import convert_dim_to_conv_op, get_matching_instancenorm
 
 from .phaser.unet import PhaserUNet, load_pretrained_weights
+from .phaser.segresnet import SegResNetWithFeatures
 from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss, contrast_consistency_loss
 from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
     compute_lesion_importance_map, lesion_weighted_loss, \
@@ -313,6 +314,15 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.num_epochs = int(os.environ.get('PHASER_NUM_EPOCHS', '200'))
         self.initial_lr = 5e-3
         self.weight_decay = 3e-5
+        # Architecture-transfer experiment (plan §11): MONAI SegResNet with the
+        # TriALS optimiser settings (Adam, lr 1e-4, wd 1e-5, no deep supervision).
+        self.arch = os.environ.get('PHASER_ARCH', 'plainunet')
+        if self.arch not in ('plainunet', 'segresnet'):
+            raise ValueError(f"PHASER_ARCH must be 'plainunet' or 'segresnet', got {self.arch!r}")
+        if self.arch == 'segresnet':
+            self.enable_deep_supervision = False
+            self.initial_lr = 1e-4
+            self.weight_decay = 1e-5
         self.oversample_foreground_percent = float(os.environ.get('PHASER_OVERSAMPLE', '0.66'))
 
         # Best raw validation Dice for tumor label 2. This is tracked
@@ -344,6 +354,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Small-Tumor Head: {self.enable_small_head}\n"
             f"  LMC contrast gate: {self.enable_lmc} (shuffle={self.lmc_shuffle}, "
             f"liver head w={self.lmc_liver_weight}, spacing={list(self.configuration_manager.spacing)})\n"
+            f"  Architecture: {self.arch} (deep supervision={self.enable_deep_supervision}, lr={self.initial_lr})\n"
             f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min}, "
             f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages})\n"
             f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
@@ -381,6 +392,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         conv_op = convert_dim_to_conv_op(dim)
 
         label_manager = plans_manager.get_label_manager(dataset_json)
+
+        if os.environ.get('PHASER_ARCH', 'plainunet') == 'segresnet':
+            # Trained from scratch (VoComni weights exist only for PlainConvUNet).
+            return SegResNetWithFeatures(num_input_channels, label_manager.num_segmentation_heads, dim)
 
         # Build standard nnUNet PlainConvUNet
         features_per_stage = [
@@ -547,6 +562,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
     # Optimizer with differential LR
     # ------------------------------------------------------------------
     def configure_optimizers(self):
+        if self.arch == 'segresnet':
+            from nnunetv2.training.lr_scheduler.polylr import PolyLRScheduler
+            optimizer = torch.optim.Adam(self.network.parameters(), lr=self.initial_lr,
+                                         weight_decay=self.weight_decay, eps=1e-5)
+            return optimizer, PolyLRScheduler(optimizer, self.initial_lr, self.num_epochs, exponent=0.9)
         phaser_params = []
         phaser_no_decay = []
         encoder_params = []
@@ -931,6 +951,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
     # Deep supervision toggle (required for nnUNet validation/inference)
     # ------------------------------------------------------------------
     def set_deep_supervision_enabled(self, enabled: bool):
+        net = self.network.module if self.is_ddp else self.network
+        if not hasattr(net, 'decoder'):      # SegResNet: no deep supervision
+            return
         if self.is_ddp:
             self.network.module.decoder.deep_supervision = enabled
         else:
