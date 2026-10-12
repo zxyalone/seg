@@ -1,0 +1,5 @@
+[2026-10-13 00:07:23] watcher stopped; shard1 restart with 2 workers; json so far 296
+removed unreadable json: []
+[2026-10-13 01:28:40] shard1 restart exit 0
+[2026-10-13 01:28:40] all shards done: 375 / 405 json
+FINISH_EXIT incomplete

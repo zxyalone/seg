@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/root/autodl-tmp/Downstream_2_test_protocol/experiments/analysis/missed_lesion_probability.py", line 417, in <module>
+    main()
+  File "/root/autodl-tmp/Downstream_2_test_protocol/experiments/analysis/missed_lesion_probability.py", line 406, in main
+    cmd_run(args)
+  File "/root/autodl-tmp/Downstream_2_test_protocol/experiments/analysis/missed_lesion_probability.py", line 188, in cmd_run
+    _drain(pending, wait_one=True)
+  File "/root/autodl-tmp/Downstream_2_test_protocol/experiments/analysis/missed_lesion_probability.py", line 243, in _drain
+    print(f"  written {f.result()}", flush=True)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+concurrent.futures.process.BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.

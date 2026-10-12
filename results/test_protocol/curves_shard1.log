@@ -1,0 +1,148 @@
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_003.json
+[1/9] LiTS_003: 1 lesions, 15 models submitted, 789s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_003.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_011.json
+[2/9] LiTS_011: 5 lesions, 15 models submitted, 735s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_011.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_028.json
+[3/9] LiTS_028: 7 lesions, 15 models submitted, 316s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_028.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_050.json
+[4/9] LiTS_050: 1 lesions, 15 models submitted, 616s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_050.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_072.json
+[5/9] LiTS_072: 4 lesions, 15 models submitted, 239s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_072.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_092.json
+[1/9] LiTS_003: done, skipped
+[2/9] LiTS_011: done, skipped
+[3/9] LiTS_028: done, skipped
+[4/9] LiTS_050: done, skipped
+[5/9] LiTS_072: done, skipped
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_092.json
+[6/9] LiTS_092: 9 lesions, 10 models submitted, 1057s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_092.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_106.json
+[7/9] LiTS_106: 0 lesions, 15 models submitted, 1309s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_106.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_115.json
+[8/9] LiTS_115: 0 lesions, 15 models submitted, 1395s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_115.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s1/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s2/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s0/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s1/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A11_s2/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s0/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s1/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13a_s2/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s0/LiTS_122.json
+[9/9] LiTS_122: 17 lesions, 15 models submitted, 992s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s1/LiTS_122.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A13b_s2/LiTS_122.json
+all exports written

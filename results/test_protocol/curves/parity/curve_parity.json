@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "runs": [
+    "A0_s0",
+    "A0_s1",
+    "A0_s2",
+    "A1_s0",
+    "A1_s1",
+    "A1_s2",
+    "A11_s0",
+    "A11_s1",
+    "A11_s2",
+    "A13a_s0",
+    "A13a_s1",
+    "A13a_s2",
+    "A13b_s0",
+    "A13b_s1",
+    "A13b_s2"
+  ],
+  "n_cases": 27,
+  "criteria": [
+    "unfiltered detections == eval_val",
+    "after 4 mm: FP per case and detections == saved masks",
+    "|unfiltered FP - eval_val| <= 1 per case"
+  ],
+  "raw_fp_differences": []
+}

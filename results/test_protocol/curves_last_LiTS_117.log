@@ -1,0 +1,6 @@
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s1/LiTS_117.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s0/LiTS_117.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A0_s2/LiTS_117.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/test_protocol/curves/cases/A1_s0/LiTS_117.json
+/root/autodl-tmp/envs/mamba/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 5 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

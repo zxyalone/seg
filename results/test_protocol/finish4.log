@@ -1,0 +1,6 @@
+removed unreadable json: []
+[2026-10-13 02:10:42] last exports done: 405 / 405 json
+[2026-10-13 02:10:44] summarize exit 0
+[2026-10-13 02:10:44] test protocol start, HEAD 9ce222f, frozen c2b8caeb43fc8a0b71b2e9b159c4f8d83d3e6efc, step 5
+[2026-10-13 02:15:54] test protocol complete
+FINISH_EXIT 0
