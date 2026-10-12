@@ -270,6 +270,12 @@ def snapshot():
         names += [name_for(e) for e in state.get('stage6_queue', [])]
         pilots, pilot_jobs = pilot_info(now)
         replication, replication_jobs = replication_info(now)
+        a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
+        if a13_curves:
+            a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
+            a13_curves['age_seconds'] = round(now-(REPLICATION/'probability_curves_A13/state.json').stat().st_mtime)
+            for job in a13_curves.get('jobs', {}).values():
+                job['process_alive'] = process_alive(job.get('pid'))
         jobs = dict(state.get('jobs', {}))
         jobs.update(pilot_jobs)
         jobs.update(replication_jobs)
@@ -347,6 +353,7 @@ def snapshot():
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
             'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
+            'a13_curves': a13_curves,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -390,6 +397,10 @@ class Handler(BaseHTTPRequestHandler):
                     path = REPLICATION / 'post4mm.log'
                 elif name in ('curves_shard0', 'curves_shard1', 'curves_shard2'):
                     path = REPLICATION / f'{name}.log'
+                elif name == 'a13_curve_controller':
+                    path = REPLICATION/'probability_curves_A13/controller.log'
+                elif name in ('curves_A13_shard0', 'curves_A13_shard1', 'curves_A13_shard2'):
+                    path = REPLICATION/'probability_curves_A13'/f'{name}.log'
                 elif name == 'audit':
                     path = HERE / 'stage4_nonfinite_audit.log'
                 elif name in ANALYSIS_LOGS:
