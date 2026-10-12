@@ -1,0 +1,39 @@
+{
+  "runs": [
+    {
+      "run": "A13b_s0",
+      "epochs": 200,
+      "mean_epoch_seconds": 93.19355,
+      "median_epoch_seconds": 93.305,
+      "min_epoch_seconds": 78.28,
+      "max_epoch_seconds": 104.35,
+      "nonfinite_gradient_skips": 18,
+      "nonfinite_loss_skips": 0,
+      "per_epoch_consistency_loss_recorded": false
+    },
+    {
+      "run": "A13b_s1",
+      "epochs": 200,
+      "mean_epoch_seconds": 93.37055,
+      "median_epoch_seconds": 93.87,
+      "min_epoch_seconds": 80.14,
+      "max_epoch_seconds": 103.74,
+      "nonfinite_gradient_skips": 17,
+      "nonfinite_loss_skips": 0,
+      "per_epoch_consistency_loss_recorded": false
+    },
+    {
+      "run": "A13b_s2",
+      "epochs": 200,
+      "mean_epoch_seconds": 93.1705,
+      "median_epoch_seconds": 93.545,
+      "min_epoch_seconds": 78.84,
+      "max_epoch_seconds": 103.65,
+      "nonfinite_gradient_skips": 18,
+      "nonfinite_loss_skips": 0,
+      "per_epoch_consistency_loss_recorded": false
+    }
+  ],
+  "scope": "Audit of original saved training logs. Total loss includes auxiliary terms; historical consistency-loss components were not recorded and cannot be reconstructed from total loss.",
+  "validation_only": true
+}
