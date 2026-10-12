@@ -1,0 +1,31 @@
+{
+  "verified_at": "2026-10-12T12:57:06+08:00",
+  "scope": "Completed training and raw validation archives only; fixed-4-mm replication and threshold curves are still running and are not claimed complete.",
+  "source_commit": "1e75c124933cf5f200ebc27f9db571a301abc077",
+  "pretrained_path": "/root/autodl-tmp/Downstream_2/VoComni_nnunet.pt",
+  "pretrained_sha256": "0d921e0fd153028042531d9967cd6d6f8b80970345b914208965a3b6e0c0caea",
+  "runs": [
+    "A13b_s0",
+    "A13a_s0",
+    "A11_s1",
+    "A13b_s1",
+    "A13a_s1",
+    "A11_s2",
+    "A13b_s2",
+    "A13a_s2"
+  ],
+  "checks": {
+    "runs_completed_with_exit_0": 8,
+    "epochs_per_run": 200,
+    "iterations_per_epoch": 250,
+    "fold": 0,
+    "validation_cases_per_run": 21,
+    "gt_lesions_per_run": 92,
+    "low_cnr_lesions_per_run": 39,
+    "all_validation_case_ids_match_frozen_list": true,
+    "manifest_source_matches_committed_source_without_dirty_suffix": true,
+    "archived_eval_val_matches_server_bytes": true,
+    "archive_copies_sha256_verified": true
+  },
+  "test_set_inference_performed": false
+}
