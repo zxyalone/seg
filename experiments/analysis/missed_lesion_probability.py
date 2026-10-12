@@ -122,6 +122,26 @@ def analyse_case(p_tumor: np.ndarray, p_liver: np.ndarray, seg_argmax: np.ndarra
 # 推理
 # ---------------------------------------------------------------------------
 
+def _export_and_analyse(logits, plans_manager, configuration_manager, label_manager, props_pp,
+                        gt, spacing_zyx, cnr, meta, out_file):
+    """CPU half of one model x case: identical calls to the serial path, so the
+    result does not depend on --workers."""
+    from nnunetv2.inference.export_prediction import \
+        convert_predicted_logits_to_segmentation_with_correct_shape
+    import common as C
+    seg, probs = convert_predicted_logits_to_segmentation_with_correct_shape(
+        logits, plans_manager, configuration_manager, label_manager, props_pp, return_probabilities=True)
+    export_dtype = str(logits.dtype)
+    del logits
+    if seg.shape != gt.shape:
+        raise RuntimeError(f"{meta['case']}: prediction {seg.shape} vs reference {gt.shape}")
+    res = analyse_case(probs[2].astype(np.float32), probs[1].astype(np.float32), seg, gt, spacing_zyx, cnr)
+    del probs
+    res.update(**meta, export_logits_dtype=export_dtype, export_dtype_policy='native_validation')
+    C.write_json(res, out_file)
+    return str(out_file)
+
+
 def cmd_run(args):
     import torch
     import common as C
@@ -133,6 +153,11 @@ def cmd_run(args):
     models = [C.load_model(g, s, device, args.results_root) for g, s in C.parse_runs(args.runs)]
     ref = models[0].predictor
     cases = C.shard(C.read_cases(args.cases_file, image_dir), args.shard)
+    pool, pending = None, []
+    if args.workers > 0:
+        import multiprocessing as mp
+        from concurrent.futures import ProcessPoolExecutor
+        pool = ProcessPoolExecutor(max_workers=args.workers, mp_context=mp.get_context("spawn"))
     for ci, case in enumerate(cases):
         todo = [m for m in models if not (out / "cases" / m.name / f"{case}.json").is_file()]
         if not todo:
@@ -148,6 +173,23 @@ def cmd_run(args):
             cnr = E.raw_lesion_cnr(gt_lab, n_gt, gt_img, E.sitk.ReadImage(str(ip)))
         raw, props, _ = C.read_raw(ref, case, image_dir, None)
         data, _, props_pp = C.preprocess(ref, raw, props)
+        if pool is not None:
+            # GPU inference stays here; resampling, softmax/argmax and the
+            # threshold analysis (CPU-bound) run in worker processes. At most
+            # `workers` exports are in flight to bound memory.
+            for m in todo:
+                while len(pending) >= args.workers:
+                    _drain(pending, wait_one=True)
+                logits = C.predict_logits(m, data, preserve_dtype=True)
+                meta = dict(case=case, run=m.name, group=m.group, seed=m.seed)
+                pending.append(pool.submit(_export_and_analyse, logits, m.predictor.plans_manager,
+                                           m.predictor.configuration_manager, m.predictor.label_manager,
+                                           props_pp, gt, spacing_zyx, cnr, meta,
+                                           out / "cases" / m.name / f"{case}.json"))
+                del logits
+            print(f"[{ci + 1}/{len(cases)}] {case}: {n_gt} lesions, {len(todo)} models submitted, "
+                  f"{time.time() - t0:.0f}s", flush=True)
+            continue
         for m in todo:
             logits = C.predict_logits(m, data, preserve_dtype=True)
             seg, probs = convert_predicted_logits_to_segmentation_with_correct_shape(
@@ -164,6 +206,23 @@ def cmd_run(args):
             C.write_json(res, out / "cases" / m.name / f"{case}.json")
         print(f"[{ci + 1}/{len(cases)}] {case}: {n_gt} lesions, {len(todo)} models, {time.time() - t0:.0f}s",
               flush=True)
+    if pool is not None:
+        while pending:
+            _drain(pending, wait_one=True)
+        pool.shutdown()
+        print("all exports written", flush=True)
+
+
+def _drain(pending, wait_one=False):
+    """Collect finished exports; re-raise the first worker error."""
+    from concurrent.futures import FIRST_COMPLETED, wait
+    if not pending:
+        return
+    done, _ = wait(pending, return_when=FIRST_COMPLETED) if wait_one else (
+        [f for f in pending if f.done()], None)
+    for f in done:
+        pending.remove(f)
+        print(f"  written {f.result()}", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -310,6 +369,8 @@ def main():
     run.add_argument("--cases-file", default=str(HERE.parent / "eval" / "val_cases.txt"))
     run.add_argument("--shard", default=None, help="i/n: this process handles cases i, i+n, ...")
     run.add_argument("--device", default=None)
+    run.add_argument("--workers", type=int, default=0,
+                     help="CPU processes for export + analysis (0 = serial, as before)")
     summ = sub.choices["summarize"]
     summ.add_argument("--results-dir", default=str(HERE.parents[1] / "results"),
                       help="where <run>/eval_val/{lesions,cases}.csv live (for the consistency check)")
