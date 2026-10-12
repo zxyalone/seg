@@ -29,3 +29,5 @@ A13a/A13b 与 A11 的多 seed 复现独立读取 `_lowcnr_replication/state.json
 原 dtype 重跑读取 `_analysis/curves_native`，展示 A0/A1/A11/A13a/A13b 各 3 seed、共 315 个病例-运行结果和三张卡的当前进程。只计入可解析且病例/运行身份匹配的 JSON；固定 4 mm 判定继续读取官方复现结果。新曲线的推理、汇总和 `curve_parity.json` 核验分别展示，旧失败记录保留为历史。核验规则按 129c569：原始检出一致、4 mm 后检出与 FP 完全一致、每例原始 FP 差异最多 1 并报告；旧于当前逐例结果的核验文件不标记为通过。
 
 冻结测试面板读取独立 `Downstream_2_test_protocol` 工作树的冻结版本、27 例清单与 `_analysis/test_protocol` 日志。展示 16 个模型的 432 个分割、15 个模型的 405 个逐例曲线，以及 4 mm 指标、曲线汇总、核验和冻结统计各阶段。GPU 任务来自实际进程，启动时的 6–9 小时估算明确区别于实时剩余时间；推理齐备不会标记整个协议完成。面板只读，不修改冻结执行工作树。
+
+SegResNet 架构迁移面板读取 `_segresnet_transfer` 日志与实际 run.sh 进程，展示 S0/S13b 各两个 seed 的当前轮次、已完成轮次、近期耗时、验证状态、GPU 和排队任务。两轮冒烟及 S0_s1 的历史 OOM 尝试独立标记。八个参考基线读取 `_analysis/reference_baselines/run.log`，以去重的病例完成记录显示 216 个固定 4 mm 评测，并单独检查汇总表。新训练 loss 加入现有曲线选择器，不修改训练配置或任务调度。
