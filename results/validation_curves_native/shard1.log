@@ -1,0 +1,77 @@
+[1/7] LiTS_009: 6 lesions, 15 models, 2600s
+[2/7] LiTS_034: 0 lesions, 15 models, 621s
+[3/7] LiTS_042: 2 lesions, 15 models, 572s
+EXIT 0
+[1/7] LiTS_009: done, skipped
+[2/7] LiTS_034: done, skipped
+[3/7] LiTS_042: done, skipped
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_061.json
+[4/7] LiTS_061: 2 lesions, 10 models submitted, 270s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_061.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_076.json
+[5/7] LiTS_076: 10 lesions, 15 models submitted, 333s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_076.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_102.json
+[6/7] LiTS_102: 1 lesions, 15 models submitted, 721s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_102.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_124.json
+[7/7] LiTS_124: 14 lesions, 15 models submitted, 531s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_124.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_124.json
+all exports written
+EXIT2 0
+[1/7] LiTS_009: done, skipped
+[2/7] LiTS_034: done, skipped
+[3/7] LiTS_042: done, skipped
+[4/7] LiTS_061: done, skipped
+[5/7] LiTS_076: done, skipped
+[6/7] LiTS_102: done, skipped
+[7/7] LiTS_124: done, skipped
+all exports written
+EXIT3 0

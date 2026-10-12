@@ -1,0 +1,82 @@
+[1/7] LiTS_006: 7 lesions, 15 models, 2440s
+[2/7] LiTS_024: 1 lesions, 15 models, 1260s
+EXIT 0
+[1/7] LiTS_006: done, skipped
+[2/7] LiTS_024: done, skipped
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_039.json
+[3/7] LiTS_039: 1 lesions, 9 models submitted, 275s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_039.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_056.json
+[4/7] LiTS_056: 2 lesions, 15 models submitted, 410s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_056.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_056.json
+Traceback (most recent call last):
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 396, in <module>
+    main()
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 385, in main
+    cmd_run(args)
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 183, in cmd_run
+    logits = C.predict_logits(m, data, preserve_dtype=True)
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/common.py", line 160, in predict_logits
+    logits = pred.predict_sliding_window_return_logits(torch.from_numpy(data))
+  File "/root/autodl-tmp/Downstream_2_curves_native/nnUNet/nnunetv2/inference/predict_from_raw_data.py", line 631, in predict_sliding_window_return_logits
+    if torch.any(torch.isinf(predicted_logits)):
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.06 GiB. GPU 0 has a total capacty of 11.63 GiB of which 935.50 MiB is free. Including non-PyTorch memory, this process has 10.71 GiB memory in use. Of the allocated memory 8.96 GiB is allocated by PyTorch, and 1.45 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+EXIT2 1
+[1/7] LiTS_006: done, skipped
+[2/7] LiTS_024: done, skipped
+[3/7] LiTS_039: done, skipped
+[4/7] LiTS_056: done, skipped
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_073.json
+[5/7] LiTS_073: 1 lesions, 15 models submitted, 413s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_073.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_094.json
+[6/7] LiTS_094: 14 lesions, 15 models submitted, 1098s
+[7/7] LiTS_120: done, skipped
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_094.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_094.json
+all exports written
+EXIT3 0

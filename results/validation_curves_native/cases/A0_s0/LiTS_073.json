@@ -1,0 +1,141 @@
+{
+  "n_gt": 1,
+  "has_tumor": true,
+  "lesions": [
+    {
+      "lesion": 1,
+      "voxels": 592,
+      "diameter_mm": 15.994365838889108,
+      "size_stratum": "10-20",
+      "cnr": 0.974570769798774,
+      "cnr_stratum": "low",
+      "p_max": 0.6669566035270691,
+      "p_q90": 0.0008824480348266655,
+      "p_mean": 0.008453801274299622,
+      "pl_mean": 0.9462234973907471,
+      "frac_tumor": 0.006756756756756757,
+      "frac_liver": 0.9915540540540541,
+      "frac_bg": 0.0016891891891891893,
+      "det@argmax": false,
+      "det_pp@argmax": false,
+      "det@0.5": false,
+      "det_pp@0.5": false,
+      "det@0.4": false,
+      "det_pp@0.4": false,
+      "det@0.3": false,
+      "det_pp@0.3": false,
+      "det@0.2": false,
+      "det_pp@0.2": false,
+      "det@0.1": false,
+      "det_pp@0.1": false,
+      "det@0.05": false,
+      "det_pp@0.05": false
+    }
+  ],
+  "rules": {
+    "argmax": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 4,
+      "fp_vox": 10,
+      "fn_vox": 588
+    },
+    "argmax_pp": {
+      "fp": 1,
+      "n_pred": 1,
+      "tp_vox": 0,
+      "fp_vox": 10,
+      "fn_vox": 592
+    },
+    "0.5": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 4,
+      "fp_vox": 10,
+      "fn_vox": 588
+    },
+    "0.5_pp": {
+      "fp": 1,
+      "n_pred": 1,
+      "tp_vox": 0,
+      "fp_vox": 10,
+      "fn_vox": 592
+    },
+    "0.4": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 5,
+      "fp_vox": 10,
+      "fn_vox": 587
+    },
+    "0.4_pp": {
+      "fp": 1,
+      "n_pred": 1,
+      "tp_vox": 0,
+      "fp_vox": 10,
+      "fn_vox": 592
+    },
+    "0.3": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 7,
+      "fp_vox": 12,
+      "fn_vox": 585
+    },
+    "0.3_pp": {
+      "fp": 1,
+      "n_pred": 1,
+      "tp_vox": 0,
+      "fp_vox": 12,
+      "fn_vox": 592
+    },
+    "0.2": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 8,
+      "fp_vox": 16,
+      "fn_vox": 584
+    },
+    "0.2_pp": {
+      "fp": 1,
+      "n_pred": 1,
+      "tp_vox": 0,
+      "fp_vox": 16,
+      "fn_vox": 592
+    },
+    "0.1": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 10,
+      "fp_vox": 17,
+      "fn_vox": 582
+    },
+    "0.1_pp": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 10,
+      "fp_vox": 17,
+      "fn_vox": 582
+    },
+    "0.05": {
+      "fp": 3,
+      "n_pred": 3,
+      "tp_vox": 16,
+      "fp_vox": 19,
+      "fn_vox": 576
+    },
+    "0.05_pp": {
+      "fp": 2,
+      "n_pred": 2,
+      "tp_vox": 14,
+      "fp_vox": 19,
+      "fn_vox": 578
+    }
+  },
+  "case": "LiTS_073",
+  "run": "A0_s0",
+  "group": "A0",
+  "seed": 0,
+  "export_logits_dtype": "torch.float16",
+  "export_dtype_policy": "native_validation"
+}

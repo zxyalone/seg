@@ -1,0 +1,66 @@
+[1/7] LiTS_017: 5 lesions, 15 models, 3530s
+[2/7] LiTS_038: 0 lesions, 15 models, 517s
+EXIT 0
+[1/7] LiTS_017: done, skipped
+[2/7] LiTS_038: done, skipped
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_053.json
+[3/7] LiTS_053: 2 lesions, 12 models submitted, 268s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_053.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s0/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s1/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A0_s2/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s0/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s1/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A1_s2/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s0/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s1/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A11_s2/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s0/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s1/LiTS_067.json
+[4/7] LiTS_067: 1 lesions, 15 models submitted, 333s
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s0/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s2/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13b_s1/LiTS_067.json
+  written /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/curves_native/cases/A13a_s2/LiTS_067.json
+Traceback (most recent call last):
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 396, in <module>
+    main()
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 385, in main
+    cmd_run(args)
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 183, in cmd_run
+    logits = C.predict_logits(m, data, preserve_dtype=True)
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/common.py", line 160, in predict_logits
+    logits = pred.predict_sliding_window_return_logits(torch.from_numpy(data))
+  File "/root/autodl-tmp/Downstream_2_curves_native/nnUNet/nnunetv2/inference/predict_from_raw_data.py", line 631, in predict_sliding_window_return_logits
+    if torch.any(torch.isinf(predicted_logits)):
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 454.00 MiB. GPU 0 has a total capacty of 11.63 GiB of which 261.50 MiB is free. Including non-PyTorch memory, this process has 11.37 GiB memory in use. Of the allocated memory 9.50 GiB is allocated by PyTorch, and 1.57 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+EXIT2 1
+[1/7] LiTS_017: done, skipped
+[2/7] LiTS_038: done, skipped
+[3/7] LiTS_053: done, skipped
+[4/7] LiTS_067: done, skipped
+Traceback (most recent call last):
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 416, in <module>
+    main()
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 405, in main
+    cmd_run(args)
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 188, in cmd_run
+    _drain(pending, wait_one=True)
+  File "/root/autodl-tmp/Downstream_2_curves_native/experiments/analysis/missed_lesion_probability.py", line 243, in _drain
+    print(f"  written {f.result()}", flush=True)
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/root/autodl-tmp/envs/mamba/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+concurrent.futures.process.BrokenProcessPool: A process in the process pool was terminated abruptly while the future was running or pending.
+EXIT3 1

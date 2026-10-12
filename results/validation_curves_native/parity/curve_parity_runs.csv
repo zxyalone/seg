@@ -1,0 +1,16 @@
+run,cases,raw_det,pp_det,pp_fp_abs_diff,raw_fp_abs_diff,raw_fp_max_case,dtypes,passed
+A0_s0,21,True,True,1,0,0,torch.float16,False
+A0_s1,21,True,True,0,0,0,torch.float16,True
+A0_s2,21,True,True,0,0,0,torch.float16,True
+A11_s0,21,True,True,0,1,1,torch.float16,True
+A11_s1,21,True,True,0,1,1,torch.float16,True
+A11_s2,21,True,True,0,0,0,torch.float16,True
+A13a_s0,21,True,True,0,0,0,torch.float16,True
+A13a_s1,21,True,True,0,0,0,torch.float16,True
+A13a_s2,21,True,True,0,0,0,torch.float16,True
+A13b_s0,21,True,True,0,0,0,torch.float16,True
+A13b_s1,21,True,True,0,0,0,torch.float16,True
+A13b_s2,21,True,True,0,0,0,torch.float16,True
+A1_s0,21,True,True,0,0,0,torch.float16,True
+A1_s1,21,True,True,1,0,0,torch.float16,False
+A1_s2,21,True,True,0,0,0,torch.float16,True

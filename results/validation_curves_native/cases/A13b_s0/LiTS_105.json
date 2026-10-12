@@ -1,0 +1,111 @@
+{
+  "n_gt": 0,
+  "has_tumor": false,
+  "lesions": [],
+  "rules": {
+    "argmax": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "argmax_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.5": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.5_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.4": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.4_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.3": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.3_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.2": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.2_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.1": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.1_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.05": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    },
+    "0.05_pp": {
+      "fp": 0,
+      "n_pred": 0,
+      "tp_vox": 0,
+      "fp_vox": 0,
+      "fn_vox": 0
+    }
+  },
+  "case": "LiTS_105",
+  "run": "A13b_s0",
+  "group": "A13b",
+  "seed": 0,
+  "export_logits_dtype": "torch.float16",
+  "export_dtype_policy": "native_validation"
+}
