@@ -21,6 +21,8 @@ PILOT = ROOT / '_pilot_lowcnr'
 PILOT_RUNS = ('A9_s0', 'A11_s0', 'A12_s0')
 REPLICATION = ROOT / '_lowcnr_replication'
 REPLICATION_RUNS = tuple(f'{g}_s{s}' for g, seeds in [('A13b', range(3)), ('A13a', range(3)), ('A11', (1, 2))] for s in seeds)
+NATIVE_CURVES = ROOT / '_analysis/curves_native'
+NATIVE_GROUPS = ('A0', 'A1', 'A11', 'A13a', 'A13b')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
 CST = timezone(timedelta(hours=8))
@@ -94,6 +96,66 @@ def replication_info(now):
     for job in state.get('analysis_jobs', {}).values():
         job['process_alive'] = process_alive(job.get('pid'))
     return state, jobs
+
+
+def native_curves_info(now):
+    if not NATIVE_CURVES.exists():
+        return None
+    cases = set((REPO/'experiments/eval/val_cases.txt').read_text().split())
+    counts, runs, dtypes, updated = {}, [], set(), 0
+    for group in NATIVE_GROUPS:
+        counts[group] = 0
+        for seed in range(3):
+            run = f'{group}_s{seed}'; done = 0
+            for case in cases:
+                path = NATIVE_CURVES/'cases'/run/f'{case}.json'
+                data = read_json(path)
+                if data and data.get('case') == case and data.get('run') == run:
+                    done += 1; updated = max(updated, path.stat().st_mtime)
+                    dtypes.add(data.get('export_logits_dtype', 'unrecorded'))
+            counts[group] += done
+            runs.append({'run': run, 'group': group, 'seed': seed, 'completed_cases': done, 'total_cases': len(cases)})
+    jobs = {}
+    for directory in Path('/proc').iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            argv = (directory/'cmdline').read_bytes().decode().split('\0')
+            if '--out' not in argv or argv[argv.index('--out')+1] != str(NATIVE_CURVES) or 'run' not in argv:
+                continue
+            if not any(Path(a).name == 'missed_lesion_probability.py' for a in argv):
+                continue
+            shard = argv[argv.index('--shard')+1]
+            gpu = int(shard.split('/')[0]); pid = int(directory.name)
+            if process_alive(pid):
+                jobs[f'native_curves_shard{gpu}'] = {'pid': pid, 'gpu': gpu, 'shard': shard, 'status': 'running', 'process_alive': True}
+        except (OSError, ValueError, IndexError, UnicodeError):
+            continue
+    completed = sum(counts.values()); total = len(cases)*len(runs)
+    parity_path = next(iter(NATIVE_CURVES.rglob('curve_parity.json')), None)
+    parity = read_json(parity_path, {}) if parity_path else {}
+    expected_runs = {r['run'] for r in runs}
+    parity_current = bool(parity_path and parity_path.stat().st_mtime >= updated and
+                          set(parity.get('runs', [])) == expected_runs and parity.get('n_cases') == len(cases))
+    if not parity_current:
+        parity = {}
+    summary_file = NATIVE_CURVES/'threshold_sweep_per_run.csv'
+    summary_ready = summary_file.is_file() and summary_file.stat().st_mtime >= updated
+    phase = ('running' if jobs else 'inference_complete' if completed == total else 'incomplete')
+    if completed == total and summary_ready and parity:
+        phase = 'complete' if parity.get('passed') else 'parity_failed'
+    errors = []
+    if not jobs and completed < total:
+        for gpu in range(3):
+            text = tail(NATIVE_CURVES/f'shard{gpu}.log')
+            if 'Traceback (most recent call last)' in text:
+                errors.append(f'分片 {gpu} 出现异常，请查看日志')
+    return {'phase': phase, 'directory': str(NATIVE_CURVES), 'completed': completed, 'total': total,
+            'groups': counts, 'runs': runs, 'jobs': jobs, 'dtypes': sorted(dtypes),
+            'last_case_updated_at': datetime.fromtimestamp(updated, CST).isoformat() if updated else None,
+            'summary_ready': summary_ready, 'parity': parity, 'errors': errors,
+            'scope': '15 runs × 21 validation cases; no test-set inference',
+            'parity_rule': 'raw detections identical; after 4 mm detections and FP identical; raw FP difference <=1 per case, explicitly reported'}
 
 
 def pilot_info(now):
@@ -270,6 +332,7 @@ def snapshot():
         names += [name_for(e) for e in state.get('stage6_queue', [])]
         pilots, pilot_jobs = pilot_info(now)
         replication, replication_jobs = replication_info(now)
+        native_curves = native_curves_info(now)
         a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
         if a13_curves:
             a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
@@ -348,12 +411,23 @@ def snapshot():
                         duration += max(0,200-row['completed_epochs'])*rate+900
                 lanes.append(duration)
             eta['replication_seconds'] = round(max(lanes, default=0))
+        if native_curves:
+            stages.append({'id': 'N', 'title': '原 dtype 验证集阈值曲线',
+                           'status': 'complete' if native_curves['phase']=='complete' else 'failed' if native_curves['phase']=='parity_failed' else 'running' if native_curves['jobs'] else 'analysis_pending',
+                           'detail': f"{native_curves['completed']} / {native_curves['total']} 病例-运行结果；原 dtype 导出，固定 4 mm 后核验",
+                           'source': '当前三卡进程、逐例 JSON、curve_parity.json',
+                           'progress': round(native_curves['completed']/native_curves['total']*100,1) if native_curves['total'] else 0})
+            for stage in stages:
+                if stage['id']=='R' and replication.get('phase')=='failed':
+                    stage.update(status='complete' if native_curves['phase']=='complete' else 'analysis_pending',
+                                 detail='8 / 8 训练与验证已完成，4 mm 判定已生成；旧曲线核验失败记录保留；'+('新曲线核验已通过' if native_curves['phase']=='complete' else '新曲线重新导出 / 待核验'))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
             'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'a13_curves': a13_curves,
+            'native_curves': native_curves,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -401,6 +475,8 @@ class Handler(BaseHTTPRequestHandler):
                     path = REPLICATION/'probability_curves_A13/controller.log'
                 elif name in ('curves_A13_shard0', 'curves_A13_shard1', 'curves_A13_shard2'):
                     path = REPLICATION/'probability_curves_A13'/f'{name}.log'
+                elif name in ('native_curves_shard0', 'native_curves_shard1', 'native_curves_shard2'):
+                    path = NATIVE_CURVES/f'shard{name[-1]}.log'
                 elif name == 'audit':
                     path = HERE / 'stage4_nonfinite_audit.log'
                 elif name in ANALYSIS_LOGS:
