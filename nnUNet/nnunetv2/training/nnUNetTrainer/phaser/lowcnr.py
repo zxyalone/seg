@@ -171,10 +171,16 @@ def contrast_consistency_loss(student: list, teacher: list, region: torch.Tensor
         m = region.float()
         if m.shape[2:] != s_f.shape[2:]:
             m = F.adaptive_max_pool3d(m, s_f.shape[2:])
-        if m.sum() == 0:
+        sel = m[:, 0] > 0
+        if not bool(sel.any()):
             continue
-        cos = F.cosine_similarity(s_f.float(), t_f.detach().float(), dim=1, eps=1e-6)
-        losses.append(((1.0 - cos) * m[:, 0]).sum() / m.sum())
+        # Only voxels inside Omega enter the loss, so gather them before the
+        # float32 cosine (full-resolution float copies do not fit next to a
+        # SegResNet on 12 GB). Same value as the masked mean over all voxels.
+        s_v = s_f.movedim(1, -1)[sel].float()
+        t_v = t_f.detach().movedim(1, -1)[sel].float()
+        cos = F.cosine_similarity(s_v, t_v, dim=-1, eps=1e-6)
+        losses.append((1.0 - cos).mean())
     if not losses:
         return student[0].new_tensor(0.0, dtype=torch.float32)
     return torch.stack(losses).mean()
