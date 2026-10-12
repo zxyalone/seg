@@ -151,6 +151,12 @@ def cmd_run(args):
     device = torch.device(args.device)
     image_dir, label_dir, out = Path(args.image_dir), Path(args.label_dir), Path(args.out)
     models = [C.load_model(g, s, device, args.results_root) for g, s in C.parse_runs(args.runs)]
+    if args.offload_models and device.type == "cuda":
+        # Keep one network on the GPU at a time (15 resident networks plus a
+        # large case exceed 12 GB). Weights are moved, not changed.
+        for m in models:
+            m.predictor.network.to("cpu")
+        torch.cuda.empty_cache()
     ref = models[0].predictor
     cases = C.shard(C.read_cases(args.cases_file, image_dir), args.shard)
     pool, pending = None, []
@@ -180,7 +186,7 @@ def cmd_run(args):
             for m in todo:
                 while len(pending) >= args.workers:
                     _drain(pending, wait_one=True)
-                logits = C.predict_logits(m, data, preserve_dtype=True)
+                logits = _predict(C, m, data, device, args.offload_models)
                 meta = dict(case=case, run=m.name, group=m.group, seed=m.seed)
                 pending.append(pool.submit(_export_and_analyse, logits, m.predictor.plans_manager,
                                            m.predictor.configuration_manager, m.predictor.label_manager,
@@ -191,7 +197,7 @@ def cmd_run(args):
                   f"{time.time() - t0:.0f}s", flush=True)
             continue
         for m in todo:
-            logits = C.predict_logits(m, data, preserve_dtype=True)
+            logits = _predict(C, m, data, device, args.offload_models)
             seg, probs = convert_predicted_logits_to_segmentation_with_correct_shape(
                 logits, m.predictor.plans_manager, m.predictor.configuration_manager,
                 m.predictor.label_manager, props_pp, return_probabilities=True)
@@ -211,6 +217,18 @@ def cmd_run(args):
             _drain(pending, wait_one=True)
         pool.shutdown()
         print("all exports written", flush=True)
+
+
+def _predict(C, m, data, device, offload):
+    import torch
+    if offload and device.type == "cuda":
+        m.predictor.network.to(device)
+    try:
+        return C.predict_logits(m, data, preserve_dtype=True)
+    finally:
+        if offload and device.type == "cuda":
+            m.predictor.network.to("cpu")
+            torch.cuda.empty_cache()
 
 
 def _drain(pending, wait_one=False):
@@ -369,6 +387,8 @@ def main():
     run.add_argument("--cases-file", default=str(HERE.parent / "eval" / "val_cases.txt"))
     run.add_argument("--shard", default=None, help="i/n: this process handles cases i, i+n, ...")
     run.add_argument("--device", default=None)
+    run.add_argument("--offload-models", action="store_true",
+                     help="keep only the network in use on the GPU")
     run.add_argument("--workers", type=int, default=0,
                      help="CPU processes for export + analysis (0 = serial, as before)")
     summ = sub.choices["summarize"]
