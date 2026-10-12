@@ -1,0 +1,48 @@
+{
+  "split": "val",
+  "method": "A13b",
+  "n_cases": 21,
+  "n_low_cnr_lesions": 39,
+  "n_cases_with_low_cnr": 16,
+  "bootstrap": {
+    "n": 10000,
+    "seed": 20261012,
+    "valid": 10000
+  },
+  "primary_endpoint_pct": {
+    "A0": 63.24786324786324,
+    "A1": 65.8119658119658,
+    "A11": 75.21367521367522,
+    "A13a": 76.92307692307692,
+    "A13b": 73.50427350427351
+  },
+  "comparisons": [
+    {
+      "comparison": "A13b vs A1",
+      "role": "primary",
+      "diff_pp": 7.692307692307708,
+      "ci95_low": 0.0,
+      "ci95_high": 14.529914529914533,
+      "p_bootstrap": 0.2412,
+      "p_holm": 0.4824,
+      "significant": false,
+      "wording": "未观察到显著差异"
+    },
+    {
+      "comparison": "A13b vs A0",
+      "role": "secondary",
+      "diff_pp": 10.25641025641027,
+      "ci95_low": -1.962269756387406,
+      "ci95_high": 19.54022988505747,
+      "p_bootstrap": 0.2672,
+      "p_holm": 0.4824,
+      "significant": false,
+      "wording": "未观察到显著差异"
+    }
+  ],
+  "loo_top": {
+    "case": "LiTS_094",
+    "contribution_pp": 6.41025641025643,
+    "diff_without_pp": 1.2820512820512775
+  }
+}
