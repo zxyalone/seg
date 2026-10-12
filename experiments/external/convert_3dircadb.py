@@ -21,6 +21,7 @@ Writes <out>/imagesTs/IRCADb_<ii>_0000.nii.gz (HU, int16),
 import argparse
 import json
 import re
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -30,14 +31,22 @@ import SimpleITK as sitk
 TUMOR = re.compile(r'^livertumor', re.I)
 
 
-def safe_extract(zip_path: Path, dest: Path):
+def safe_extract(zip_path: Path, dest: Path, keep=None):
+    """Extract members (optionally only those for which keep(name) is true)
+    after checking that none escapes dest."""
     dest = dest.resolve()
     with zipfile.ZipFile(zip_path) as z:
-        for info in z.infolist():
+        members = [m for m in z.infolist() if keep is None or keep(m.filename)]
+        for info in members:
             target = (dest / info.filename).resolve()
             if not str(target).startswith(str(dest)):
                 raise RuntimeError(f'unsafe member {info.filename} in {zip_path}')
-        z.extractall(dest)
+        z.extractall(dest, members=members)
+
+
+def mask_names(zip_path: Path):
+    with zipfile.ZipFile(zip_path) as z:
+        return sorted({n.split('/')[1] for n in z.namelist() if n.count('/') >= 2 and n.split('/')[1]})
 
 
 def slice_files(folder: Path):
@@ -63,17 +72,20 @@ def main():
     for i in range(1, 21):
         zp = zips / f'3Dircadb1.{i}.zip'
         case = f'IRCADb_{i:02d}'
+        if (out / 'labelsTs' / f'{case}.nii.gz').exists() and (out / 'imagesTs' / f'{case}_0000.nii.gz').exists():
+            print(f'{case}: already converted, re-reading manifest entry', flush=True)
         pdir = work / f'3Dircadb1.{i}'
-        if not pdir.exists():
-            safe_extract(zp, work)
-        for inner in ('PATIENT_DICOM', 'MASKS_DICOM'):
-            if not (pdir / inner).exists():
-                safe_extract(pdir / f'{inner}.zip', pdir)
+        # Only the CT and the liver / liver-tumor masks are extracted (the other
+        # ~20 structures would need ~0.5 GB per patient as uncompressed DICOM).
+        safe_extract(zp, work, keep=lambda n: n.endswith(('PATIENT_DICOM.zip', 'MASKS_DICOM.zip')))
+        safe_extract(pdir / 'PATIENT_DICOM.zip', pdir)
+        structures = mask_names(pdir / 'MASKS_DICOM.zip')
+        tumor_dirs = [s for s in structures if TUMOR.match(s)]
+        wanted = {'liver', *tumor_dirs}
+        safe_extract(pdir / 'MASKS_DICOM.zip', pdir, keep=lambda n: n.count('/') >= 1 and n.split('/')[1] in wanted)
         ct_files = slice_files(pdir / 'PATIENT_DICOM')
         ct = read_series(ct_files)
         names = [f.name for f in ct_files]
-        structures = sorted(d.name for d in (pdir / 'MASKS_DICOM').iterdir() if d.is_dir())
-        tumor_dirs = [s for s in structures if TUMOR.match(s)]
         size = ct.GetSize()
         lab = np.zeros(sitk.GetArrayFromImage(ct).shape, np.uint8)
 
@@ -99,6 +111,7 @@ def main():
                                                     and s not in tumor_dirs],
                               liver_voxels=int((lab > 0).sum()), tumor_voxels=int((lab == 2).sum()))
         cases.append(case)
+        shutil.rmtree(pdir)
         print(f'{case}: size {size}, spacing {manifest[case]["spacing"]}, tumor folders {len(tumor_dirs)}, '
               f'tumor voxels {manifest[case]["tumor_voxels"]}', flush=True)
     (out / 'cases.txt').write_text('\n'.join(cases) + '\n')
