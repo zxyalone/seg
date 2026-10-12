@@ -13,14 +13,19 @@ TRAINER = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 
 
 def metrics(run, args, cases):
+    """Fixed 4-mm metrics from saved masks. args.pred_subdir / args.eval_subdir
+    select validation (default: validation/, eval_val/) or test (test_pred/,
+    eval_test/) outputs of the same run."""
     folder = Path(args.results_root) / run / TRAINER
-    ref = pd.read_csv(folder / 'eval_val/lesions.csv').set_index(['case', 'lesion'])
-    refc = pd.read_csv(folder / 'eval_val/cases.csv').set_index('case')
+    pred_subdir = getattr(args, 'pred_subdir', 'validation')
+    eval_subdir = getattr(args, 'eval_subdir', 'eval_val')
+    ref = pd.read_csv(folder / eval_subdir / 'lesions.csv').set_index(['case', 'lesion'])
+    refc = pd.read_csv(folder / eval_subdir / 'cases.csv').set_index('case')
     assert set(refc.index) == set(cases)
     rows, lesions = [], []
     for case in cases:
         im, gt = E.read(Path(args.gt_dir) / f'{case}.nii.gz')
-        _, pred = E.read(folder / 'validation' / f'{case}.nii.gz')
+        _, pred = E.read(folder / pred_subdir / f'{case}.nii.gz')
         assert pred.shape == gt.shape
         gt_mask = gt == 2
         gl, ng = E.components(gt_mask, 26)
@@ -34,6 +39,7 @@ def metrics(run, args, cases):
             r = ref.loc[(case, i)]
             assert (raw[i] is not None) == bool(r['detected@0.1'])
             lesions.append(dict(run=run, case=case, lesion=i, cnr_stratum=r.cnr_stratum,
+                                size_stratum=r.size_stratum, diameter_mm=r.diameter_mm, cnr=r.cnr,
                                 detected=match[i] is not None))
         tp = int((pp & gt_mask).sum())
         fpvox = int(pp.sum()) - tp

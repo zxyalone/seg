@@ -306,11 +306,11 @@ def decide(L: pd.DataFrame, S: pd.DataFrame) -> dict:
     return out
 
 
-def consistency(L: pd.DataFrame, R: pd.DataFrame, results_dir: Path) -> pd.DataFrame:
-    """argmax 规则应复现训练结束时的 eval_val（逐病灶检出、逐病例 FP）。"""
+def consistency(L: pd.DataFrame, R: pd.DataFrame, results_dir: Path, eval_subdir: str = "eval_val") -> pd.DataFrame:
+    """argmax 规则应复现保存的评测（验证集 eval_val / 测试集 eval_test；逐病灶检出、逐病例 FP）。"""
     rows = []
     for run, Lr in L.groupby("run"):
-        ev = results_dir / run / "eval_val"
+        ev = results_dir / run / eval_subdir
         if not (ev / "lesions.csv").is_file():
             continue
         ref = pd.read_csv(ev / "lesions.csv").set_index(["case", "lesion"])["detected@0.1"]
@@ -330,7 +330,7 @@ def cmd_summarize(args):
     if L.empty:
         sys.exit(f"no results under {out / 'cases'}")
     n_cases = R.case.nunique()
-    chk = consistency(L, R, Path(args.results_dir))
+    chk = consistency(L, R, Path(args.results_dir), args.eval_subdir)
     S = sweep(L, R, n_cases)
     D = decide(L, S)
     L.to_csv(out / "lesions.csv", index=False)
@@ -393,7 +393,8 @@ def main():
                      help="CPU processes for export + analysis (0 = serial, as before)")
     summ = sub.choices["summarize"]
     summ.add_argument("--results-dir", default=str(HERE.parents[1] / "results"),
-                      help="where <run>/eval_val/{lesions,cases}.csv live (for the consistency check)")
+                      help="where <run>/<eval-subdir>/{lesions,cases}.csv live (for the consistency check)")
+    summ.add_argument("--eval-subdir", default="eval_val", help="eval_val (validation) or eval_test (test)")
     args = ap.parse_args()
     if args.cmd == "run":
         import torch

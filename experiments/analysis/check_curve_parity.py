@@ -29,8 +29,8 @@ from lowcnr_pilot_metrics import metrics
 def run_rows(run, args, cases):
     _, saved_c, saved_l = metrics(run, args, cases)       # saved masks, fixed 4-mm filter
     saved_c = saved_c.set_index('case'); saved_l = saved_l.set_index(['case', 'lesion'])
-    ev_c = pd.read_csv(Path(args.eval_root) / run / 'eval_val/cases.csv').set_index('case')
-    ev_l = pd.read_csv(Path(args.eval_root) / run / 'eval_val/lesions.csv').set_index(['case', 'lesion'])
+    ev_c = pd.read_csv(Path(args.eval_root) / run / args.eval_subdir / 'cases.csv').set_index('case')
+    ev_l = pd.read_csv(Path(args.eval_root) / run / args.eval_subdir / 'lesions.csv').set_index(['case', 'lesion'])
     rows = []
     for case in cases:
         d = json.loads((Path(args.curves) / run / f'{case}.json').read_text())
@@ -56,6 +56,8 @@ def main():
     p.add_argument('--eval-root', default=str(Path(__file__).resolve().parents[2] / 'results'))
     p.add_argument('--out', required=True)
     p.add_argument('--jobs', type=int, default=1, help='runs checked in parallel processes')
+    p.add_argument('--pred-subdir', default='validation', help='validation or test_pred')
+    p.add_argument('--eval-subdir', default='eval_val', help='eval_val or eval_test')
     args = p.parse_args()
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     cases = Path(args.cases_file).read_text().split()
