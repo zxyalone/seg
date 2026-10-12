@@ -34,4 +34,14 @@ loss.backward()
 g = net.net.convInit.conv.weight.grad
 print(f'CFC loss {loss.item():.4f}; first conv |grad| {g.abs().max().item():.2e}')
 assert loss.item() > 0 and g.abs().max() > 0
+# gradient checkpointing must not change the gradients
+torch.manual_seed(1)
+xa = torch.randn(1, 1, 48, 48, 48)
+grads = []
+for ckpt in (False, True):
+    net.zero_grad(); net.checkpointing = ckpt
+    net(xa).square().mean().backward()
+    grads.append(net.net.convInit.conv.weight.grad.clone())
+print(f'checkpointing grad max |diff| {(grads[0] - grads[1]).abs().max().item():.2e}')
+assert torch.allclose(grads[0], grads[1], atol=1e-6)
 print('全部通过')
