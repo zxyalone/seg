@@ -22,6 +22,9 @@ PILOT_RUNS = ('A9_s0', 'A11_s0', 'A12_s0')
 REPLICATION = ROOT / '_lowcnr_replication'
 REPLICATION_RUNS = tuple(f'{g}_s{s}' for g, seeds in [('A13b', range(3)), ('A13a', range(3)), ('A11', (1, 2))] for s in seeds)
 NATIVE_CURVES = ROOT / '_analysis/curves_native'
+TEST_OUT = ROOT / '_analysis/test_protocol'
+TEST_WORKTREE = REPO.parent / 'Downstream_2_test_protocol'
+TEST_RUNS = tuple(f'{g}_s{s}' for g in ('A0', 'A1', 'A11', 'A13a', 'A13b') for s in range(3)) + ('A12_s0',)
 NATIVE_GROUPS = ('A0', 'A1', 'A11', 'A13a', 'A13b')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
@@ -156,6 +159,72 @@ def native_curves_info(now):
             'summary_ready': summary_ready, 'parity': parity, 'errors': errors,
             'scope': '15 runs × 21 validation cases; no test-set inference',
             'parity_rule': 'raw detections identical; after 4 mm detections and FP identical; raw FP difference <=1 per case, explicitly reported'}
+
+
+def test_protocol_info(now):
+    if not (TEST_OUT/'runner.log').is_file():
+        return None
+    cases = (TEST_WORKTREE/'experiments/eval/test_cases.txt').read_text().split()
+    runner = tail(TEST_OUT/'runner.log')
+    frozen = (TEST_WORKTREE/'experiments/PROTOCOL_FROZEN').read_text().strip()
+    rows = []
+    for run in TEST_RUNS:
+        fold = ROOT/run/FOLD
+        predicted = sum((fold/'test_pred'/f'{case}.nii.gz').is_file() for case in cases)
+        summary = read_json(fold/'eval_test/summary.json', {})
+        evaluated = summary.get('All', {}).get('n_cases') == len(cases)
+        curves = sum(bool(read_json(TEST_OUT/'curves/cases'/run/f'{case}.json')) for case in cases) if run != 'A12_s0' else None
+        log = tail(TEST_OUT/f'predict_{run}.log')
+        current = re.findall(r'Predicting (LiTS_\d+)', log)
+        rows.append(dict(run=run, predicted=predicted, total=len(cases), evaluated=evaluated,
+                         curves=curves, current_case=current[-1] if current else None))
+    jobs = {}; alive = False
+    for directory in Path('/proc').iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            argv = (directory/'cmdline').read_bytes().decode().split('\0')
+            cwd = (directory/'cwd').resolve()
+            if cwd != TEST_WORKTREE or not process_alive(directory.name):
+                continue
+            if 'experiments/server_test_protocol.sh' in argv:
+                alive = True
+            if any(Path(a).name in ('nnUNetv2_predict', 'evaluate.py', 'missed_lesion_probability.py') for a in argv):
+                env = dict(x.split('=', 1) for x in (directory/'environ').read_bytes().decode().split('\0') if '=' in x)
+                gpu = env.get('CUDA_VISIBLE_DEVICES', '')
+                if not gpu.isdigit():
+                    continue
+                result_root = env.get('nnUNet_results', '')
+                run = Path(result_root).name
+                is_curve = any(Path(a).name == 'missed_lesion_probability.py' for a in argv)
+                jobs[f'test_gpu{gpu}'] = dict(gpu=int(gpu), pid=int(directory.name), process_alive=True,
+                    name=run if run in TEST_RUNS else f'测试曲线分片 {gpu}',
+                    phase='测试阈值曲线' if is_curve else '测试评测' if any(Path(a).name=='evaluate.py' for a in argv) else '测试滑窗推理')
+        except (OSError, ValueError, UnicodeError):
+            continue
+    predicted = sum(r['predicted'] for r in rows); evaluated = sum(r['evaluated'] for r in rows)
+    curves = sum(r['curves'] or 0 for r in rows)
+    metrics = read_json(TEST_OUT/'tables/metrics_manifest.json', {})
+    parity = read_json(TEST_OUT/'curves/parity/curve_parity.json', {})
+    stats = read_json(TEST_OUT/'stats/protocol_results.json', {})
+    summary_ready = (TEST_OUT/'curves/threshold_sweep_per_run.csv').is_file()
+    complete = 'test protocol complete' in runner
+    phase = ('已完成' if complete else '冻结统计' if (TEST_OUT/'stats.log').exists() else
+             '一致性核验' if (TEST_OUT/'parity.log').exists() else
+             '测试阈值曲线' if (TEST_OUT/'curves_summary.log').exists() or (TEST_OUT/'curves_shard0.log').exists() else
+             '固定 4 mm 指标' if (TEST_OUT/'metrics.log').exists() else '测试推理与评测')
+    errors = []
+    for log in TEST_OUT.glob('*.log'):
+        text = tail(log, 16000)
+        if 'Traceback (most recent call last)' in text:
+            errors.append(log.name+' 出现异常，请查看日志')
+    if not alive and not complete:
+        errors.append('测试执行脚本未运行，尚无完整结束记录')
+    return dict(phase=phase, alive=alive, complete=complete, frozen=frozen, runs=rows, jobs=jobs,
+                predicted=predicted, total=len(cases)*len(rows), evaluated=evaluated,
+                curves=curves, curves_total=len(cases)*15, metrics_ready=bool(metrics),
+                summary_ready=summary_ready, parity=parity, stats_ready=bool(stats), errors=errors,
+                started_at=re.search(r'\[([^]]+)\] test protocol start', runner).group(1) if 'test protocol start' in runner else None)
 
 
 def pilot_info(now):
@@ -333,6 +402,7 @@ def snapshot():
         pilots, pilot_jobs = pilot_info(now)
         replication, replication_jobs = replication_info(now)
         native_curves = native_curves_info(now)
+        test_protocol = test_protocol_info(now)
         a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
         if a13_curves:
             a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
@@ -421,13 +491,20 @@ def snapshot():
                 if stage['id']=='R' and replication.get('phase')=='failed':
                     stage.update(status='complete' if native_curves['phase']=='complete' else 'analysis_pending',
                                  detail='8 / 8 训练与验证已完成，4 mm 判定已生成；旧曲线核验失败记录保留；'+('新曲线核验已通过' if native_curves['phase']=='complete' else '新曲线重新导出 / 待核验'))
+        if test_protocol:
+            for stage in stages:
+                if stage['id'] == 7:
+                    stage.update(status='complete' if test_protocol['complete'] else 'running' if test_protocol['alive'] else 'failed',
+                        detail=f"{test_protocol['phase']}；{test_protocol['predicted']} / {test_protocol['total']} 分割，{test_protocol['evaluated']} / 16 评测；{test_protocol['curves']} / {test_protocol['curves_total']} 曲线",
+                        source='冻结工作树、test_protocol 日志与逐例产物',
+                        progress=100 if test_protocol['complete'] else round(test_protocol['predicted']/test_protocol['total']*100,1))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
             'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'a13_curves': a13_curves,
-            'native_curves': native_curves,
+            'native_curves': native_curves, 'test_protocol': test_protocol,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -477,6 +554,14 @@ class Handler(BaseHTTPRequestHandler):
                     path = REPLICATION/'probability_curves_A13'/f'{name}.log'
                 elif name in ('native_curves_shard0', 'native_curves_shard1', 'native_curves_shard2'):
                     path = NATIVE_CURVES/f'shard{name[-1]}.log'
+                elif name == 'test_runner':
+                    path = TEST_OUT/'runner.log'
+                elif name in ('test_metrics', 'test_parity', 'test_stats', 'test_curves_summary'):
+                    path = TEST_OUT/f'{name[5:]}.log'
+                elif name in ('test_curves_shard0', 'test_curves_shard1', 'test_curves_shard2'):
+                    path = TEST_OUT/f'curves_shard{name[-1]}.log'
+                elif name.startswith('test_predict_') and name[13:] in TEST_RUNS:
+                    path = TEST_OUT/f'predict_{name[13:]}.log'
                 elif name == 'audit':
                     path = HERE / 'stage4_nonfinite_audit.log'
                 elif name in ANALYSIS_LOGS:
