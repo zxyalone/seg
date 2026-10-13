@@ -47,9 +47,10 @@ n_cases=$(wc -l < "$EXT/cases.txt")
 count() { ls "$RESULTS_ROOT/$1/$TRAINER/external_msd08_pred/"*.nii.gz 2>/dev/null | wc -l; }
 
 if (( STEP <= 2 )); then
-  while tmux has-session -t transfer-eval 2>/dev/null; do sleep 60; done   # GPUs busy until then
   for g in 0 1 2; do
     (
+      # GPUs 0 and 1 run the SegResNet transfer evaluation until it finishes; GPU 2 is free
+      if (( g < 2 )); then while tmux has-session -t transfer-eval 2>/dev/null; do sleep 60; done; fi
       for i in "${!RUNS[@]}"; do
         (( i % 3 == g )) || continue
         run=${RUNS[$i]}
