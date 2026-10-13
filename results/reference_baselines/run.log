@@ -1,0 +1,256 @@
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/SegResNet/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.6071 ± 0.2306 | global 0.6936 | HD95 59.97 mm | NSD@2 0.6049
+All cases lesion@0.1: recall 0.719 precision 0.480 F1 0.576 FP/scan 7.30
+SegResNet LiTS_000: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/nnUNet3D/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.5621 ± 0.2267 | global 0.7096 | HD95 75.73 mm | NSD@2 0.5376
+All cases lesion@0.1: recall 0.684 precision 0.411 F1 0.513 FP/scan 9.19
+nnUNet3D LiTS_000: fixed 4-mm metrics complete
+SegResNet LiTS_003: fixed 4-mm metrics complete
+nnUNet3D LiTS_003: fixed 4-mm metrics complete
+SegResNet LiTS_005: fixed 4-mm metrics complete
+nnUNet3D LiTS_005: fixed 4-mm metrics complete
+SegResNet LiTS_007: fixed 4-mm metrics complete
+nnUNet3D LiTS_007: fixed 4-mm metrics complete
+SegResNet LiTS_011: fixed 4-mm metrics complete
+nnUNet3D LiTS_011: fixed 4-mm metrics complete
+SegResNet LiTS_016: fixed 4-mm metrics complete
+nnUNet3D LiTS_016: fixed 4-mm metrics complete
+SegResNet LiTS_021: fixed 4-mm metrics complete
+SegResNet LiTS_028: fixed 4-mm metrics complete
+SegResNet LiTS_032: fixed 4-mm metrics complete
+nnUNet3D LiTS_021: fixed 4-mm metrics complete
+SegResNet LiTS_036: fixed 4-mm metrics complete
+nnUNet3D LiTS_028: fixed 4-mm metrics complete
+nnUNet3D LiTS_032: fixed 4-mm metrics complete
+SegResNet LiTS_050: fixed 4-mm metrics complete
+nnUNet3D LiTS_036: fixed 4-mm metrics complete
+SegResNet LiTS_054: fixed 4-mm metrics complete
+nnUNet3D LiTS_050: fixed 4-mm metrics complete
+nnUNet3D LiTS_054: fixed 4-mm metrics complete
+SegResNet LiTS_057: fixed 4-mm metrics complete
+SegResNet LiTS_072: fixed 4-mm metrics complete
+SegResNet LiTS_075: fixed 4-mm metrics complete
+nnUNet3D LiTS_057: fixed 4-mm metrics complete
+SegResNet LiTS_077: fixed 4-mm metrics complete
+nnUNet3D LiTS_072: fixed 4-mm metrics complete
+nnUNet3D LiTS_075: fixed 4-mm metrics complete
+nnUNet3D LiTS_077: fixed 4-mm metrics complete
+SegResNet LiTS_092: fixed 4-mm metrics complete
+nnUNet3D LiTS_092: fixed 4-mm metrics complete
+SegResNet LiTS_097: fixed 4-mm metrics complete
+nnUNet3D LiTS_097: fixed 4-mm metrics complete
+SegResNet LiTS_099: fixed 4-mm metrics complete
+nnUNet3D LiTS_099: fixed 4-mm metrics complete
+SegResNet LiTS_106: fixed 4-mm metrics complete
+nnUNet3D LiTS_106: fixed 4-mm metrics complete
+SegResNet LiTS_109: fixed 4-mm metrics complete
+nnUNet3D LiTS_109: fixed 4-mm metrics complete
+SegResNet LiTS_112: fixed 4-mm metrics complete
+nnUNet3D LiTS_112: fixed 4-mm metrics complete
+SegResNet LiTS_115: fixed 4-mm metrics complete
+nnUNet3D LiTS_115: fixed 4-mm metrics complete
+SegResNet LiTS_117: fixed 4-mm metrics complete
+nnUNet3D LiTS_117: fixed 4-mm metrics complete
+SegResNet LiTS_118: fixed 4-mm metrics complete
+nnUNet3D LiTS_118: fixed 4-mm metrics complete
+SegResNet LiTS_122: fixed 4-mm metrics complete
+nnUNet3D LiTS_122: fixed 4-mm metrics complete
+SegResNet LiTS_130: fixed 4-mm metrics complete
+nnUNet3D LiTS_130: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/UMambaBot/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.5735 ± 0.2542 | global 0.7363 | HD95 57.92 mm | NSD@2 0.5638
+All cases lesion@0.1: recall 0.700 precision 0.445 F1 0.544 FP/scan 8.19
+UMambaBot LiTS_000: fixed 4-mm metrics complete
+UMambaBot LiTS_003: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/MedNeXt-L/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.6586 ± 0.2163 | global 0.7275 | HD95 51.12 mm | NSD@2 0.6620
+All cases lesion@0.1: recall 0.783 precision 0.339 F1 0.473 FP/scan 14.30
+MedNeXt-L LiTS_000: fixed 4-mm metrics complete
+UMambaBot LiTS_005: fixed 4-mm metrics complete
+MedNeXt-L LiTS_003: fixed 4-mm metrics complete
+UMambaBot LiTS_007: fixed 4-mm metrics complete
+MedNeXt-L LiTS_005: fixed 4-mm metrics complete
+UMambaBot LiTS_011: fixed 4-mm metrics complete
+MedNeXt-L LiTS_007: fixed 4-mm metrics complete
+MedNeXt-L LiTS_011: fixed 4-mm metrics complete
+UMambaBot LiTS_016: fixed 4-mm metrics complete
+UMambaBot LiTS_021: fixed 4-mm metrics complete
+MedNeXt-L LiTS_016: fixed 4-mm metrics complete
+UMambaBot LiTS_028: fixed 4-mm metrics complete
+UMambaBot LiTS_032: fixed 4-mm metrics complete
+UMambaBot LiTS_036: fixed 4-mm metrics complete
+MedNeXt-L LiTS_021: fixed 4-mm metrics complete
+UMambaBot LiTS_050: fixed 4-mm metrics complete
+UMambaBot LiTS_054: fixed 4-mm metrics complete
+MedNeXt-L LiTS_028: fixed 4-mm metrics complete
+MedNeXt-L LiTS_032: fixed 4-mm metrics complete
+MedNeXt-L LiTS_036: fixed 4-mm metrics complete
+UMambaBot LiTS_057: fixed 4-mm metrics complete
+UMambaBot LiTS_072: fixed 4-mm metrics complete
+MedNeXt-L LiTS_050: fixed 4-mm metrics complete
+UMambaBot LiTS_075: fixed 4-mm metrics complete
+MedNeXt-L LiTS_054: fixed 4-mm metrics complete
+UMambaBot LiTS_077: fixed 4-mm metrics complete
+MedNeXt-L LiTS_057: fixed 4-mm metrics complete
+MedNeXt-L LiTS_072: fixed 4-mm metrics complete
+MedNeXt-L LiTS_075: fixed 4-mm metrics complete
+MedNeXt-L LiTS_077: fixed 4-mm metrics complete
+UMambaBot LiTS_092: fixed 4-mm metrics complete
+MedNeXt-L LiTS_092: fixed 4-mm metrics complete
+UMambaBot LiTS_097: fixed 4-mm metrics complete
+MedNeXt-L LiTS_097: fixed 4-mm metrics complete
+UMambaBot LiTS_099: fixed 4-mm metrics complete
+MedNeXt-L LiTS_099: fixed 4-mm metrics complete
+UMambaBot LiTS_106: fixed 4-mm metrics complete
+MedNeXt-L LiTS_106: fixed 4-mm metrics complete
+UMambaBot LiTS_109: fixed 4-mm metrics complete
+MedNeXt-L LiTS_109: fixed 4-mm metrics complete
+UMambaBot LiTS_112: fixed 4-mm metrics complete
+MedNeXt-L LiTS_112: fixed 4-mm metrics complete
+UMambaBot LiTS_115: fixed 4-mm metrics complete
+MedNeXt-L LiTS_115: fixed 4-mm metrics complete
+UMambaBot LiTS_117: fixed 4-mm metrics complete
+MedNeXt-L LiTS_117: fixed 4-mm metrics complete
+UMambaBot LiTS_118: fixed 4-mm metrics complete
+MedNeXt-L LiTS_118: fixed 4-mm metrics complete
+UMambaBot LiTS_122: fixed 4-mm metrics complete
+MedNeXt-L LiTS_122: fixed 4-mm metrics complete
+UMambaBot LiTS_130: fixed 4-mm metrics complete
+MedNeXt-L LiTS_130: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/nnUNet2D/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.5690 ± 0.2699 | global 0.7296 | HD95 41.37 mm | NSD@2 0.5276
+All cases lesion@0.1: recall 0.648 precision 0.351 F1 0.456 FP/scan 11.22
+nnUNet2D LiTS_000: fixed 4-mm metrics complete
+nnUNet2D LiTS_003: fixed 4-mm metrics complete
+nnUNet2D LiTS_005: fixed 4-mm metrics complete
+nnUNet2D LiTS_007: fixed 4-mm metrics complete
+nnUNet2D LiTS_011: fixed 4-mm metrics complete
+nnUNet2D LiTS_016: fixed 4-mm metrics complete
+nnUNet2D LiTS_021: fixed 4-mm metrics complete
+nnUNet2D LiTS_028: fixed 4-mm metrics complete
+nnUNet2D LiTS_032: fixed 4-mm metrics complete
+nnUNet2D LiTS_036: fixed 4-mm metrics complete
+nnUNet2D LiTS_050: fixed 4-mm metrics complete
+nnUNet2D LiTS_054: fixed 4-mm metrics complete
+nnUNet2D LiTS_057: fixed 4-mm metrics complete
+nnUNet2D LiTS_072: fixed 4-mm metrics complete
+nnUNet2D LiTS_075: fixed 4-mm metrics complete
+nnUNet2D LiTS_077: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/SwinUNETR/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.2404 ± 0.2177 | global 0.4221 | HD95 136.08 mm | NSD@2 0.1720
+All cases lesion@0.1: recall 0.486 precision 0.035 F1 0.066 FP/scan 124.63
+SwinUNETR LiTS_000: fixed 4-mm metrics complete
+nnUNet2D LiTS_092: fixed 4-mm metrics complete
+SwinUNETR LiTS_003: fixed 4-mm metrics complete
+nnUNet2D LiTS_097: fixed 4-mm metrics complete
+SwinUNETR LiTS_005: fixed 4-mm metrics complete
+SwinUNETR LiTS_007: fixed 4-mm metrics complete
+nnUNet2D LiTS_099: fixed 4-mm metrics complete
+SwinUNETR LiTS_011: fixed 4-mm metrics complete
+nnUNet2D LiTS_106: fixed 4-mm metrics complete
+SwinUNETR LiTS_016: fixed 4-mm metrics complete
+nnUNet2D LiTS_109: fixed 4-mm metrics complete
+SwinUNETR LiTS_021: fixed 4-mm metrics complete
+SwinUNETR LiTS_028: fixed 4-mm metrics complete
+SwinUNETR LiTS_032: fixed 4-mm metrics complete
+SwinUNETR LiTS_036: fixed 4-mm metrics complete
+nnUNet2D LiTS_112: fixed 4-mm metrics complete
+SwinUNETR LiTS_050: fixed 4-mm metrics complete
+SwinUNETR LiTS_054: fixed 4-mm metrics complete
+SwinUNETR LiTS_057: fixed 4-mm metrics complete
+nnUNet2D LiTS_115: fixed 4-mm metrics complete
+SwinUNETR LiTS_072: fixed 4-mm metrics complete
+SwinUNETR LiTS_075: fixed 4-mm metrics complete
+SwinUNETR LiTS_077: fixed 4-mm metrics complete
+nnUNet2D LiTS_117: fixed 4-mm metrics complete
+SwinUNETR LiTS_092: fixed 4-mm metrics complete
+nnUNet2D LiTS_118: fixed 4-mm metrics complete
+nnUNet2D LiTS_122: fixed 4-mm metrics complete
+SwinUNETR LiTS_097: fixed 4-mm metrics complete
+nnUNet2D LiTS_130: fixed 4-mm metrics complete
+SwinUNETR LiTS_099: fixed 4-mm metrics complete
+SwinUNETR LiTS_106: fixed 4-mm metrics complete
+SwinUNETR LiTS_109: fixed 4-mm metrics complete
+SwinUNETR LiTS_112: fixed 4-mm metrics complete
+SwinUNETR LiTS_115: fixed 4-mm metrics complete
+SwinUNETR LiTS_117: fixed 4-mm metrics complete
+SwinUNETR LiTS_118: fixed 4-mm metrics complete
+SwinUNETR LiTS_122: fixed 4-mm metrics complete
+SwinUNETR LiTS_130: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/SAMed-B/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.1237 ± 0.1936 | global 0.3478 | HD95 289.61 mm | NSD@2 0.0784
+All cases lesion@0.1: recall 0.051 precision 0.058 F1 0.054 FP/scan 7.89
+SAMed-B LiTS_000: fixed 4-mm metrics complete
+SAMed-B LiTS_003: fixed 4-mm metrics complete
+SAMed-B LiTS_005: fixed 4-mm metrics complete
+SAMed-B LiTS_007: fixed 4-mm metrics complete
+SAMed-B LiTS_011: fixed 4-mm metrics complete
+SAMed-B LiTS_016: fixed 4-mm metrics complete
+SAMed-B LiTS_021: fixed 4-mm metrics complete
+SAMed-B LiTS_028: fixed 4-mm metrics complete
+SAMed-B LiTS_032: fixed 4-mm metrics complete
+SAMed-B LiTS_036: fixed 4-mm metrics complete
+SAMed-B LiTS_050: fixed 4-mm metrics complete
+SAMed-B LiTS_054: fixed 4-mm metrics complete
+SAMed-B LiTS_057: fixed 4-mm metrics complete
+SAMed-B LiTS_072: fixed 4-mm metrics complete
+SAMed-B LiTS_075: fixed 4-mm metrics complete
+SAMed-B LiTS_077: fixed 4-mm metrics complete
+SAMed-B LiTS_092: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/SAMed-H/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.6278 ± 0.2124 | global 0.7774 | HD95 49.81 mm | NSD@2 0.5769
+All cases lesion@0.1: recall 0.688 precision 0.327 F1 0.443 FP/scan 13.26
+SAMed-H LiTS_000: fixed 4-mm metrics complete
+SAMed-B LiTS_097: fixed 4-mm metrics complete
+SAMed-H LiTS_003: fixed 4-mm metrics complete
+SAMed-B LiTS_099: fixed 4-mm metrics complete
+SAMed-H LiTS_005: fixed 4-mm metrics complete
+SAMed-B LiTS_106: fixed 4-mm metrics complete
+SAMed-H LiTS_007: fixed 4-mm metrics complete
+SAMed-H LiTS_011: fixed 4-mm metrics complete
+SAMed-B LiTS_109: fixed 4-mm metrics complete
+SAMed-H LiTS_016: fixed 4-mm metrics complete
+SAMed-B LiTS_112: fixed 4-mm metrics complete
+SAMed-H LiTS_021: fixed 4-mm metrics complete
+SAMed-H LiTS_028: fixed 4-mm metrics complete
+SAMed-H LiTS_032: fixed 4-mm metrics complete
+SAMed-B LiTS_115: fixed 4-mm metrics complete
+SAMed-H LiTS_036: fixed 4-mm metrics complete
+SAMed-H LiTS_050: fixed 4-mm metrics complete
+SAMed-H LiTS_054: fixed 4-mm metrics complete
+SAMed-H LiTS_057: fixed 4-mm metrics complete
+SAMed-H LiTS_072: fixed 4-mm metrics complete
+SAMed-B LiTS_117: fixed 4-mm metrics complete
+SAMed-H LiTS_075: fixed 4-mm metrics complete
+SAMed-H LiTS_077: fixed 4-mm metrics complete
+SAMed-B LiTS_118: fixed 4-mm metrics complete
+SAMed-B LiTS_122: fixed 4-mm metrics complete
+SAMed-H LiTS_092: fixed 4-mm metrics complete
+SAMed-B LiTS_130: fixed 4-mm metrics complete
+SAMed-H LiTS_097: fixed 4-mm metrics complete
+SAMed-H LiTS_099: fixed 4-mm metrics complete
+SAMed-H LiTS_106: fixed 4-mm metrics complete
+SAMed-H LiTS_109: fixed 4-mm metrics complete
+SAMed-H LiTS_112: fixed 4-mm metrics complete
+SAMed-H LiTS_115: fixed 4-mm metrics complete
+SAMed-H LiTS_117: fixed 4-mm metrics complete
+SAMed-H LiTS_118: fixed 4-mm metrics complete
+SAMed-H LiTS_122: fixed 4-mm metrics complete
+SAMed-H LiTS_130: fixed 4-mm metrics complete
+    group                             training  seeds  recall_low  recall_all  fp_per_scan  tumor_dice    f1
+ nnUNet3D     TriALS: 100 epochs, from scratch      1       56.45       66.80         5.00       56.25 60.68
+SegResNet     TriALS: 100 epochs, from scratch      1       58.06       68.77         3.81       60.68 65.66
+UMambaBot     TriALS: 100 epochs, from scratch      1       61.29       65.61         4.04       57.24 62.88
+MedNeXt-L     TriALS: 100 epochs, from scratch      1       64.52       71.94         3.70       66.11 68.04
+SwinUNETR     TriALS: 100 epochs, from scratch      1       46.77       46.25        35.70       24.11 17.54
+ nnUNet2D     TriALS: 100 epochs, from scratch      1       53.23       61.66         6.00       56.76 54.64
+  SAMed-B     TriALS: 100 epochs, from scratch      1        8.06        5.14         5.33       12.37  6.34
+  SAMed-H     TriALS: 100 epochs, from scratch      1       58.06       67.19         7.04       62.87 55.46
+       A0 this study: 200 epochs, VoComni init      3       62.37       73.39         1.99       74.58 75.42
+       A1 this study: 200 epochs, VoComni init      3       62.90       73.78         1.94       74.07 75.90
+      A11 this study: 200 epochs, VoComni init      3       66.67       73.65         2.16       74.32 74.88
+     A13a this study: 200 epochs, VoComni init      3       68.28       71.67         2.07       74.28 73.96
+     A13b this study: 200 epochs, VoComni init      3       71.51       73.12         2.06       73.97 74.94
+      A12 this study: 200 epochs, VoComni init      1       66.13       82.21         4.00       73.17 73.11
+REF_EXIT 0

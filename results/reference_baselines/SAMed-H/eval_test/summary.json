@@ -1,0 +1,133 @@
+{
+  "conventions": {
+    "empty_empty_tumor_dice": 1.0,
+    "connectivity": 26,
+    "nsd_tau_mm": 2.0,
+    "iou_thresholds": [
+      0.1,
+      0.5
+    ],
+    "cnr_tertiles": [
+      1.2785,
+      1.9208
+    ],
+    "size_edges_mm": [
+      10.0,
+      20.0
+    ],
+    "aggregation": "mean over cases; std with ddof=0; global Dice pools voxel counts"
+  },
+  "All": {
+    "n_cases": 27,
+    "liver1_dice_mean": 0.9406893634155202,
+    "liver1_dice_std": 0.018112479733951494,
+    "liver1_iou_mean": 0.8885626637489948,
+    "liver1_global_dice": 0.9400100509750193,
+    "liver_dice_mean": 0.9491325324652906,
+    "liver_dice_std": 0.010506746047961202,
+    "liver_iou_mean": 0.9033784474136319,
+    "liver_global_dice": 0.9511215459303742,
+    "tumor_dice_mean": 0.5580203555340298,
+    "tumor_dice_std": 0.2811192043093958,
+    "tumor_iou_mean": 0.43370838576022663,
+    "tumor_global_dice": 0.7744665359010937,
+    "tumor_hd95_mean": 49.806668869596706,
+    "tumor_hd95_median": 26.253894351508478,
+    "tumor_nsd_mean": 0.5769405757978295,
+    "n_tumor_cases_without_prediction": 0,
+    "lesion@0.1": {
+      "tp": 174,
+      "fp": 358,
+      "fn": 79,
+      "recall": 0.6877470355731226,
+      "precision": 0.32706766917293234,
+      "f1": 0.44331210191082804,
+      "fp_per_scan": 13.25925925925926
+    },
+    "lesion@0.5": {
+      "tp": 71,
+      "fp": 461,
+      "fn": 182,
+      "recall": 0.28063241106719367,
+      "precision": 0.13345864661654136,
+      "f1": 0.18089171974522292,
+      "fp_per_scan": 17.074074074074073
+    }
+  },
+  "Tumor": {
+    "n_cases": 24,
+    "liver1_dice_mean": 0.9389616602362046,
+    "liver1_dice_std": 0.018228123425383012,
+    "liver1_iou_mean": 0.8854929450658636,
+    "liver1_global_dice": 0.9382653545686911,
+    "liver_dice_mean": 0.9485910102538977,
+    "liver_dice_std": 0.010510380611423495,
+    "liver_iou_mean": 0.9023978010520902,
+    "liver_global_dice": 0.950992346049002,
+    "tumor_dice_mean": 0.6277728999757836,
+    "tumor_dice_std": 0.2124093943440399,
+    "tumor_iou_mean": 0.48792193398025496,
+    "tumor_global_dice": 0.7773935333625637,
+    "tumor_hd95_mean": 49.806668869596706,
+    "tumor_hd95_median": 26.253894351508478,
+    "tumor_nsd_mean": 0.5769405757978295,
+    "n_tumor_cases_without_prediction": 0,
+    "lesion@0.1": {
+      "tp": 174,
+      "fp": 307,
+      "fn": 79,
+      "recall": 0.6877470355731226,
+      "precision": 0.36174636174636177,
+      "f1": 0.47411444141689374,
+      "fp_per_scan": 12.791666666666666
+    },
+    "lesion@0.5": {
+      "tp": 71,
+      "fp": 410,
+      "fn": 182,
+      "recall": 0.28063241106719367,
+      "precision": 0.14760914760914762,
+      "f1": 0.19346049046321526,
+      "fp_per_scan": 17.083333333333332
+    }
+  },
+  "lesion_strata": {
+    "size_stratum=10-20": {
+      "n_lesions": 64,
+      "recall@0.1": 0.859375,
+      "recall@0.5": 0.515625
+    },
+    "size_stratum=<10": {
+      "n_lesions": 148,
+      "recall@0.1": 0.5540540540540541,
+      "recall@0.5": 0.06756756756756757
+    },
+    "size_stratum=>20": {
+      "n_lesions": 41,
+      "recall@0.1": 0.9024390243902439,
+      "recall@0.5": 0.6829268292682927
+    },
+    "cnr_stratum=high": {
+      "n_lesions": 135,
+      "recall@0.1": 0.7481481481481481,
+      "recall@0.5": 0.2518518518518518
+    },
+    "cnr_stratum=low": {
+      "n_lesions": 62,
+      "recall@0.1": 0.5806451612903226,
+      "recall@0.5": 0.24193548387096775
+    },
+    "cnr_stratum=mid": {
+      "n_lesions": 54,
+      "recall@0.1": 0.6851851851851852,
+      "recall@0.5": 0.4074074074074074
+    },
+    "cnr_stratum=na": {
+      "n_lesions": 2,
+      "recall@0.1": 0.0,
+      "recall@0.5": 0.0
+    }
+  },
+  "pred_dir": "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/_analysis/reference_baselines/stage/SAMed-H/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/test_pred",
+  "gt_dir": "/root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset101_LiTS/labelsTr"
+}
