@@ -29,6 +29,14 @@ TEST_RUNS = tuple(f'{g}_s{s}' for g in ('A0', 'A1', 'A11', 'A13a', 'A13b') for s
 TRANSFER = ROOT / '_segresnet_transfer'
 REFERENCE = ROOT / '_analysis/reference_baselines'
 TRANSFER_RUNS = ('S0_s0', 'S0_s1', 'S13b_s0', 'S13b_s1', 'S13b_bf16_s0', 'S13b_bf16_s1')
+# FP16 S13b runs stopped by the user's decision (decoder activations overflowed FP16; rerun in bf16, plan §11)
+STOPPED_RUNS = ('S13b_s0', 'S13b_s1')
+EXT_WORKTREE = REPO.parent / 'Downstream_2_external'
+TRANSFER_RESULTS = EXT_WORKTREE / 'results/segresnet_transfer'
+MSD08_OUT = EXT_WORKTREE / 'results/external_msd08'
+MSD08_EXT = REPO.parent / 'ext_data/msd08'
+MSD08_DATA = MSD08_EXT / 'Dataset104_MSD08'
+MSD08_RUNS = tuple(f'{g}_s{s}' for g in ('A0', 'A1', 'A13b') for s in range(3))   # GPU = index % 3
 NATIVE_GROUPS = ('A0', 'A1', 'A11', 'A13a', 'A13b')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
@@ -278,6 +286,8 @@ def transfer_info(now):
         row['waiting']=name in waiting and name not in active
         row['gpu']=active.get(name,{}).get('gpu', {'S0_s0':2,'S0_s1':2,'S13b_s0':0,'S13b_s1':1,'S13b_bf16_s0':0,'S13b_bf16_s1':1}[name])
         row['phase']='排队等待前序任务' if row['waiting'] else row['phase']
+        if name in STOPPED_RUNS and name not in active:
+            row.update(status='cancelled', phase='已停止：FP16 激活溢出，改用 bf16 重跑', stopped=True)
         rows.append(row)
     smoke=tail(ROOT/'_smoke_S0.log');smoke_exit=re.findall(r'SMOKE_EXIT (\d+)',smoke)
     smoke_status='running' if smoke_alive else 'complete' if smoke_exit and smoke_exit[-1]=='0' else 'failed' if smoke_exit else 'unknown'
@@ -289,7 +299,15 @@ def transfer_info(now):
     try:
         with (REFERENCE/'reference_table.csv').open() as f: table=list(csv.DictReader(f))
     except OSError: pass
-    return dict(runs=rows,jobs=active,smoke_status=smoke_status,
+    results={}
+    for split in ('val','test'):
+        try:
+            with (TRANSFER_RESULTS/split/'stats/per_run.csv').open() as f: per_run=list(csv.DictReader(f))
+        except OSError: continue
+        results[split]=dict(per_run=per_run, stats=read_json(TRANSFER_RESULTS/split/'stats/transfer_stats.json',{}))
+    eval_log=tail(TRANSFER_RESULTS/'runner.log')
+    return dict(runs=rows,jobs=active,smoke_status=smoke_status,results=results,
+                eval_complete='transfer evaluation complete' in eval_log,
                 reference=dict(alive=reference_alive, completed=sum(r['completed'] for r in refs),total=216,runs=refs,
                     complete=bool(table) and (REFERENCE/'reference_strata.csv').is_file(), table=table,
                     error='Traceback (most recent call last)' in text),
@@ -460,6 +478,90 @@ def estimates(state, runs):
             'projected': projected, 'basis': '最近 10 轮耗时中位数；每 run 预留 15 分钟验证。仅估算有效训练 / 成本队列，已取消任务不计入。'}
 
 
+def msd08_info(now):
+    if not MSD08_OUT.exists():
+        return None
+    runner = tail(MSD08_OUT/'runner.log', 400000)
+    try:
+        n_cases = len((MSD08_DATA/'cases.txt').read_text().split())
+    except OSError:
+        n_cases = 303
+    procs, evals, runner_alive = {}, set(), False
+    for directory in Path('/proc').iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            argv = (directory/'cmdline').read_bytes().decode().split('\0')
+            if not process_alive(directory.name):
+                continue
+            joined = ' '.join(argv)
+            if 'server_external_msd08.sh' in joined:
+                runner_alive = True
+            if any(a.endswith('nnUNetv2_predict') for a in argv[:2]) and 'external_msd08_pred' in joined:
+                m = re.search(r'nnUNet_results_v2/([A-Za-z0-9]+_s\d+)/', joined)
+                if m and m.group(1) not in procs:
+                    env = dict(x.split('=', 1) for x in (directory/'environ').read_bytes().decode().split('\0') if '=' in x)
+                    procs[m.group(1)] = int(env.get('CUDA_VISIBLE_DEVICES', '-1').split(',')[0])
+            if any(Path(a).name == 'evaluate.py' for a in argv) and 'eval_external_msd08' in joined:
+                m = re.search(r'nnUNet_results_v2/([A-Za-z0-9]+_s\d+)/', joined)
+                if m: evals.add(m.group(1))
+        except (OSError, ValueError, UnicodeError):
+            continue
+    rows, rates = [], []
+    for i, run in enumerate(MSD08_RUNS):
+        pred = ROOT/run/FOLD/'external_msd08_pred'
+        try:
+            times = sorted(p.stat().st_mtime for p in pred.glob('*.nii.gz'))
+        except OSError:
+            times = []
+        n = len(times)
+        rate = statistics.median([b - a for a, b in zip(times[-25:-1], times[-24:])]) if n >= 6 else None
+        if run in procs and rate:
+            rates.append(rate)
+        start = re.findall(re.escape(run) + r' prediction start \(GPU (\d)\)', runner)
+        evaluated = (ROOT/run/FOLD/'eval_external_msd08/summary.json').is_file()
+        status = ('complete' if evaluated else 'evaluating' if run in evals else 'predicting' if run in procs
+                  else 'predicted' if n >= n_cases else 'pending')
+        rows.append(dict(name=run, group=run.rsplit('_s', 1)[0], gpu=procs.get(run, int(start[-1]) if start else i % 3),
+                         predicted=n, total=n_cases, seconds_per_case=round(rate, 1) if rate else None,
+                         status=status, evaluated=evaluated, last_case_age=round(now - times[-1]) if times else None))
+    default_rate = statistics.median(rates) if rates else 11.0
+    lanes = {}
+    for i, r in enumerate(rows):
+        g = i % 3
+        lanes[g] = lanes.get(g, 0) + max(0, r['total'] - r['predicted']) * (r['seconds_per_case'] or default_rate)
+    predict_left = max(lanes.values()) if lanes else 0
+    ref_n = len(list((MSD08_DATA/'labelsTs').glob('*.nii.gz'))) if (MSD08_DATA/'labelsTs').exists() else 0
+    n_eval = sum(r['evaluated'] for r in rows)
+    stats = read_json(MSD08_OUT/'stats/protocol_results.json', {})
+    secondary = []
+    try:
+        with (MSD08_OUT/'stats/secondary_per_group.csv').open() as f: secondary = list(csv.DictReader(f))
+    except OSError:
+        pass
+    steps = [
+        dict(name='整理 303 例影像', done=f'{n_cases} cases staged' in runner),
+        dict(name='9 个模型推理', done=all(r['predicted'] >= n_cases for r in rows)),
+        dict(name='肝脏参照标签（基线多数投票）', done='reference labels built' in runner),
+        dict(name=f'评估 {n_eval} / 9', done=n_eval == 9),
+        dict(name='冻结协议统计', done=bool(stats)),
+    ]
+    remaining = None
+    if not stats:
+        left_eval = (9 - n_eval) / 3 * 20 * 60
+        remaining = round(predict_left + (0 if steps[2]['done'] else 300) + left_eval + 20 * 60)
+    overlap = read_json(MSD08_EXT/'overlap_check/overlap.json', {})
+    inspect = read_json(MSD08_EXT/'inspect/summary.json', {})
+    return dict(runs=rows, steps=steps, alive=runner_alive, complete='EXTERNAL_EXIT 0' in runner,
+                error=bool(re.search(r'incomplete|missing|Traceback', runner)), n_cases=n_cases, reference_labels=ref_n,
+                remaining_seconds=remaining, eta=(datetime.now(CST) + timedelta(seconds=remaining)).strftime('%H:%M') if remaining else None,
+                stats=stats, secondary=secondary,
+                overlap=dict(independent=overlap.get('independent'), min_fingerprint=overlap.get('min_fingerprint_mae_hu'),
+                             n_lits=overlap.get('n_lits')),
+                annotation=dict(components=inspect.get('n_tumour_components'),
+                                single=(inspect.get('tumour_components_per_case') or {}).get('1')))
+
+
 def snapshot():
     with LOCK:
         now = time.time()
@@ -473,6 +575,7 @@ def snapshot():
         native_curves = native_curves_info(now)
         test_protocol = test_protocol_info(now)
         transfer = transfer_info(now)
+        msd08 = msd08_info(now)
         a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
         if a13_curves:
             a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
@@ -569,19 +672,29 @@ def snapshot():
                         source='冻结工作树、test_protocol 日志与逐例产物',
                         progress=100 if test_protocol['complete'] else round(test_protocol['predicted']/test_protocol['total']*100,1))
         if transfer:
-            stages.append(dict(id='S',title='SegResNet 架构迁移',status='running' if transfer['jobs'] else 'analysis_pending',
-                detail=f"{sum(r['status']=='complete' for r in transfer['runs'])} / 4 完成；S0 / S13b 各两个 seed；两轮冒烟 {transfer['smoke_status']}",
-                source='实际 run.sh 进程、训练日志和 eval_val',progress=round(sum(r['progress'] for r in transfer['runs'])/4,1)))
+            live=[r for r in transfer['runs'] if not r.get('stopped')]
+            stages.append(dict(id='S',title='SegResNet 架构迁移',
+                status='complete' if transfer['eval_complete'] else 'running' if transfer['jobs'] else 'analysis_pending',
+                detail=(f"{sum(r['status']=='complete' for r in live)} / {len(live)} 训练完成；"
+                        + ('验证集与测试集评估完成：方法在 SegResNet 上无提升（负结果）' if transfer['eval_complete'] else '测试集评估进行中')
+                        + '；FP16 的 S13b 两次运行已停止'),
+                source='训练日志、results/segresnet_transfer',progress=100 if transfer['eval_complete'] else round(sum(r['progress'] for r in live)/len(live),1)))
             ref=transfer['reference']
             stages.append(dict(id='B',title='八个参考基线统一评测',status='complete' if ref['complete'] else 'running' if ref['alive'] else 'analysis_pending',
                 detail=f"{ref['completed']} / {ref['total']} 固定 4 mm 病例评测完成；汇总另计",source='当前 run.log 与汇总 CSV',progress=round(ref['completed']/ref['total']*100,1)))
+        if msd08:
+            pred = sum(r['predicted'] for r in msd08['runs']); tot = sum(r['total'] for r in msd08['runs'])
+            stages.append(dict(id='X', title='MSD Task08 外部验证',
+                status='complete' if msd08['complete'] else 'failed' if msd08['error'] else 'running' if msd08['alive'] else 'analysis_pending',
+                detail=f"{pred} / {tot} 例推理；{sum(r['evaluated'] for r in msd08['runs'])} / 9 评估；独立性核查通过；A0 / A1 / A13b × 3 seeds",
+                source='server_external_msd08.sh、预测目录与评估结果', progress=100 if msd08['complete'] else round(pred / tot * 95, 1)))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
             'stages': stages, 'runs': list(runs.values()) + (transfer['runs'] if transfer else []), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'a13_curves': a13_curves,
-            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer,
+            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer, 'msd08': msd08,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -636,6 +749,16 @@ class Handler(BaseHTTPRequestHandler):
                     # evaluation included) once run.sh has exited and flushed it.
                     out=TRANSFER/f'{name[9:]}.log'
                     path=out if 'RUN_EXIT' in tail(out, 4096) else run_log(name[9:])
+                elif name == 'transfer_eval':
+                    path=TRANSFER_RESULTS/'runner.log'
+                elif name == 'msd08_runner':
+                    path=MSD08_OUT/'runner.log'
+                elif name in ('msd08_reference', 'msd08_metrics', 'msd08_stats'):
+                    path=MSD08_OUT/f'{name[6:]}.log'
+                elif name.startswith('msd08_predict_') and name[14:] in MSD08_RUNS:
+                    path=MSD08_OUT/f'predict_{name[14:]}.log'
+                elif name.startswith('msd08_eval_') and name[11:] in MSD08_RUNS:
+                    path=MSD08_OUT/f'eval_{name[11:]}.log'
                 elif name == 'transfer_smoke':
                     path=ROOT/'_smoke_S0.log'
                 elif name == 'reference_baselines':
