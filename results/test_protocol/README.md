@@ -1,6 +1,6 @@
 # 测试集一次性评估（冻结协议 c2b8cae）
 
-`docs/测试集冻结协议_草案.md` 冻结后，2026-10-12 19:06 – 2026-10-13 02:15 在服务器上运行一次（HEAD 9ce222f，`experiments/server_test_protocol.sh`）。27 例内部测试集此前从未推理。
+`docs/测试集冻结协议_草案.md` 冻结后，2026-10-12 19:06 – 2026-10-13 02:15 在服务器上运行一次（HEAD 9ce222f，`experiments/server_test_protocol.sh`）。本研究的模型此前从未在 27 例内部测试集上推理（TriALS 参考架构曾于 2026-08 在该测试集上推理，开发过程中未查看其结果；见计划 §11）。
 
 ## 结果（`stats/PROTOCOL_RESULTS.md`）
 
