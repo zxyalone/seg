@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only experiment dashboard. No training imports or scheduling actions."""
 import argparse
+import csv
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,6 +26,9 @@ NATIVE_CURVES = ROOT / '_analysis/curves_native'
 TEST_OUT = ROOT / '_analysis/test_protocol'
 TEST_WORKTREE = REPO.parent / 'Downstream_2_test_protocol'
 TEST_RUNS = tuple(f'{g}_s{s}' for g in ('A0', 'A1', 'A11', 'A13a', 'A13b') for s in range(3)) + ('A12_s0',)
+TRANSFER = ROOT / '_segresnet_transfer'
+REFERENCE = ROOT / '_analysis/reference_baselines'
+TRANSFER_RUNS = ('S0_s0', 'S0_s1', 'S13b_s0', 'S13b_s1')
 NATIVE_GROUPS = ('A0', 'A1', 'A11', 'A13a', 'A13b')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
@@ -72,6 +76,8 @@ def name_for(entry):
 
 
 def run_log(name):
+    if name in TRANSFER_RUNS:
+        return TRANSFER/f'{name}.log'
     if name in REPLICATION_RUNS:
         return REPLICATION / f'{name}.log'
     return PILOT / f'{name.split("_s")[0]}.log' if name in PILOT_RUNS else ROOT / name / 'launcher.log'
@@ -225,6 +231,56 @@ def test_protocol_info(now):
                 curves=curves, curves_total=len(cases)*15, metrics_ready=bool(metrics),
                 summary_ready=summary_ready, parity=parity, stats_ready=bool(stats), errors=errors,
                 started_at=re.search(r'\[([^]]+)\] test protocol start', runner).group(1) if 'test protocol start' in runner else None)
+
+
+def transfer_info(now):
+    if not TRANSFER.exists():
+        return None
+    active = {}; waiting = set(); reference_alive = False; smoke_alive = False
+    for directory in Path('/proc').iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            argv = (directory/'cmdline').read_bytes().decode().split('\0')
+            if not process_alive(directory.name):
+                continue
+            if 'experiments/run.sh' in argv:
+                idx = argv.index('experiments/run.sh'); name = f'{argv[idx+1]}_s{argv[idx+2]}'
+                env = dict(x.split('=',1) for x in (directory/'environ').read_bytes().decode().split('\0') if '=' in x)
+                if name == 'S0_s99': smoke_alive = True
+                if name in TRANSFER_RUNS:
+                    active[name] = dict(pid=int(directory.name), gpu=int(env['GPU']), status='running')
+            if any(Path(a).name=='reference_baselines_eval.py' for a in argv): reference_alive = True
+            if '-c' in argv and 'until grep' in argv[argv.index('-c')+1]:
+                for name in TRANSFER_RUNS:
+                    if f'/{name}.log' in argv[argv.index('-c')+1]: waiting.add(name)
+        except (OSError, ValueError, IndexError, KeyError, UnicodeError):
+            continue
+    rows=[]
+    for name in TRANSFER_RUNS:
+        text=tail(TRANSFER/f'{name}.log')
+        exits=re.findall(r'RUN_EXIT (\d+)',text)
+        status = active.get(name,{}).get('status', 'pending' if name in waiting or not text else 'complete' if exits and exits[-1]=='0' else 'failed' if exits or 'Traceback (most recent call last)' in text else 'unknown')
+        row=run_info(name, dict(active.get(name,{}),status=status))
+        row['waiting']=name in waiting and name not in active
+        row['gpu']=active.get(name,{}).get('gpu', {'S0_s0':2,'S0_s1':2,'S13b_s0':0,'S13b_s1':1}[name])
+        row['phase']='排队等待前序任务' if row['waiting'] else row['phase']
+        rows.append(row)
+    smoke=tail(ROOT/'_smoke_S0.log');smoke_exit=re.findall(r'SMOKE_EXIT (\d+)',smoke)
+    smoke_status='running' if smoke_alive else 'complete' if smoke_exit and smoke_exit[-1]=='0' else 'failed' if smoke_exit else 'unknown'
+    refs=[];text=tail(REFERENCE/'run.log',2000000)
+    for name in ('nnUNet3D','SegResNet','UMambaBot','MedNeXt-L','SwinUNETR','nnUNet2D','SAMed-B','SAMed-H'):
+        cases=set(re.findall(re.escape(name)+r' (LiTS_\d+): fixed 4-mm metrics complete',text))
+        refs.append(dict(name=name, completed=len(cases), total=27))
+    table=[]
+    try:
+        with (REFERENCE/'reference_table.csv').open() as f: table=list(csv.DictReader(f))
+    except OSError: pass
+    return dict(runs=rows,jobs=active,smoke_status=smoke_status,
+                reference=dict(alive=reference_alive, completed=sum(r['completed'] for r in refs),total=216,runs=refs,
+                    complete=bool(table) and (REFERENCE/'reference_strata.csv').is_file(), table=table,
+                    error='Traceback (most recent call last)' in text),
+                historical_oom=(TRANSFER/'S0_s1_oom_attempt.log').is_file())
 
 
 def pilot_info(now):
@@ -403,6 +459,7 @@ def snapshot():
         replication, replication_jobs = replication_info(now)
         native_curves = native_curves_info(now)
         test_protocol = test_protocol_info(now)
+        transfer = transfer_info(now)
         a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
         if a13_curves:
             a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
@@ -498,13 +555,20 @@ def snapshot():
                         detail=f"{test_protocol['phase']}；{test_protocol['predicted']} / {test_protocol['total']} 分割，{test_protocol['evaluated']} / 16 评测；{test_protocol['curves']} / {test_protocol['curves_total']} 曲线",
                         source='冻结工作树、test_protocol 日志与逐例产物',
                         progress=100 if test_protocol['complete'] else round(test_protocol['predicted']/test_protocol['total']*100,1))
+        if transfer:
+            stages.append(dict(id='S',title='SegResNet 架构迁移',status='running' if transfer['jobs'] else 'analysis_pending',
+                detail=f"{sum(r['status']=='complete' for r in transfer['runs'])} / 4 完成；S0 / S13b 各两个 seed；两轮冒烟 {transfer['smoke_status']}",
+                source='实际 run.sh 进程、训练日志和 eval_val',progress=round(sum(r['progress'] for r in transfer['runs'])/4,1)))
+            ref=transfer['reference']
+            stages.append(dict(id='B',title='八个参考基线统一评测',status='complete' if ref['complete'] else 'running' if ref['alive'] else 'analysis_pending',
+                detail=f"{ref['completed']} / {ref['total']} 固定 4 mm 病例评测完成；汇总另计",source='当前 run.log 与汇总 CSV',progress=round(ref['completed']/ref['total']*100,1)))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
-            'stages': stages, 'runs': list(runs.values()), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
+            'stages': stages, 'runs': list(runs.values()) + (transfer['runs'] if transfer else []), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'a13_curves': a13_curves,
-            'native_curves': native_curves, 'test_protocol': test_protocol,
+            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -554,6 +618,12 @@ class Handler(BaseHTTPRequestHandler):
                     path = REPLICATION/'probability_curves_A13'/f'{name}.log'
                 elif name in ('native_curves_shard0', 'native_curves_shard1', 'native_curves_shard2'):
                     path = NATIVE_CURVES/f'shard{name[-1]}.log'
+                elif name.startswith('transfer_') and name[9:] in TRANSFER_RUNS:
+                    path=TRANSFER/f'{name[9:]}.log'
+                elif name == 'transfer_smoke':
+                    path=ROOT/'_smoke_S0.log'
+                elif name == 'reference_baselines':
+                    path=REFERENCE/'run.log'
                 elif name == 'test_runner':
                     path = TEST_OUT/'runner.log'
                 elif name in ('test_metrics', 'test_parity', 'test_stats', 'test_curves_summary'):
