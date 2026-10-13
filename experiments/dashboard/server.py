@@ -28,7 +28,7 @@ TEST_WORKTREE = REPO.parent / 'Downstream_2_test_protocol'
 TEST_RUNS = tuple(f'{g}_s{s}' for g in ('A0', 'A1', 'A11', 'A13a', 'A13b') for s in range(3)) + ('A12_s0',)
 TRANSFER = ROOT / '_segresnet_transfer'
 REFERENCE = ROOT / '_analysis/reference_baselines'
-TRANSFER_RUNS = ('S0_s0', 'S0_s1', 'S13b_s0', 'S13b_s1')
+TRANSFER_RUNS = ('S0_s0', 'S0_s1', 'S13b_s0', 'S13b_s1', 'S13b_bf16_s0', 'S13b_bf16_s1')
 NATIVE_GROUPS = ('A0', 'A1', 'A11', 'A13a', 'A13b')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
@@ -75,9 +75,22 @@ def name_for(entry):
     return 'E16_cost' if group == 'Cost' else f'{group}_s{seed}'
 
 
+def transfer_training_log(name):
+    """nnU-Net's own training_log of the current attempt. It is written line by
+    line, whereas the run.sh stdout log is block-buffered and lags by tens of
+    minutes. Logs left by an earlier failed attempt (S0_s1 OOM) are skipped."""
+    if not (TRANSFER/f'{name}.log').is_file():
+        return None
+    logs = sorted((ROOT/name/FOLD).glob('training_log_*.txt'))
+    old = TRANSFER/f'{name}_oom_attempt.log'
+    if old.is_file():
+        logs = [p for p in logs if p.stat().st_mtime > old.stat().st_mtime]
+    return logs[-1] if logs else None
+
+
 def run_log(name):
     if name in TRANSFER_RUNS:
-        return TRANSFER/f'{name}.log'
+        return transfer_training_log(name) or TRANSFER/f'{name}.log'
     if name in REPLICATION_RUNS:
         return REPLICATION / f'{name}.log'
     return PILOT / f'{name.split("_s")[0]}.log' if name in PILOT_RUNS else ROOT / name / 'launcher.log'
@@ -263,7 +276,7 @@ def transfer_info(now):
         status = active.get(name,{}).get('status', 'pending' if name in waiting or not text else 'complete' if exits and exits[-1]=='0' else 'failed' if exits or 'Traceback (most recent call last)' in text else 'unknown')
         row=run_info(name, dict(active.get(name,{}),status=status))
         row['waiting']=name in waiting and name not in active
-        row['gpu']=active.get(name,{}).get('gpu', {'S0_s0':2,'S0_s1':2,'S13b_s0':0,'S13b_s1':1}[name])
+        row['gpu']=active.get(name,{}).get('gpu', {'S0_s0':2,'S0_s1':2,'S13b_s0':0,'S13b_s1':1,'S13b_bf16_s0':0,'S13b_bf16_s1':1}[name])
         row['phase']='排队等待前序任务' if row['waiting'] else row['phase']
         rows.append(row)
     smoke=tail(ROOT/'_smoke_S0.log');smoke_exit=re.findall(r'SMOKE_EXIT (\d+)',smoke)
@@ -619,7 +632,10 @@ class Handler(BaseHTTPRequestHandler):
                 elif name in ('native_curves_shard0', 'native_curves_shard1', 'native_curves_shard2'):
                     path = NATIVE_CURVES/f'shard{name[-1]}.log'
                 elif name.startswith('transfer_') and name[9:] in TRANSFER_RUNS:
-                    path=TRANSFER/f'{name[9:]}.log'
+                    # Live training_log while running; the full stdout (validation and
+                    # evaluation included) once run.sh has exited and flushed it.
+                    out=TRANSFER/f'{name[9:]}.log'
+                    path=out if 'RUN_EXIT' in tail(out, 4096) else run_log(name[9:])
                 elif name == 'transfer_smoke':
                     path=ROOT/'_smoke_S0.log'
                 elif name == 'reference_baselines':

@@ -571,8 +571,12 @@ class nnUNetPredictor(object):
         # If the device_type is 'mps' then it will complain that mps is not implemented, even if enabled=False
         # is set. Whyyyyyyy. (this is why we don't make use of enabled=False)
         # So autocast will only be active if we have a cuda device.
+        # PHASER_AMP_DTYPE=bf16 (set by the run's config) predicts in bf16, matching
+        # training; fp16 (the default, identical to the previous behaviour) can
+        # overflow for networks trained in bf16 (plan §11, 2026-10-13).
+        amp_dtype = torch.bfloat16 if os.environ.get('PHASER_AMP_DTYPE', 'fp16') == 'bf16' else torch.float16
         with torch.no_grad():
-            with torch.autocast(self.device.type, enabled=True) if self.device.type == 'cuda' else dummy_context():
+            with torch.autocast(self.device.type, enabled=True, dtype=amp_dtype) if self.device.type == 'cuda' else dummy_context():
                 assert input_image.ndim == 4, 'input_image must be a 4D np.ndarray or torch.Tensor (c, x, y, z)'
 
                 if self.verbose: print(f'Input shape: {input_image.shape}')

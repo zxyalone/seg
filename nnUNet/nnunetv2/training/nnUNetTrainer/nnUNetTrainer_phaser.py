@@ -204,6 +204,13 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         # Disable AMP for diagnosis/workstations where rare FP16 overflow creates
         # non-finite losses. Default remains enabled for normal CUDA training.
         self.use_amp = os.environ.get('PHASER_AMP', '1') == '1'
+        # Autocast dtype. bf16 has the fp32 exponent range, so activations above
+        # the fp16 maximum (65504) stay finite; it needs no loss scaling. Used for
+        # the SegResNet + CFC runs, whose unnormalised residual decoder outgrew
+        # fp16 (plan §11, 2026-10-13). Default fp16 = unchanged behaviour.
+        self.amp_dtype = {'fp16': torch.float16, 'bf16': torch.bfloat16}[os.environ.get('PHASER_AMP_DTYPE', 'fp16')]
+        if self.amp_dtype == torch.bfloat16:
+            self.grad_scaler = None
 
         # --- Module switches ---
         self.enable_pcsf = os.environ.get('PHASER_PCSF', '0') == '1'
@@ -354,7 +361,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Small-Tumor Head: {self.enable_small_head}\n"
             f"  LMC contrast gate: {self.enable_lmc} (shuffle={self.lmc_shuffle}, "
             f"liver head w={self.lmc_liver_weight}, spacing={list(self.configuration_manager.spacing)})\n"
-            f"  Architecture: {self.arch} (deep supervision={self.enable_deep_supervision}, lr={self.initial_lr})\n"
+            f"  Architecture: {self.arch} (deep supervision={self.enable_deep_supervision}, lr={self.initial_lr}, "
+            f"autocast={'off' if not self.use_amp else str(self.amp_dtype).replace('torch.', '')})\n"
             f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min}, "
             f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages})\n"
             f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
@@ -676,11 +684,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 net_c = self.network.module if self.is_ddp else self.network
                 net_c._spectral_grad_scales = 10 ** 6   # keep every decoder stage in the graph
                 with torch.no_grad():
-                    with autocast(self.device.type, enabled=self.use_amp) if self.device.type == 'cuda' else dummy_context():
+                    with autocast(self.device.type, enabled=self.use_amp, dtype=self.amp_dtype) if self.device.type == 'cuda' else dummy_context():
                         self.network(clean)
                 cons_teacher = [f.detach() for f in net_c._last_dec_features[:self.lca_cons_stages]]
 
-        with autocast(self.device.type, enabled=self.use_amp) if self.device.type == 'cuda' else dummy_context():
+        with autocast(self.device.type, enabled=self.use_amp, dtype=self.amp_dtype) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
 
             # Small-tumor head logits (training only) are exposed as an
@@ -847,7 +855,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             self.grad_scaler.update()
         else:
             total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
+            grad_norm = torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
+            if not torch.isfinite(grad_norm):
+                self.print_to_log_file(f"WARNING: non-finite gradient at epoch {self.current_epoch}; skipping update")
+                self.optimizer.zero_grad(set_to_none=True)
+                return {'loss': total_loss.detach().cpu().numpy()}
             self.optimizer.step()
 
         return {'loss': total_loss.detach().cpu().numpy()}
@@ -1066,7 +1078,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         else:
             target = target.to(self.device, non_blocking=True)
 
-        with autocast(self.device.type, enabled=self.use_amp) if self.device.type == 'cuda' else dummy_context():
+        with autocast(self.device.type, enabled=self.use_amp, dtype=self.amp_dtype) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
             # forward returns the segmentation output only (small-head logits,
             # if any, are stored on the network and not produced in eval mode).

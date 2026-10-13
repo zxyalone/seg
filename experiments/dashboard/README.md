@@ -30,4 +30,4 @@ A13a/A13b 与 A11 的多 seed 复现独立读取 `_lowcnr_replication/state.json
 
 冻结测试面板读取独立 `Downstream_2_test_protocol` 工作树的冻结版本、27 例清单与 `_analysis/test_protocol` 日志。展示 16 个模型的 432 个分割、15 个模型的 405 个逐例曲线，以及 4 mm 指标、曲线汇总、核验和冻结统计各阶段。GPU 任务来自实际进程，启动时的 6–9 小时估算明确区别于实时剩余时间；推理齐备不会标记整个协议完成。面板只读，不修改冻结执行工作树。
 
-SegResNet 架构迁移面板读取 `_segresnet_transfer` 日志与实际 run.sh 进程，展示 S0/S13b 各两个 seed 的当前轮次、已完成轮次、近期耗时、验证状态、GPU 和排队任务。两轮冒烟及 S0_s1 的历史 OOM 尝试独立标记。八个参考基线读取 `_analysis/reference_baselines/run.log`，以去重的病例完成记录显示 216 个固定 4 mm 评测，并单独检查汇总表。新训练 loss 加入现有曲线选择器，不修改训练配置或任务调度。
+SegResNet 架构迁移面板的轮次、耗时和 loss 读取 fold 目录中 nnU-Net 逐行写入的 `training_log_*.txt`（`_segresnet_transfer/*.log` 是 run.sh 的标准输出，有块缓冲，会滞后数十分钟；跳过 S0_s1 OOM 尝试留下的旧日志），运行状态仍由 `_segresnet_transfer` 中的 RUN_EXIT 标记与实际 run.sh 进程判断，展示 S0/S13b 各两个 seed 的当前轮次、已完成轮次、近期耗时、验证状态、GPU 和排队任务。两轮冒烟及 S0_s1 的历史 OOM 尝试独立标记。八个参考基线读取 `_analysis/reference_baselines/run.log`，以去重的病例完成记录显示 216 个固定 4 mm 评测，并单独检查汇总表。新训练 loss 加入现有曲线选择器，不修改训练配置或任务调度。
