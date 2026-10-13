@@ -1,0 +1,46 @@
+{
+  "split": "external_msd08",
+  "method": "A13b",
+  "n_cases": 303,
+  "n_low_cnr_lesions": 315,
+  "n_cases_with_low_cnr": 228,
+  "bootstrap": {
+    "n": 10000,
+    "seed": 20261012,
+    "valid": 10000
+  },
+  "primary_endpoint_pct": {
+    "A0": 70.68783068783068,
+    "A1": 70.8994708994709,
+    "A13b": 78.41269841269842
+  },
+  "comparisons": [
+    {
+      "comparison": "A13b vs A1",
+      "role": "primary",
+      "diff_pp": 7.51322751322752,
+      "ci95_low": 4.318895182057127,
+      "ci95_high": 10.830770241850693,
+      "p_bootstrap": 0.0,
+      "p_holm": 0.0,
+      "significant": true,
+      "wording": "提高"
+    },
+    {
+      "comparison": "A13b vs A0",
+      "role": "secondary",
+      "diff_pp": 7.724867724867735,
+      "ci95_low": 5.072405140471836,
+      "ci95_high": 10.601542952460377,
+      "p_bootstrap": 0.0,
+      "p_holm": 0.0,
+      "significant": true,
+      "wording": "提高"
+    }
+  ],
+  "loo_top": {
+    "case": "hepaticvessel_332",
+    "contribution_pp": -0.7089947089946769,
+    "diff_without_pp": 8.222222222222197
+  }
+}

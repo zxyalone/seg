@@ -1,0 +1,3 @@
+303 cases -> /root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A13b_s0/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_external_msd08
+Tumor cohort (n=303): tumor Dice 0.6162 ± 0.2485 | global 0.6968 | HD95 56.26 mm | NSD@2 0.5001
+All cases lesion@0.1: recall 0.855 precision 0.211 F1 0.338 FP/scan 5.74

@@ -1,0 +1,14 @@
+{
+  "rule": "liver = predicted liver or tumour in >= 2 of 3 A0 models; tumour = Task08 label 2",
+  "a0_dirs": [
+    "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A0_s0/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/external_msd08_pred",
+    "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A0_s1/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/external_msd08_pred",
+    "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A0_s2/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/external_msd08_pred"
+  ],
+  "n_cases": 303,
+  "tumour_in_liver_frac": {
+    "median": 0.9976957109499816,
+    "min": 0.15695559673323725,
+    "cases_below_0_5": 3
+  }
+}

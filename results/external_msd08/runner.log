@@ -1,0 +1,25 @@
+[2026-10-13 22:49:48] MSD08 external start, HEAD 04a3580, step 1
+303 cases staged in /root/autodl-tmp/ext_data/msd08/Dataset104_MSD08
+[2026-10-13 22:57:05] MSD08 external start, HEAD f76f091, step 2
+[2026-10-13 22:57:05] A0_s2 prediction start (GPU 2)
+[2026-10-13 23:20:05] A0_s1 prediction start (GPU 1)
+[2026-10-13 23:20:05] A0_s0 prediction start (GPU 0)
+[2026-10-14 00:01:06] A0_s2 prediction done (303 / 303)
+[2026-10-14 00:01:06] A1_s2 prediction start (GPU 2)
+[2026-10-14 00:24:32] A0_s1 prediction done (303 / 303)
+[2026-10-14 00:24:32] A1_s1 prediction start (GPU 1)
+[2026-10-14 00:25:01] A0_s0 prediction done (303 / 303)
+[2026-10-14 00:25:01] A1_s0 prediction start (GPU 0)
+[2026-10-14 01:07:34] A1_s2 prediction done (303 / 303)
+[2026-10-14 01:07:34] A13b_s2 prediction start (GPU 2)
+[2026-10-14 01:30:55] A1_s1 prediction done (303 / 303)
+[2026-10-14 01:30:55] A13b_s1 prediction start (GPU 1)
+[2026-10-14 01:31:48] A1_s0 prediction done (303 / 303)
+[2026-10-14 01:31:48] A13b_s0 prediction start (GPU 0)
+[2026-10-14 02:11:43] A13b_s2 prediction done (303 / 303)
+[2026-10-14 02:35:08] A13b_s1 prediction done (303 / 303)
+[2026-10-14 02:36:20] A13b_s0 prediction done (303 / 303)
+[2026-10-14 02:36:27] reference labels built
+[2026-10-14 02:53:28] evaluation done
+[2026-10-14 03:02:19] MSD08 external complete
+EXTERNAL_EXIT 0

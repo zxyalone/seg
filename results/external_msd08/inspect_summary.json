@@ -1,0 +1,55 @@
+{
+  "labels_meta": {
+    "0": "background",
+    "1": "Vessel",
+    "2": "Tumour"
+  },
+  "modality": {
+    "0": "CT"
+  },
+  "n_labelled": 303,
+  "n_images_tr": 303,
+  "n_images_ts": 140,
+  "cases_without_tumour": 0,
+  "tumour_components_per_case": {
+    "1": 211,
+    "2": 36,
+    "3": 23,
+    "4": 13,
+    "5": 10,
+    "6": 3,
+    "7": 2,
+    "8": 2,
+    "11": 1,
+    "14": 1,
+    "17": 1
+  },
+  "n_tumour_components": 544,
+  "tumour_diam_mm_quartiles": [
+    1.2,
+    12.1,
+    22.3,
+    41.8,
+    159.5
+  ],
+  "slice_thickness_mm": {
+    "count": 303.0,
+    "mean": 4.24,
+    "std": 1.69,
+    "min": 0.8,
+    "25%": 2.5,
+    "50%": 5.0,
+    "75%": 5.0,
+    "max": 8.0
+  },
+  "inplane_mm": {
+    "count": 303.0,
+    "mean": 0.805,
+    "std": 0.097,
+    "min": 0.568,
+    "25%": 0.732,
+    "50%": 0.799,
+    "75%": 0.863,
+    "max": 0.977
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "n_ircadb": 303,
+  "n_lits": 151,
+  "lits_dirs": [
+    "/root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset101_LiTS/imagesTr",
+    "/root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset101_LiTS/imagesTs"
+  ],
+  "flagged_pairs": [],
+  "min_fingerprint_mae_hu": 9.970297029702971,
+  "independent": true
+}

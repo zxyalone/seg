@@ -1,0 +1,1834 @@
+{
+ "rule": "liver = predicted liver or tumour in >= 2 of 3 A0 models; tumour = Task08 label 2",
+ "a0_dirs": [
+  "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A0_s0/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/external_msd08_pred",
+  "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A0_s1/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/external_msd08_pred",
+  "/root/autodl-tmp/nnUNet_data/nnUNet_results_v2/A0_s2/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/external_msd08_pred"
+ ],
+ "n_cases": 303,
+ "tumour_in_liver_frac": {
+  "median": 0.9976957109499816,
+  "min": 0.15695559673323725,
+  "cases_below_0_5": 3
+ },
+ "per_case": [
+  {
+   "case": "hepaticvessel_001",
+   "liver_ml": 1858.451648962623,
+   "tumour_ml": 2.2246410481633254,
+   "tumour_in_liver_frac": 0.8977272727272727
+  },
+  {
+   "case": "hepaticvessel_002",
+   "liver_ml": 1975.8889870119735,
+   "tumour_ml": 29.84924390352727,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_004",
+   "liver_ml": 1295.5223783341532,
+   "tumour_ml": 99.32031468956306,
+   "tumour_in_liver_frac": 0.9878534735224926
+  },
+  {
+   "case": "hepaticvessel_005",
+   "liver_ml": 1088.7898302825902,
+   "tumour_ml": 74.98256990222185,
+   "tumour_in_liver_frac": 0.9724006359300477
+  },
+  {
+   "case": "hepaticvessel_007",
+   "liver_ml": 2692.817028316525,
+   "tumour_ml": 677.3652228786718,
+   "tumour_in_liver_frac": 0.9922032817096077
+  },
+  {
+   "case": "hepaticvessel_008",
+   "liver_ml": 1620.6759228515625,
+   "tumour_ml": 5.317998046875,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_010",
+   "liver_ml": 1261.2090545947178,
+   "tumour_ml": 36.78270458587516,
+   "tumour_in_liver_frac": 0.5010891488503428
+  },
+  {
+   "case": "hepaticvessel_011",
+   "liver_ml": 1118.9788818359375,
+   "tumour_ml": 7.501220703125,
+   "tumour_in_liver_frac": 0.9987794955248169
+  },
+  {
+   "case": "hepaticvessel_013",
+   "liver_ml": 1232.1496037159825,
+   "tumour_ml": 169.52275211188993,
+   "tumour_in_liver_frac": 0.9921319642748648
+  },
+  {
+   "case": "hepaticvessel_016",
+   "liver_ml": 1171.5971976509989,
+   "tumour_ml": 81.01317515695645,
+   "tumour_in_liver_frac": 0.9579006743071046
+  },
+  {
+   "case": "hepaticvessel_018",
+   "liver_ml": 1580.7082504764232,
+   "tumour_ml": 232.02145717575408,
+   "tumour_in_liver_frac": 0.7301085926522966
+  },
+  {
+   "case": "hepaticvessel_019",
+   "liver_ml": 1233.106582716129,
+   "tumour_ml": 42.41581798610958,
+   "tumour_in_liver_frac": 0.9320217192017488
+  },
+  {
+   "case": "hepaticvessel_020",
+   "liver_ml": 1867.4163818359375,
+   "tumour_ml": 38.02490234375,
+   "tumour_in_liver_frac": 0.9235152487961477
+  },
+  {
+   "case": "hepaticvessel_022",
+   "liver_ml": 1610.6919720352114,
+   "tumour_ml": 6.813821075971142,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_023",
+   "liver_ml": 3777.516020811304,
+   "tumour_ml": 1888.6788466914272,
+   "tumour_in_liver_frac": 0.9633209025826741
+  },
+  {
+   "case": "hepaticvessel_025",
+   "liver_ml": 3791.5440152076335,
+   "tumour_ml": 1657.7521981624827,
+   "tumour_in_liver_frac": 0.984518964640609
+  },
+  {
+   "case": "hepaticvessel_026",
+   "liver_ml": 1602.2718359374999,
+   "tumour_ml": 19.62974609375,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_027",
+   "liver_ml": 1886.27435546875,
+   "tumour_ml": 111.104296875,
+   "tumour_in_liver_frac": 0.9985739750445632
+  },
+  {
+   "case": "hepaticvessel_028",
+   "liver_ml": 1843.4442983520203,
+   "tumour_ml": 374.79777946832064,
+   "tumour_in_liver_frac": 0.9949509827989722
+  },
+  {
+   "case": "hepaticvessel_029",
+   "liver_ml": 1360.2195807782452,
+   "tumour_ml": 7.233612625861403,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_030",
+   "liver_ml": 1080.2198970456172,
+   "tumour_ml": 81.65914243111902,
+   "tumour_in_liver_frac": 0.9860421493986539
+  },
+  {
+   "case": "hepaticvessel_031",
+   "liver_ml": 3147.719283800899,
+   "tumour_ml": 734.798279949188,
+   "tumour_in_liver_frac": 0.9791030780411187
+  },
+  {
+   "case": "hepaticvessel_032",
+   "liver_ml": 3300.9341221621244,
+   "tumour_ml": 1259.85532595886,
+   "tumour_in_liver_frac": 0.9916836986397913
+  },
+  {
+   "case": "hepaticvessel_033",
+   "liver_ml": 1430.205737642576,
+   "tumour_ml": 162.74052417963586,
+   "tumour_in_liver_frac": 0.9935456020275304
+  },
+  {
+   "case": "hepaticvessel_039",
+   "liver_ml": 1273.7964523522614,
+   "tumour_ml": 16.030674600146092,
+   "tumour_in_liver_frac": 0.993837023510614
+  },
+  {
+   "case": "hepaticvessel_040",
+   "liver_ml": 2021.570239086458,
+   "tumour_ml": 140.631230235487,
+   "tumour_in_liver_frac": 0.9953049449907734
+  },
+  {
+   "case": "hepaticvessel_042",
+   "liver_ml": 1786.016716858902,
+   "tumour_ml": 71.25767018460179,
+   "tumour_in_liver_frac": 0.9640102827763496
+  },
+  {
+   "case": "hepaticvessel_044",
+   "liver_ml": 1128.0851191896725,
+   "tumour_ml": 5.689502482256044,
+   "tumour_in_liver_frac": 0.9953810623556582
+  },
+  {
+   "case": "hepaticvessel_046",
+   "liver_ml": 1788.2319485455967,
+   "tumour_ml": 236.29653640503,
+   "tumour_in_liver_frac": 0.9994731592542391
+  },
+  {
+   "case": "hepaticvessel_049",
+   "liver_ml": 1350.841601030301,
+   "tumour_ml": 212.12893164411506,
+   "tumour_in_liver_frac": 0.9968579544026342
+  },
+  {
+   "case": "hepaticvessel_050",
+   "liver_ml": 1969.141769819697,
+   "tumour_ml": 346.09717333422225,
+   "tumour_in_liver_frac": 0.9511639174576607
+  },
+  {
+   "case": "hepaticvessel_051",
+   "liver_ml": 1452.603596448218,
+   "tumour_ml": 31.274762488255238,
+   "tumour_in_liver_frac": 0.9762358925449054
+  },
+  {
+   "case": "hepaticvessel_052",
+   "liver_ml": 831.5917930163146,
+   "tumour_ml": 2.0941640349292863,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_053",
+   "liver_ml": 1066.320638843221,
+   "tumour_ml": 7.622582694144407,
+   "tumour_in_liver_frac": 0.9895833333333334
+  },
+  {
+   "case": "hepaticvessel_057",
+   "liver_ml": 2348.6168518066406,
+   "tumour_ml": 420.4322204589844,
+   "tumour_in_liver_frac": 0.9928975852965904
+  },
+  {
+   "case": "hepaticvessel_058",
+   "liver_ml": 1084.460623672605,
+   "tumour_ml": 584.7152705065196,
+   "tumour_in_liver_frac": 0.9437799313699612
+  },
+  {
+   "case": "hepaticvessel_059",
+   "liver_ml": 1164.1320962097225,
+   "tumour_ml": 48.36322258171356,
+   "tumour_in_liver_frac": 0.9984109259577392
+  },
+  {
+   "case": "hepaticvessel_061",
+   "liver_ml": 1766.8591983698477,
+   "tumour_ml": 417.2358736819026,
+   "tumour_in_liver_frac": 0.9946900070697445
+  },
+  {
+   "case": "hepaticvessel_062",
+   "liver_ml": 1158.3418027422745,
+   "tumour_ml": 16.356218610737837,
+   "tumour_in_liver_frac": 0.9996470795835539
+  },
+  {
+   "case": "hepaticvessel_065",
+   "liver_ml": 1510.6109619140625,
+   "tumour_ml": 11.0687255859375,
+   "tumour_in_liver_frac": 0.9975186104218362
+  },
+  {
+   "case": "hepaticvessel_066",
+   "liver_ml": 2752.5054931640625,
+   "tumour_ml": 720.2117919921875,
+   "tumour_in_liver_frac": 0.9318386942317552
+  },
+  {
+   "case": "hepaticvessel_067",
+   "liver_ml": 2117.8235278845646,
+   "tumour_ml": 441.92876872618336,
+   "tumour_in_liver_frac": 0.9963368688494636
+  },
+  {
+   "case": "hepaticvessel_068",
+   "liver_ml": 1627.1536317335726,
+   "tumour_ml": 37.856034173008695,
+   "tumour_in_liver_frac": 0.9741025183068405
+  },
+  {
+   "case": "hepaticvessel_070",
+   "liver_ml": 1735.2622068943501,
+   "tumour_ml": 991.5914600038395,
+   "tumour_in_liver_frac": 0.6838887120018768
+  },
+  {
+   "case": "hepaticvessel_071",
+   "liver_ml": 1579.2059050244768,
+   "tumour_ml": 183.73096188657053,
+   "tumour_in_liver_frac": 0.982566765578635
+  },
+  {
+   "case": "hepaticvessel_072",
+   "liver_ml": 1863.1297036683904,
+   "tumour_ml": 36.058390690022364,
+   "tumour_in_liver_frac": 0.9861147844485586
+  },
+  {
+   "case": "hepaticvessel_075",
+   "liver_ml": 1461.7856508095972,
+   "tumour_ml": 84.21797990942162,
+   "tumour_in_liver_frac": 0.9981797317082822
+  },
+  {
+   "case": "hepaticvessel_077",
+   "liver_ml": 1555.7961417565123,
+   "tumour_ml": 104.6449234724891,
+   "tumour_in_liver_frac": 0.999931863090236
+  },
+  {
+   "case": "hepaticvessel_078",
+   "liver_ml": 2377.932133670532,
+   "tumour_ml": 20.13681352604661,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_079",
+   "liver_ml": 1600.4742736816406,
+   "tumour_ml": 5.7855377197265625,
+   "tumour_in_liver_frac": 0.9912411877803888
+  },
+  {
+   "case": "hepaticvessel_080",
+   "liver_ml": 1811.736244946219,
+   "tumour_ml": 45.31855925918706,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_081",
+   "liver_ml": 3628.8493472668324,
+   "tumour_ml": 2122.6251523819756,
+   "tumour_in_liver_frac": 0.8820866168386275
+  },
+  {
+   "case": "hepaticvessel_082",
+   "liver_ml": 2625.430738353562,
+   "tumour_ml": 136.76094017358443,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_083",
+   "liver_ml": 1409.8846435546875,
+   "tumour_ml": 28.6773681640625,
+   "tumour_in_liver_frac": 0.9074172608279238
+  },
+  {
+   "case": "hepaticvessel_084",
+   "liver_ml": 2833.924371059638,
+   "tumour_ml": 1114.039155895267,
+   "tumour_in_liver_frac": 0.9994805351695811
+  },
+  {
+   "case": "hepaticvessel_085",
+   "liver_ml": 1312.1410598141902,
+   "tumour_ml": 11.994606171739582,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_086",
+   "liver_ml": 1633.3383557411935,
+   "tumour_ml": 17.726484359322086,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_087",
+   "liver_ml": 1548.8992736414245,
+   "tumour_ml": 160.91038140083288,
+   "tumour_in_liver_frac": 0.9996476934933392
+  },
+  {
+   "case": "hepaticvessel_088",
+   "liver_ml": 2046.4235143166063,
+   "tumour_ml": 387.00716176265115,
+   "tumour_in_liver_frac": 0.7047951096841124
+  },
+  {
+   "case": "hepaticvessel_089",
+   "liver_ml": 2158.9126693522726,
+   "tumour_ml": 639.961395325371,
+   "tumour_in_liver_frac": 0.9067027426684768
+  },
+  {
+   "case": "hepaticvessel_090",
+   "liver_ml": 1428.3445544433594,
+   "tumour_ml": 162.05431762695312,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_091",
+   "liver_ml": 1960.8881375403275,
+   "tumour_ml": 46.14858409764758,
+   "tumour_in_liver_frac": 0.9892038533938656
+  },
+  {
+   "case": "hepaticvessel_092",
+   "liver_ml": 1686.1568631557973,
+   "tumour_ml": 116.55679991407042,
+   "tumour_in_liver_frac": 0.9989111661785688
+  },
+  {
+   "case": "hepaticvessel_093",
+   "liver_ml": 2378.102843100998,
+   "tumour_ml": 1106.28386625391,
+   "tumour_in_liver_frac": 0.9864765632528019
+  },
+  {
+   "case": "hepaticvessel_094",
+   "liver_ml": 1677.747735530004,
+   "tumour_ml": 522.9499263553112,
+   "tumour_in_liver_frac": 0.8338499340140307
+  },
+  {
+   "case": "hepaticvessel_096",
+   "liver_ml": 2461.4608978990327,
+   "tumour_ml": 25.1801894187621,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_097",
+   "liver_ml": 2228.6250382885296,
+   "tumour_ml": 9.099444636047101,
+   "tumour_in_liver_frac": 0.9689011748445059
+  },
+  {
+   "case": "hepaticvessel_098",
+   "liver_ml": 1599.496257324219,
+   "tumour_ml": 19.598983154296878,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_100",
+   "liver_ml": 1962.9703186432553,
+   "tumour_ml": 10.917708120499588,
+   "tumour_in_liver_frac": 0.9664480322906155
+  },
+  {
+   "case": "hepaticvessel_102",
+   "liver_ml": 1585.6924443339024,
+   "tumour_ml": 8.094637781571214,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_103",
+   "liver_ml": 2351.727020263672,
+   "tumour_ml": 4.013885498046875,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_104",
+   "liver_ml": 3352.052276130634,
+   "tumour_ml": 104.2174275219689,
+   "tumour_in_liver_frac": 0.9741032210834554
+  },
+  {
+   "case": "hepaticvessel_108",
+   "liver_ml": 1461.3685788022733,
+   "tumour_ml": 2.039767734473819,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_110",
+   "liver_ml": 1773.2194872361772,
+   "tumour_ml": 60.35341799691454,
+   "tumour_in_liver_frac": 0.9821798909286428
+  },
+  {
+   "case": "hepaticvessel_111",
+   "liver_ml": 874.3363051480412,
+   "tumour_ml": 3.3143862646728146,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_112",
+   "liver_ml": 2578.351226647017,
+   "tumour_ml": 742.3141059931321,
+   "tumour_in_liver_frac": 0.9976205648673772
+  },
+  {
+   "case": "hepaticvessel_113",
+   "liver_ml": 1416.2580570186146,
+   "tumour_ml": 29.91261260401077,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_115",
+   "liver_ml": 1086.7844747753845,
+   "tumour_ml": 55.218057176941315,
+   "tumour_in_liver_frac": 0.34635930786203695
+  },
+  {
+   "case": "hepaticvessel_116",
+   "liver_ml": 1431.8834790039064,
+   "tumour_ml": 54.33610717773438,
+   "tumour_in_liver_frac": 0.9468148228059766
+  },
+  {
+   "case": "hepaticvessel_117",
+   "liver_ml": 1871.5096179727907,
+   "tumour_ml": 629.1432584170664,
+   "tumour_in_liver_frac": 0.9591326902618903
+  },
+  {
+   "case": "hepaticvessel_119",
+   "liver_ml": 1633.456542338634,
+   "tumour_ml": 131.33036185990426,
+   "tumour_in_liver_frac": 0.9999273836322707
+  },
+  {
+   "case": "hepaticvessel_121",
+   "liver_ml": 1107.2393820012005,
+   "tumour_ml": 107.72308795958672,
+   "tumour_in_liver_frac": 0.9997813661492332
+  },
+  {
+   "case": "hepaticvessel_123",
+   "liver_ml": 2047.2256164550781,
+   "tumour_ml": 22.9976806640625,
+   "tumour_in_liver_frac": 0.970616570327553
+  },
+  {
+   "case": "hepaticvessel_124",
+   "liver_ml": 1671.3458541390683,
+   "tumour_ml": 71.71096712071932,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_125",
+   "liver_ml": 1689.1893343972013,
+   "tumour_ml": 119.28016394760922,
+   "tumour_in_liver_frac": 0.9930785516530047
+  },
+  {
+   "case": "hepaticvessel_127",
+   "liver_ml": 1229.1506982421877,
+   "tumour_ml": 543.8243408203125,
+   "tumour_in_liver_frac": 0.9268385114373506
+  },
+  {
+   "case": "hepaticvessel_128",
+   "liver_ml": 1375.3744555664061,
+   "tumour_ml": 27.0064501953125,
+   "tumour_in_liver_frac": 0.9633062468257999
+  },
+  {
+   "case": "hepaticvessel_129",
+   "liver_ml": 1560.6496594935616,
+   "tumour_ml": 576.4478363752945,
+   "tumour_in_liver_frac": 0.977344350976451
+  },
+  {
+   "case": "hepaticvessel_131",
+   "liver_ml": 1879.9091992564358,
+   "tumour_ml": 317.9647574178697,
+   "tumour_in_liver_frac": 0.991815611299904
+  },
+  {
+   "case": "hepaticvessel_132",
+   "liver_ml": 2891.8474728505494,
+   "tumour_ml": 2118.272626446309,
+   "tumour_in_liver_frac": 0.8074345086036535
+  },
+  {
+   "case": "hepaticvessel_133",
+   "liver_ml": 952.9644368610648,
+   "tumour_ml": 32.28331682188697,
+   "tumour_in_liver_frac": 0.9907144417740879
+  },
+  {
+   "case": "hepaticvessel_136",
+   "liver_ml": 1392.6744611195625,
+   "tumour_ml": 23.396515268964645,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_137",
+   "liver_ml": 1642.173117078301,
+   "tumour_ml": 6.132119866089495,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_138",
+   "liver_ml": 1678.1672155740819,
+   "tumour_ml": 64.83979134214533,
+   "tumour_in_liver_frac": 0.9980633666434271
+  },
+  {
+   "case": "hepaticvessel_139",
+   "liver_ml": 1673.2894135148738,
+   "tumour_ml": 10.580521572682997,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_140",
+   "liver_ml": 1060.9515474357006,
+   "tumour_ml": 66.0881129006837,
+   "tumour_in_liver_frac": 0.9999348831151917
+  },
+  {
+   "case": "hepaticvessel_141",
+   "liver_ml": 1439.4793758125684,
+   "tumour_ml": 65.2694064751423,
+   "tumour_in_liver_frac": 0.7084307422559907
+  },
+  {
+   "case": "hepaticvessel_142",
+   "liver_ml": 1789.3123619262321,
+   "tumour_ml": 49.49309282706533,
+   "tumour_in_liver_frac": 0.15695559673323725
+  },
+  {
+   "case": "hepaticvessel_144",
+   "liver_ml": 1708.7538244579337,
+   "tumour_ml": 11.515606124888127,
+   "tumour_in_liver_frac": 0.998343685300207
+  },
+  {
+   "case": "hepaticvessel_145",
+   "liver_ml": 1729.8316606389374,
+   "tumour_ml": 905.0216799777319,
+   "tumour_in_liver_frac": 0.9540382746751429
+  },
+  {
+   "case": "hepaticvessel_146",
+   "liver_ml": 1819.4425182447399,
+   "tumour_ml": 140.28529070415618,
+   "tumour_in_liver_frac": 0.9958268377503298
+  },
+  {
+   "case": "hepaticvessel_147",
+   "liver_ml": 1763.232336481595,
+   "tumour_ml": 313.85626806772103,
+   "tumour_in_liver_frac": 0.9877352321441546
+  },
+  {
+   "case": "hepaticvessel_148",
+   "liver_ml": 2820.991234516106,
+   "tumour_ml": 333.00328542400865,
+   "tumour_in_liver_frac": 0.9959087955819053
+  },
+  {
+   "case": "hepaticvessel_150",
+   "liver_ml": 2079.0569434436543,
+   "tumour_ml": 122.23106669843602,
+   "tumour_in_liver_frac": 0.9982383220017066
+  },
+  {
+   "case": "hepaticvessel_151",
+   "liver_ml": 3188.3602611714077,
+   "tumour_ml": 1803.9330803311166,
+   "tumour_in_liver_frac": 0.8932211222295292
+  },
+  {
+   "case": "hepaticvessel_154",
+   "liver_ml": 1530.01874303527,
+   "tumour_ml": 8.708827718723436,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_157",
+   "liver_ml": 2160.494601871402,
+   "tumour_ml": 151.2049152050528,
+   "tumour_in_liver_frac": 0.9780195521917376
+  },
+  {
+   "case": "hepaticvessel_158",
+   "liver_ml": 1460.43017578125,
+   "tumour_ml": 11.7333984375,
+   "tumour_in_liver_frac": 0.999625468164794
+  },
+  {
+   "case": "hepaticvessel_159",
+   "liver_ml": 1830.7567098925063,
+   "tumour_ml": 148.1688518217162,
+   "tumour_in_liver_frac": 0.9991207385795932
+  },
+  {
+   "case": "hepaticvessel_160",
+   "liver_ml": 1701.1380529757992,
+   "tumour_ml": 50.45328703155876,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_161",
+   "liver_ml": 1462.3357543945312,
+   "tumour_ml": 47.46588134765625,
+   "tumour_in_liver_frac": 0.6493594417248203
+  },
+  {
+   "case": "hepaticvessel_163",
+   "liver_ml": 1630.7719517596229,
+   "tumour_ml": 46.362831615853935,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_164",
+   "liver_ml": 1629.1934326171875,
+   "tumour_ml": 21.702431640625,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_165",
+   "liver_ml": 2077.66710418213,
+   "tumour_ml": 47.40350813438222,
+   "tumour_in_liver_frac": 0.9916182682154171
+  },
+  {
+   "case": "hepaticvessel_166",
+   "liver_ml": 1713.5335593495881,
+   "tumour_ml": 75.05256336181465,
+   "tumour_in_liver_frac": 0.9489532984152113
+  },
+  {
+   "case": "hepaticvessel_167",
+   "liver_ml": 1499.853515625,
+   "tumour_ml": 91.4276123046875,
+   "tumour_in_liver_frac": 0.9915551253379619
+  },
+  {
+   "case": "hepaticvessel_171",
+   "liver_ml": 1729.0929199218751,
+   "tumour_ml": 13.602832031250001,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_172",
+   "liver_ml": 1473.2270272186415,
+   "tumour_ml": 183.52193231996782,
+   "tumour_in_liver_frac": 0.9959887448583978
+  },
+  {
+   "case": "hepaticvessel_173",
+   "liver_ml": 1452.1206601380093,
+   "tumour_ml": 12.920673068430254,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_174",
+   "liver_ml": 938.689453125,
+   "tumour_ml": 173.43017578125,
+   "tumour_in_liver_frac": 0.9727606740149499
+  },
+  {
+   "case": "hepaticvessel_175",
+   "liver_ml": 1866.6053009033203,
+   "tumour_ml": 37.36436462402344,
+   "tumour_in_liver_frac": 0.9859415831431312
+  },
+  {
+   "case": "hepaticvessel_177",
+   "liver_ml": 2568.6118978719355,
+   "tumour_ml": 314.66612634649533,
+   "tumour_in_liver_frac": 0.9903360028634065
+  },
+  {
+   "case": "hepaticvessel_178",
+   "liver_ml": 2020.6404237457168,
+   "tumour_ml": 27.562592974874857,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_179",
+   "liver_ml": 1159.3956768894193,
+   "tumour_ml": 54.74091979401627,
+   "tumour_in_liver_frac": 0.8945895203959721
+  },
+  {
+   "case": "hepaticvessel_181",
+   "liver_ml": 1816.9604836750448,
+   "tumour_ml": 77.88817838050883,
+   "tumour_in_liver_frac": 0.9997789933145478
+  },
+  {
+   "case": "hepaticvessel_183",
+   "liver_ml": 1256.1209727009593,
+   "tumour_ml": 55.537999797959706,
+   "tumour_in_liver_frac": 0.9973901489987662
+  },
+  {
+   "case": "hepaticvessel_184",
+   "liver_ml": 1272.7303510783377,
+   "tumour_ml": 8.256244900863607,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_185",
+   "liver_ml": 1800.473362268378,
+   "tumour_ml": 146.42701154578245,
+   "tumour_in_liver_frac": 0.9988602318614042
+  },
+  {
+   "case": "hepaticvessel_186",
+   "liver_ml": 1135.0429479450784,
+   "tumour_ml": 33.51711685399362,
+   "tumour_in_liver_frac": 0.99327970675084
+  },
+  {
+   "case": "hepaticvessel_189",
+   "liver_ml": 2008.2900899914566,
+   "tumour_ml": 129.65422508760585,
+   "tumour_in_liver_frac": 0.9976957109499816
+  },
+  {
+   "case": "hepaticvessel_192",
+   "liver_ml": 1986.099675488423,
+   "tumour_ml": 31.183043087051846,
+   "tumour_in_liver_frac": 0.9713759458383114
+  },
+  {
+   "case": "hepaticvessel_193",
+   "liver_ml": 1597.5925740443893,
+   "tumour_ml": 52.43141362986432,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_194",
+   "liver_ml": 1343.582838106845,
+   "tumour_ml": 73.87013040393734,
+   "tumour_in_liver_frac": 0.9580015923566879
+  },
+  {
+   "case": "hepaticvessel_195",
+   "liver_ml": 1092.9784240722656,
+   "tumour_ml": 6.676666259765625,
+   "tumour_in_liver_frac": 0.8744909292854498
+  },
+  {
+   "case": "hepaticvessel_196",
+   "liver_ml": 1545.2162592843292,
+   "tumour_ml": 31.331654135140866,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_197",
+   "liver_ml": 1138.1033935546875,
+   "tumour_ml": 40.67179870605469,
+   "tumour_in_liver_frac": 0.9988756191691738
+  },
+  {
+   "case": "hepaticvessel_198",
+   "liver_ml": 1057.9799597753677,
+   "tumour_ml": 79.2217966649995,
+   "tumour_in_liver_frac": 0.9992750996737948
+  },
+  {
+   "case": "hepaticvessel_199",
+   "liver_ml": 1695.8669921875,
+   "tumour_ml": 194.49095703125,
+   "tumour_in_liver_frac": 0.9994167466614822
+  },
+  {
+   "case": "hepaticvessel_200",
+   "liver_ml": 1573.6659338378904,
+   "tumour_ml": 196.57768310546874,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_201",
+   "liver_ml": 2374.6743582167164,
+   "tumour_ml": 63.12808996976027,
+   "tumour_in_liver_frac": 0.9615290249766917
+  },
+  {
+   "case": "hepaticvessel_203",
+   "liver_ml": 2073.77949121544,
+   "tumour_ml": 631.0708443948917,
+   "tumour_in_liver_frac": 0.9944935336705786
+  },
+  {
+   "case": "hepaticvessel_206",
+   "liver_ml": 2108.846794211453,
+   "tumour_ml": 1.0000323095068182,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_207",
+   "liver_ml": 1634.6015424137026,
+   "tumour_ml": 345.7096246866469,
+   "tumour_in_liver_frac": 0.9948280816013791
+  },
+  {
+   "case": "hepaticvessel_208",
+   "liver_ml": 2828.8485354301597,
+   "tumour_ml": 1294.345909245404,
+   "tumour_in_liver_frac": 0.9979067360682732
+  },
+  {
+   "case": "hepaticvessel_209",
+   "liver_ml": 2551.0525817871094,
+   "tumour_ml": 1006.587158203125,
+   "tumour_in_liver_frac": 0.9690170625331526
+  },
+  {
+   "case": "hepaticvessel_210",
+   "liver_ml": 2008.9467502680072,
+   "tumour_ml": 76.26338398744898,
+   "tumour_in_liver_frac": 0.9964591600860491
+  },
+  {
+   "case": "hepaticvessel_211",
+   "liver_ml": 1084.8516411111505,
+   "tumour_ml": 13.76774150524383,
+   "tumour_in_liver_frac": 0.8607099879663056
+  },
+  {
+   "case": "hepaticvessel_213",
+   "liver_ml": 2817.6978295898434,
+   "tumour_ml": 41.88545544433594,
+   "tumour_in_liver_frac": 0.9848738472775969
+  },
+  {
+   "case": "hepaticvessel_214",
+   "liver_ml": 1760.2198791503906,
+   "tumour_ml": 11.142501831054688,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_215",
+   "liver_ml": 1298.0066975022967,
+   "tumour_ml": 8.859625747429456,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_217",
+   "liver_ml": 1444.2763529395404,
+   "tumour_ml": 13.74720184598446,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_218",
+   "liver_ml": 1286.1035480402984,
+   "tumour_ml": 39.817405787472275,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_219",
+   "liver_ml": 1446.2471189898163,
+   "tumour_ml": 96.33054862732502,
+   "tumour_in_liver_frac": 0.9977873477873478
+  },
+  {
+   "case": "hepaticvessel_221",
+   "liver_ml": 1511.2748599475128,
+   "tumour_ml": 12.164127784784059,
+   "tumour_in_liver_frac": 0.9835358682869463
+  },
+  {
+   "case": "hepaticvessel_222",
+   "liver_ml": 3286.4538523376373,
+   "tumour_ml": 721.4014637797928,
+   "tumour_in_liver_frac": 0.9947914256819729
+  },
+  {
+   "case": "hepaticvessel_223",
+   "liver_ml": 1541.163337116657,
+   "tumour_ml": 59.314397830439674,
+   "tumour_in_liver_frac": 0.9997618480590617
+  },
+  {
+   "case": "hepaticvessel_224",
+   "liver_ml": 1338.2832972343251,
+   "tumour_ml": 176.65697414989071,
+   "tumour_in_liver_frac": 0.9947391638211316
+  },
+  {
+   "case": "hepaticvessel_225",
+   "liver_ml": 1625.3991748046874,
+   "tumour_ml": 5.2179296875,
+   "tumour_in_liver_frac": 0.9982014388489209
+  },
+  {
+   "case": "hepaticvessel_227",
+   "liver_ml": 2056.067377022908,
+   "tumour_ml": 10.892463579864883,
+   "tumour_in_liver_frac": 0.9987946966653274
+  },
+  {
+   "case": "hepaticvessel_229",
+   "liver_ml": 1535.0035018377282,
+   "tumour_ml": 62.58163709664468,
+   "tumour_in_liver_frac": 0.8496682939041181
+  },
+  {
+   "case": "hepaticvessel_230",
+   "liver_ml": 1460.1734331025586,
+   "tumour_ml": 47.6194163474598,
+   "tumour_in_liver_frac": 0.9076900606149128
+  },
+  {
+   "case": "hepaticvessel_231",
+   "liver_ml": 1494.3262182147996,
+   "tumour_ml": 6.198312382212953,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_233",
+   "liver_ml": 2059.5076569740568,
+   "tumour_ml": 33.72541024099802,
+   "tumour_in_liver_frac": 0.9942268041237113
+  },
+  {
+   "case": "hepaticvessel_234",
+   "liver_ml": 1944.0950748955095,
+   "tumour_ml": 48.45599124455685,
+   "tumour_in_liver_frac": 0.987237479806139
+  },
+  {
+   "case": "hepaticvessel_235",
+   "liver_ml": 1593.033123779297,
+   "tumour_ml": 93.83856811523438,
+   "tumour_in_liver_frac": 0.9987480967687362
+  },
+  {
+   "case": "hepaticvessel_236",
+   "liver_ml": 1200.097208917126,
+   "tumour_ml": 47.953362782871665,
+   "tumour_in_liver_frac": 0.9986111111111111
+  },
+  {
+   "case": "hepaticvessel_237",
+   "liver_ml": 1140.5039561700864,
+   "tumour_ml": 5.382063879084405,
+   "tumour_in_liver_frac": 0.4600146735143067
+  },
+  {
+   "case": "hepaticvessel_238",
+   "liver_ml": 1345.7679000744256,
+   "tumour_ml": 144.72631081522644,
+   "tumour_in_liver_frac": 0.9986808037252528
+  },
+  {
+   "case": "hepaticvessel_240",
+   "liver_ml": 1294.1313742653851,
+   "tumour_ml": 28.772654099207635,
+   "tumour_in_liver_frac": 0.9826618171545606
+  },
+  {
+   "case": "hepaticvessel_242",
+   "liver_ml": 2378.3515287369537,
+   "tumour_ml": 3.7288378396480115,
+   "tumour_in_liver_frac": 0.91324200913242
+  },
+  {
+   "case": "hepaticvessel_244",
+   "liver_ml": 886.73828125,
+   "tumour_ml": 4.41015625,
+   "tumour_in_liver_frac": 0.9136403897254207
+  },
+  {
+   "case": "hepaticvessel_245",
+   "liver_ml": 1194.0822194801083,
+   "tumour_ml": 29.056426596828693,
+   "tumour_in_liver_frac": 0.9911858592596122
+  },
+  {
+   "case": "hepaticvessel_246",
+   "liver_ml": 1781.9913907315456,
+   "tumour_ml": 266.32403616609747,
+   "tumour_in_liver_frac": 0.9994784241454849
+  },
+  {
+   "case": "hepaticvessel_248",
+   "liver_ml": 1379.2124201049367,
+   "tumour_ml": 27.451753758186946,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_255",
+   "liver_ml": 1503.2008136600646,
+   "tumour_ml": 49.84916718174596,
+   "tumour_in_liver_frac": 0.9581787865382653
+  },
+  {
+   "case": "hepaticvessel_256",
+   "liver_ml": 1356.5710417498203,
+   "tumour_ml": 245.6397290737267,
+   "tumour_in_liver_frac": 0.9885396120973045
+  },
+  {
+   "case": "hepaticvessel_258",
+   "liver_ml": 1686.1125388017854,
+   "tumour_ml": 47.620817895507734,
+   "tumour_in_liver_frac": 0.9756744803184432
+  },
+  {
+   "case": "hepaticvessel_259",
+   "liver_ml": 1381.5514297485352,
+   "tumour_ml": 106.34092712402344,
+   "tumour_in_liver_frac": 0.9831762340334035
+  },
+  {
+   "case": "hepaticvessel_262",
+   "liver_ml": 2346.966358856858,
+   "tumour_ml": 9.784688930960844,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_263",
+   "liver_ml": 1724.7713083030674,
+   "tumour_ml": 1.0744054234565994,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_265",
+   "liver_ml": 2167.7550622558597,
+   "tumour_ml": 2.3114355468750003,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_266",
+   "liver_ml": 1301.4239392089844,
+   "tumour_ml": 1.5017980957031252,
+   "tumour_in_liver_frac": 0.9704016913319239
+  },
+  {
+   "case": "hepaticvessel_268",
+   "liver_ml": 1616.420728868553,
+   "tumour_ml": 15.34952655327114,
+   "tumour_in_liver_frac": 0.9978907403501371
+  },
+  {
+   "case": "hepaticvessel_269",
+   "liver_ml": 1045.0675059747107,
+   "tumour_ml": 0.4819866279140831,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_270",
+   "liver_ml": 1000.0082891803393,
+   "tumour_ml": 0.24239770122341406,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_271",
+   "liver_ml": 1487.5069381880674,
+   "tumour_ml": 163.9595675449796,
+   "tumour_in_liver_frac": 0.9998036520714706
+  },
+  {
+   "case": "hepaticvessel_272",
+   "liver_ml": 1745.708206078255,
+   "tumour_ml": 1.6351757112896008,
+   "tumour_in_liver_frac": 0.9567901234567902
+  },
+  {
+   "case": "hepaticvessel_274",
+   "liver_ml": 1596.0666628027343,
+   "tumour_ml": 0.9373993556248713,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_275",
+   "liver_ml": 1368.4446963020887,
+   "tumour_ml": 7.243049215726653,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_278",
+   "liver_ml": 1866.2937529428375,
+   "tumour_ml": 5.498096344178016,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_279",
+   "liver_ml": 1676.2601598349022,
+   "tumour_ml": 2.029556973232136,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_280",
+   "liver_ml": 1435.9311568133319,
+   "tumour_ml": 13.766296578058306,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_281",
+   "liver_ml": 1680.4326444202852,
+   "tumour_ml": 1.4936875928567355,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_282",
+   "liver_ml": 1585.2669067382812,
+   "tumour_ml": 10.728927612304688,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_284",
+   "liver_ml": 1641.7761005626983,
+   "tumour_ml": 15.370571042323295,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_285",
+   "liver_ml": 1805.202586669922,
+   "tumour_ml": 8.6488330078125,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_286",
+   "liver_ml": 1620.5514775599759,
+   "tumour_ml": 0.4240034548269271,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_287",
+   "liver_ml": 1620.5514775599759,
+   "tumour_ml": 1.7118906006558532,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_289",
+   "liver_ml": 1297.981248274649,
+   "tumour_ml": 3.214732321725953,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_290",
+   "liver_ml": 1343.0092676109987,
+   "tumour_ml": 3.599699212064257,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_291",
+   "liver_ml": 1463.7478201881981,
+   "tumour_ml": 7.494733569366617,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_293",
+   "liver_ml": 1490.1384961918088,
+   "tumour_ml": 60.07026325227174,
+   "tumour_in_liver_frac": 0.9994483899882783
+  },
+  {
+   "case": "hepaticvessel_294",
+   "liver_ml": 2053.715575124403,
+   "tumour_ml": 630.4708688885511,
+   "tumour_in_liver_frac": 0.8711971029152051
+  },
+  {
+   "case": "hepaticvessel_296",
+   "liver_ml": 1098.2065427060634,
+   "tumour_ml": 3.0580735798064462,
+   "tumour_in_liver_frac": 0.9881061299176578
+  },
+  {
+   "case": "hepaticvessel_297",
+   "liver_ml": 1579.594841160531,
+   "tumour_ml": 7.71919637696867,
+   "tumour_in_liver_frac": 0.9712973593570609
+  },
+  {
+   "case": "hepaticvessel_299",
+   "liver_ml": 1363.7320137944935,
+   "tumour_ml": 9.098911335401194,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_300",
+   "liver_ml": 1035.3135842684405,
+   "tumour_ml": 1.748479239457257,
+   "tumour_in_liver_frac": 0.8385876418663304
+  },
+  {
+   "case": "hepaticvessel_303",
+   "liver_ml": 1022.423628841772,
+   "tumour_ml": 6.781638644527769,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_305",
+   "liver_ml": 1768.216552734375,
+   "tumour_ml": 65.4144287109375,
+   "tumour_in_liver_frac": 0.9999440167949615
+  },
+  {
+   "case": "hepaticvessel_307",
+   "liver_ml": 1608.8714381173138,
+   "tumour_ml": 20.105708221565077,
+   "tumour_in_liver_frac": 0.988065299859341
+  },
+  {
+   "case": "hepaticvessel_308",
+   "liver_ml": 1755.1755812930996,
+   "tumour_ml": 15.797708950704994,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_309",
+   "liver_ml": 1956.466003532737,
+   "tumour_ml": 109.43989118148298,
+   "tumour_in_liver_frac": 0.9936112979152656
+  },
+  {
+   "case": "hepaticvessel_314",
+   "liver_ml": 2980.0986328125,
+   "tumour_ml": 19.36669921875,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_318",
+   "liver_ml": 1558.7346938343564,
+   "tumour_ml": 5.132600174264455,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_319",
+   "liver_ml": 1687.0776307019742,
+   "tumour_ml": 115.57638795962829,
+   "tumour_in_liver_frac": 0.5312647053287406
+  },
+  {
+   "case": "hepaticvessel_320",
+   "liver_ml": 1577.3362518875163,
+   "tumour_ml": 6.958766023821818,
+   "tumour_in_liver_frac": 0.7840440165061898
+  },
+  {
+   "case": "hepaticvessel_321",
+   "liver_ml": 1711.3176877449766,
+   "tumour_ml": 16.05952528216079,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_322",
+   "liver_ml": 1323.4013378462769,
+   "tumour_ml": 8.040776513769273,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_323",
+   "liver_ml": 2392.088909912109,
+   "tumour_ml": 72.34742431640625,
+   "tumour_in_liver_frac": 0.9808293011575917
+  },
+  {
+   "case": "hepaticvessel_324",
+   "liver_ml": 1031.1940931729569,
+   "tumour_ml": 1.8070779782722384,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_325",
+   "liver_ml": 1161.1872774826898,
+   "tumour_ml": 6.767341813841039,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_327",
+   "liver_ml": 1937.324818013911,
+   "tumour_ml": 44.3021476423212,
+   "tumour_in_liver_frac": 0.9966436919388673
+  },
+  {
+   "case": "hepaticvessel_329",
+   "liver_ml": 2185.5933763284856,
+   "tumour_ml": 3.9163774641140847,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_330",
+   "liver_ml": 1955.9192529118498,
+   "tumour_ml": 14.643059281899118,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_332",
+   "liver_ml": 1595.129070536145,
+   "tumour_ml": 20.5498000675079,
+   "tumour_in_liver_frac": 0.9830157246759579
+  },
+  {
+   "case": "hepaticvessel_333",
+   "liver_ml": 1882.1382778776497,
+   "tumour_ml": 5.420312145478592,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_335",
+   "liver_ml": 2408.7668086585427,
+   "tumour_ml": 17.49422930243697,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_336",
+   "liver_ml": 1623.1247840608005,
+   "tumour_ml": 25.85110618198333,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_338",
+   "liver_ml": 1296.199996156014,
+   "tumour_ml": 19.69596898318483,
+   "tumour_in_liver_frac": 0.9691104335145168
+  },
+  {
+   "case": "hepaticvessel_340",
+   "liver_ml": 1577.1785531929518,
+   "tumour_ml": 21.00259815396531,
+   "tumour_in_liver_frac": 0.9979307812969329
+  },
+  {
+   "case": "hepaticvessel_341",
+   "liver_ml": 1807.5136587028453,
+   "tumour_ml": 13.115517899954225,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_344",
+   "liver_ml": 2006.664340074352,
+   "tumour_ml": 43.16255288096527,
+   "tumour_in_liver_frac": 0.9853290744317338
+  },
+  {
+   "case": "hepaticvessel_345",
+   "liver_ml": 1990.183678277642,
+   "tumour_ml": 396.47496643341685,
+   "tumour_in_liver_frac": 0.7301563220442342
+  },
+  {
+   "case": "hepaticvessel_348",
+   "liver_ml": 1382.0563954118586,
+   "tumour_ml": 36.02516394542126,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_349",
+   "liver_ml": 1300.9648125385459,
+   "tumour_ml": 8.616129486873595,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_350",
+   "liver_ml": 1679.0627076406959,
+   "tumour_ml": 57.63209956253665,
+   "tumour_in_liver_frac": 0.9978723910046118
+  },
+  {
+   "case": "hepaticvessel_353",
+   "liver_ml": 1894.905105132471,
+   "tumour_ml": 22.565928362884677,
+   "tumour_in_liver_frac": 0.9995548300934857
+  },
+  {
+   "case": "hepaticvessel_356",
+   "liver_ml": 1165.642635498047,
+   "tumour_ml": 37.416934204101565,
+   "tumour_in_liver_frac": 0.9991068105694083
+  },
+  {
+   "case": "hepaticvessel_358",
+   "liver_ml": 1124.4069140742629,
+   "tumour_ml": 4.624873363702259,
+   "tumour_in_liver_frac": 0.9811371597952034
+  },
+  {
+   "case": "hepaticvessel_359",
+   "liver_ml": 1325.4272852158906,
+   "tumour_ml": 7.453529749866764,
+   "tumour_in_liver_frac": 0.993993993993994
+  },
+  {
+   "case": "hepaticvessel_361",
+   "liver_ml": 1776.4251491898087,
+   "tumour_ml": 41.6268294643728,
+   "tumour_in_liver_frac": 0.723288733759938
+  },
+  {
+   "case": "hepaticvessel_362",
+   "liver_ml": 3328.39879199709,
+   "tumour_ml": 50.086926184606575,
+   "tumour_in_liver_frac": 0.9774371667936025
+  },
+  {
+   "case": "hepaticvessel_363",
+   "liver_ml": 1167.0224304199219,
+   "tumour_ml": 39.71392822265625,
+   "tumour_in_liver_frac": 0.9989418648076683
+  },
+  {
+   "case": "hepaticvessel_367",
+   "liver_ml": 1657.379538592212,
+   "tumour_ml": 10.089218756146483,
+   "tumour_in_liver_frac": 0.9950875038378876
+  },
+  {
+   "case": "hepaticvessel_368",
+   "liver_ml": 2091.4719356431133,
+   "tumour_ml": 61.19595969983655,
+   "tumour_in_liver_frac": 0.9978961670793978
+  },
+  {
+   "case": "hepaticvessel_369",
+   "liver_ml": 1762.1508992094152,
+   "tumour_ml": 4.058307678139631,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_371",
+   "liver_ml": 1333.3087463378906,
+   "tumour_ml": 15.016937255859375,
+   "tumour_in_liver_frac": 0.9795884773662551
+  },
+  {
+   "case": "hepaticvessel_372",
+   "liver_ml": 1693.3421634744993,
+   "tumour_ml": 6.068483273297458,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_373",
+   "liver_ml": 1466.1864181108508,
+   "tumour_ml": 26.65862327108916,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_374",
+   "liver_ml": 1760.1556256958265,
+   "tumour_ml": 133.12490524028982,
+   "tumour_in_liver_frac": 0.9976897645949786
+  },
+  {
+   "case": "hepaticvessel_375",
+   "liver_ml": 1661.0066390655222,
+   "tumour_ml": 344.09502053603956,
+   "tumour_in_liver_frac": 0.9866448446939927
+  },
+  {
+   "case": "hepaticvessel_378",
+   "liver_ml": 1167.7275600049052,
+   "tumour_ml": 6.727679216603618,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_379",
+   "liver_ml": 1521.7401781228089,
+   "tumour_ml": 2.850613893089153,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_382",
+   "liver_ml": 1375.292572763906,
+   "tumour_ml": 50.63620962733811,
+   "tumour_in_liver_frac": 0.9508984538236523
+  },
+  {
+   "case": "hepaticvessel_383",
+   "liver_ml": 2378.6736147274346,
+   "tumour_ml": 44.084029062195945,
+   "tumour_in_liver_frac": 0.9886101826913717
+  },
+  {
+   "case": "hepaticvessel_384",
+   "liver_ml": 1360.3409071323454,
+   "tumour_ml": 2.5903122686700217,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_385",
+   "liver_ml": 2265.3528748565195,
+   "tumour_ml": 9.131037092957536,
+   "tumour_in_liver_frac": 0.990251572327044
+  },
+  {
+   "case": "hepaticvessel_386",
+   "liver_ml": 2242.96435546875,
+   "tumour_ml": 37.15301513671875,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_388",
+   "liver_ml": 1496.9417880961348,
+   "tumour_ml": 22.891102357179296,
+   "tumour_in_liver_frac": 0.999734172167826
+  },
+  {
+   "case": "hepaticvessel_389",
+   "liver_ml": 1879.6034838994308,
+   "tumour_ml": 113.31071659308823,
+   "tumour_in_liver_frac": 0.9977805960684845
+  },
+  {
+   "case": "hepaticvessel_391",
+   "liver_ml": 2839.6724545636557,
+   "tumour_ml": 38.78318194178234,
+   "tumour_in_liver_frac": 0.9906594961788848
+  },
+  {
+   "case": "hepaticvessel_393",
+   "liver_ml": 2563.9061174669478,
+   "tumour_ml": 4.859181282634221,
+   "tumour_in_liver_frac": 0.9223300970873787
+  },
+  {
+   "case": "hepaticvessel_396",
+   "liver_ml": 1824.6976654143466,
+   "tumour_ml": 73.8889322530815,
+   "tumour_in_liver_frac": 0.9989105135442975
+  },
+  {
+   "case": "hepaticvessel_397",
+   "liver_ml": 1625.7560177092298,
+   "tumour_ml": 38.53108886097748,
+   "tumour_in_liver_frac": 0.999734696830833
+  },
+  {
+   "case": "hepaticvessel_398",
+   "liver_ml": 1435.0314426231073,
+   "tumour_ml": 11.018282051362144,
+   "tumour_in_liver_frac": 0.9759930161501528
+  },
+  {
+   "case": "hepaticvessel_400",
+   "liver_ml": 1790.0020383738479,
+   "tumour_ml": 14.0101406829862,
+   "tumour_in_liver_frac": 0.9998820476527482
+  },
+  {
+   "case": "hepaticvessel_401",
+   "liver_ml": 1443.5518049199852,
+   "tumour_ml": 0.22368295991566137,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_402",
+   "liver_ml": 1562.131512417451,
+   "tumour_ml": 72.36837530781709,
+   "tumour_in_liver_frac": 0.9977165039675744
+  },
+  {
+   "case": "hepaticvessel_404",
+   "liver_ml": 1278.9525258318654,
+   "tumour_ml": 7.044340604045232,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_406",
+   "liver_ml": 1734.3027465820314,
+   "tumour_ml": 11.223325195312501,
+   "tumour_in_liver_frac": 0.9871550903901046
+  },
+  {
+   "case": "hepaticvessel_407",
+   "liver_ml": 1416.8893180542086,
+   "tumour_ml": 29.081799469638494,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_408",
+   "liver_ml": 1875.0081904297044,
+   "tumour_ml": 11.357961941582081,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_409",
+   "liver_ml": 1217.0911597354366,
+   "tumour_ml": 5.487391092279532,
+   "tumour_in_liver_frac": 0.9693893735130849
+  },
+  {
+   "case": "hepaticvessel_411",
+   "liver_ml": 1573.8093965826338,
+   "tumour_ml": 3.5676245752084452,
+   "tumour_in_liver_frac": 0.9226361031518625
+  },
+  {
+   "case": "hepaticvessel_412",
+   "liver_ml": 1184.4571924124243,
+   "tumour_ml": 7.57957411590113,
+   "tumour_in_liver_frac": 0.9767687434002112
+  },
+  {
+   "case": "hepaticvessel_416",
+   "liver_ml": 1623.073293457031,
+   "tumour_ml": 0.6738266601562499,
+   "tumour_in_liver_frac": 0.96513470681458
+  },
+  {
+   "case": "hepaticvessel_419",
+   "liver_ml": 2426.1957092285156,
+   "tumour_ml": 1.5313568115234375,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_420",
+   "liver_ml": 1097.7244730295672,
+   "tumour_ml": 12.084989762279928,
+   "tumour_in_liver_frac": 0.9974734453954831
+  },
+  {
+   "case": "hepaticvessel_422",
+   "liver_ml": 1816.7705934767928,
+   "tumour_ml": 4.096665445646383,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_423",
+   "liver_ml": 1768.2239170493162,
+   "tumour_ml": 43.43927612473689,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_424",
+   "liver_ml": 1378.364326221061,
+   "tumour_ml": 30.248890232994093,
+   "tumour_in_liver_frac": 0.9428867844222175
+  },
+  {
+   "case": "hepaticvessel_425",
+   "liver_ml": 1690.8441009521484,
+   "tumour_ml": 2.669677734375,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_427",
+   "liver_ml": 1993.689913330078,
+   "tumour_ml": 6.32606689453125,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_429",
+   "liver_ml": 1555.5750622530609,
+   "tumour_ml": 3.1115648913891873,
+   "tumour_in_liver_frac": 0.9924202822791427
+  },
+  {
+   "case": "hepaticvessel_431",
+   "liver_ml": 1231.5165296234395,
+   "tumour_ml": 3.6117941948492884,
+   "tumour_in_liver_frac": 0.9946996466431095
+  },
+  {
+   "case": "hepaticvessel_432",
+   "liver_ml": 1532.7343277729976,
+   "tumour_ml": 1.1944759148175883,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_433",
+   "liver_ml": 998.5937092678732,
+   "tumour_ml": 32.41109520932073,
+   "tumour_in_liver_frac": 0.9882795082489331
+  },
+  {
+   "case": "hepaticvessel_434",
+   "liver_ml": 1858.7160065838716,
+   "tumour_ml": 1.1744587631130106,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_437",
+   "liver_ml": 1103.862657265987,
+   "tumour_ml": 5.25359474655272,
+   "tumour_in_liver_frac": 0.9340866290018832
+  },
+  {
+   "case": "hepaticvessel_438",
+   "liver_ml": 2024.9124642051431,
+   "tumour_ml": 13.81912296210682,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_440",
+   "liver_ml": 1995.900418055438,
+   "tumour_ml": 27.762578544912184,
+   "tumour_in_liver_frac": 0.979800013421918
+  },
+  {
+   "case": "hepaticvessel_441",
+   "liver_ml": 2119.0137498882104,
+   "tumour_ml": 30.110588961979996,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_442",
+   "liver_ml": 1633.439638378453,
+   "tumour_ml": 142.14889777827975,
+   "tumour_in_liver_frac": 0.9453300795486959
+  },
+  {
+   "case": "hepaticvessel_443",
+   "liver_ml": 1219.7521480708558,
+   "tumour_ml": 31.421253038116504,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_444",
+   "liver_ml": 1684.6518762088547,
+   "tumour_ml": 132.24563849800256,
+   "tumour_in_liver_frac": 0.9928162148293851
+  },
+  {
+   "case": "hepaticvessel_445",
+   "liver_ml": 2283.42088494648,
+   "tumour_ml": 36.09629598790634,
+   "tumour_in_liver_frac": 0.9951501585525089
+  },
+  {
+   "case": "hepaticvessel_446",
+   "liver_ml": 1621.4365302927752,
+   "tumour_ml": 0.5728093662860101,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_447",
+   "liver_ml": 1130.9682218673213,
+   "tumour_ml": 2.648307328953022,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_453",
+   "liver_ml": 1370.0107717729504,
+   "tumour_ml": 13.597285076477066,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_454",
+   "liver_ml": 1438.75828125,
+   "tumour_ml": 24.645937500000002,
+   "tumour_in_liver_frac": 0.9952071208490243
+  },
+  {
+   "case": "hepaticvessel_455",
+   "liver_ml": 2313.975680201121,
+   "tumour_ml": 6.42512379664938,
+   "tumour_in_liver_frac": 1.0
+  },
+  {
+   "case": "hepaticvessel_456",
+   "liver_ml": 920.3508196966278,
+   "tumour_ml": 72.65102743031657,
+   "tumour_in_liver_frac": 0.9997878359264498
+  },
+  {
+   "case": "hepaticvessel_458",
+   "liver_ml": 1832.4159483435535,
+   "tumour_ml": 5.910036716239517,
+   "tumour_in_liver_frac": 0.9964723926380368
+  }
+ ]
+}
