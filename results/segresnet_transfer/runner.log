@@ -1,0 +1,12 @@
+[2026-10-13 20:40:48] transfer evaluation start
+[2026-10-13 20:40:48] S0_s0 test prediction start (GPU 2)
+[2026-10-13 21:16:48] S0_s0 test prediction done
+[2026-10-13 21:16:48] S0_s1 test prediction start (GPU 2)
+[2026-10-13 21:52:40] S0_s1 test prediction done
+[2026-10-13 22:31:48] S13b_bf16_s0 test prediction start (GPU 0)
+[2026-10-13 22:34:48] S13b_bf16_s1 test prediction start (GPU 1)
+[2026-10-13 23:08:15] S13b_bf16_s0 test prediction done
+[2026-10-13 23:11:04] S13b_bf16_s1 test prediction done
+[2026-10-13 23:11:04] metrics val
+[2026-10-13 23:14:29] metrics test
+[2026-10-13 23:19:28] transfer evaluation complete

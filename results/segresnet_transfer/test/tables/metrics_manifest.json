@@ -1,0 +1,13 @@
+{
+  "split": "test",
+  "runs": [
+    "S0_s0",
+    "S0_s1",
+    "S13b_bf16_s0",
+    "S13b_bf16_s1"
+  ],
+  "n_cases": 27,
+  "min_diameter_mm": 4.0,
+  "connectivity": 26,
+  "iou": 0.1
+}

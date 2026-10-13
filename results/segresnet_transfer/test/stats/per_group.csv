@@ -1,0 +1,3 @@
+group,recall_low,n_low,det_low,recall_all,fp_per_scan,tumor_dice,f1
+S0,58.0645,62.0,36.0,69.17,2.7222,67.7105,69.7855
+S13b_bf16,33.871,62.0,21.0,31.0277,4.963,32.9506,33.5498
