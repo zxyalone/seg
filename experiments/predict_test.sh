@@ -15,6 +15,8 @@ DATA=${DATA:-/root/autodl-tmp/nnUNet_data}
 ENV_BIN=${ENV_BIN:-/root/autodl-tmp/envs/mamba/bin}
 RESULTS_ROOT=${RESULTS_ROOT:-$DATA/nnUNet_results_v2}
 GPU=${GPU:-0}
+CHK=${CHK:-checkpoint_final.pth}   # TriALS-setting runs (plan §11, 2026-10-14) also predict with checkpoint_best.pth
+SUFFIX=${SUFFIX:-}                 # output folders test_pred$SUFFIX / eval_test$SUFFIX
 
 [[ -f $REPO/experiments/PROTOCOL_FROZEN ]] || {
   echo "experiments/PROTOCOL_FROZEN missing: the test set stays locked until the protocol is frozen" >&2; exit 1; }
@@ -27,19 +29,19 @@ for v in $(env | grep -o '^PHASER_[A-Z0-9_]*'); do unset "$v"; done
 set -a; source "$REPO/experiments/configs/$GROUP.env"; set +a
 export PHASER_SEED=$SEED
 FOLD_DIR="$nnUNet_results/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0"
-[[ -f $FOLD_DIR/checkpoint_final.pth ]] || { echo "no checkpoint_final for $RUN" >&2; exit 1; }
+[[ -f $FOLD_DIR/$CHK ]] || { echo "no $CHK for $RUN" >&2; exit 1; }
 
 predict() {  # input_dir output_dir
   "$ENV_BIN/nnUNetv2_predict" -i "$1" -o "$2" -d Dataset102_LiTS -c 3d_fullres \
-    -tr nnUNetTrainer_phaser -p nnUNetPlans -f 0 -chk checkpoint_final.pth \
+    -tr nnUNetTrainer_phaser -p nnUNetPlans -f 0 -chk "$CHK" \
     --disable_tta -device cuda -npp 1 -nps 1
 }
 
-predict "$nnUNet_raw/Dataset102_LiTS/imagesTs" "$FOLD_DIR/test_pred"
+predict "$nnUNet_raw/Dataset102_LiTS/imagesTs" "$FOLD_DIR/test_pred$SUFFIX"
 "$ENV_BIN/python" "$REPO/experiments/eval/evaluate.py" \
-  --pred-dir "$FOLD_DIR/test_pred" --gt-dir "$nnUNet_raw/Dataset101_LiTS/labelsTr" \
+  --pred-dir "$FOLD_DIR/test_pred$SUFFIX" --gt-dir "$nnUNet_raw/Dataset101_LiTS/labelsTr" \
   --image-dir "$nnUNet_raw/Dataset102_LiTS/imagesTs" \
-  --cases-file "$REPO/experiments/eval/test_cases.txt" --out-dir "$FOLD_DIR/eval_test"
+  --cases-file "$REPO/experiments/eval/test_cases.txt" --out-dir "$FOLD_DIR/eval_test$SUFFIX"
 
 if [[ -n ${EXTERNAL_IMAGES:-} && -n ${EXTERNAL_LABELS:-} ]]; then
   predict "$EXTERNAL_IMAGES" "$FOLD_DIR/external_pred"

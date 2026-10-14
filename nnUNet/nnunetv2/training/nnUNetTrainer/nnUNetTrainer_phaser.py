@@ -327,6 +327,14 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.num_epochs = int(os.environ.get('PHASER_NUM_EPOCHS', '200'))
         self.initial_lr = 5e-3
         self.weight_decay = 3e-5
+        # TriALS-setting experiment (plan §11, 2026-10-14): 'nnunet' = stock nnU-Net
+        # optimiser (SGD, lr 1e-2 for every parameter, poly decay) as in the TriALS
+        # nnUNetTrainer_100epochs; 'finetune' (default) = the 0.3x / 0.5x / 1x groups.
+        self.lr_recipe = os.environ.get('PHASER_LR_RECIPE', 'finetune')
+        if self.lr_recipe not in ('finetune', 'nnunet'):
+            raise ValueError(f"PHASER_LR_RECIPE must be 'finetune' or 'nnunet', got {self.lr_recipe!r}")
+        if self.lr_recipe == 'nnunet':
+            self.initial_lr = 1e-2
         # Architecture-transfer experiment (plan §11): MONAI SegResNet with the
         # TriALS optimiser settings (Adam, lr 1e-4, wd 1e-5, no deep supervision).
         self.arch = os.environ.get('PHASER_ARCH', 'plainunet')
@@ -386,7 +394,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"{self.phase2_start}-{self.phase3_start-1} (B), "
             f"{self.phase3_start}-{self.num_epochs} (C)\n"
             f"  Total epochs: {self.num_epochs}\n"
-            f"  Initial LR: {self.initial_lr}\n"
+            f"  Initial LR: {self.initial_lr} (recipe {self.lr_recipe})\n"
             f"  Oversample: {self.oversample_foreground_percent}\n"
             f"{'='*60}\n"
         )
@@ -448,6 +456,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         )
         if checkpoint_path and os.path.isfile(checkpoint_path):
             base_model = load_pretrained_weights(base_model, checkpoint_path)
+            print(f'Pretrained weights: {checkpoint_path}')
+        else:
+            print('Pretrained weights: none (trained from scratch)')
 
         # Read module switches from environment (in static context)
         enable_pcsf = os.environ.get('PHASER_PCSF', '0') == '1'
@@ -610,6 +621,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 other_params.append(param)
 
         param_groups = []
+        if self.lr_recipe == 'nnunet':
+            encoder_params, decoder_params = [], []
+            other_params = [p for p in self.network.parameters() if p.requires_grad]
+            phaser_params, phaser_no_decay = [], []
         if encoder_params:
             param_groups.append({'params': encoder_params, 'lr': self.initial_lr * 0.3})
         if decoder_params:
