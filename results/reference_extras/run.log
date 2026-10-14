@@ -1,0 +1,113 @@
+27 cases -> /root/autodl-tmp/Downstream_2_external/results/reference_extras/stage/UMambaBot+TTA/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.6146 ± 0.2302 | global 0.7473 | HD95 50.31 mm | NSD@2 0.6086
+All cases lesion@0.1: recall 0.715 precision 0.537 F1 0.614 FP/scan 5.78
+UMambaBot+TTA LiTS_000: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/Downstream_2_external/results/reference_extras/stage/SegResNet+TTA/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.6035 ± 0.2362 | global 0.6935 | HD95 51.51 mm | NSD@2 0.6083
+All cases lesion@0.1: recall 0.708 precision 0.514 F1 0.596 FP/scan 6.26
+SegResNet+TTA LiTS_000: fixed 4-mm metrics complete
+27 cases -> /root/autodl-tmp/Downstream_2_external/results/reference_extras/stage/nnUNet3D+TTA/Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0/eval_test
+Tumor cohort (n=24): tumor Dice 0.6117 ± 0.2380 | global 0.7094 | HD95 42.04 mm | NSD@2 0.5971
+All cases lesion@0.1: recall 0.688 precision 0.474 F1 0.561 FP/scan 7.15
+nnUNet3D+TTA LiTS_000: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_003: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_003: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_003: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_005: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_005: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_005: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_007: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_007: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_007: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_011: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_011: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_011: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_016: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_016: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_016: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_021: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_028: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_032: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_021: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_036: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_021: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_028: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_028: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_032: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_050: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_032: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_036: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_054: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_036: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_050: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_050: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_054: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_057: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_054: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_072: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_075: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_057: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_077: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_057: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_072: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_072: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_075: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_075: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_077: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_077: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_092: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_092: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_092: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_097: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_097: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_097: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_099: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_099: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_099: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_106: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_106: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_106: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_109: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_109: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_109: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_112: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_112: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_112: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_115: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_115: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_115: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_117: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_117: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_117: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_118: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_118: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_118: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_122: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_122: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_122: fixed 4-mm metrics complete
+UMambaBot+TTA LiTS_130: fixed 4-mm metrics complete
+SegResNet+TTA LiTS_130: fixed 4-mm metrics complete
+nnUNet3D+TTA LiTS_130: fixed 4-mm metrics complete
+          run  recall_low  recall_all  fp_per_scan  tumor_dice    f1
+ nnUNet3D+TTA       56.45       66.80         3.44       61.21 65.63
+SegResNet+TTA       59.68       67.59         3.59       60.20 65.64
+UMambaBot+TTA       61.29       67.98         3.19       61.24 67.32
+                  n_cases  pred_empty_cases   dice    voe     rvd    assd    hd95    mssd
+region run                                                                               
+liver  MedNeXt-L       27                 0  94.27  10.56    4.08    5.42   44.06  137.47
+       SAMed-B         27                 0  72.91  41.28   -2.23   19.95   82.13  157.14
+       SAMed-H         27                 0  94.91   9.66    1.06    5.05   55.10  113.16
+       SegResNet       27                 0  90.94  16.29   10.05    9.81   94.07  131.30
+       SwinUNETR       27                 0  82.27  29.70    9.22   19.31  128.98  283.58
+       UMambaBot       27                 0  91.68  15.00   11.68    8.71   77.78  136.82
+       nnUNet2D        27                 0  95.76   8.09    0.62    3.05   29.04   99.08
+       nnUNet3D        27                 0  92.41  13.79    7.89    8.74   85.72  151.07
+tumour MedNeXt-L       24                 0  66.11  47.08    0.01    9.51   48.63   79.08
+       SAMed-B         24                 7  12.37  92.04   -3.33  255.50  291.26  317.80
+       SAMed-H         24                 1  62.87  51.13    0.60   42.51   81.50  113.23
+       SegResNet       24                 0  60.68  52.63   10.87   12.49   58.35   89.02
+       SwinUNETR       24                 0  24.11  84.25  867.92   56.63  137.25  239.91
+       UMambaBot       24                 0  57.24  55.57  118.92   15.14   54.94   85.10
+       nnUNet2D        24                 0  56.76  55.62   26.66   15.44   41.66   66.59
+       nnUNet3D        24                 0  56.25  57.46   78.48   17.43   75.53  109.13
+REFX_EXIT 0

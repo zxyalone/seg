@@ -2,7 +2,8 @@
 """Unified test-set evaluation of the TriALS reference architectures (plan §11,
 2026-10-13; descriptive, not part of the confirmatory tests).
 
-Their saved test predictions (no TTA, checkpoint_final; Dataset101, same
+Their saved test predictions (no TTA, checkpoint_best as written by TriALS
+train_new_split/09_test_inference.sh; corrected 2026-10-14, plan §11; Dataset101, same
 83/21/27 split, 100 epochs, no pretraining, one seed) are scored with exactly
 the pipeline of the frozen protocol: evaluate.py against the same labels,
 26-connectivity, IoU > 0.1 Hungarian matching, frozen CNR tertiles, then the

@@ -1,0 +1,12 @@
+model,params_m,trainable_m,note
+nnUNet3D,88.621199,88.621199,
+SegResNet,18.796035,18.796035,
+UMambaBot,174.208271,174.208271,
+MedNeXt-L,62.992932,62.992932,
+SwinUNETR,63.127949,63.127949,
+nnUNet2D,126.564245,126.564245,
+SAMed-B,93.883184,4.071951,SAM total + LoRA; trainable = stored LoRA + decoder weights
+SAMed-H,641.746224,4.579855,SAM total + LoRA; trainable = stored LoRA + decoder weights
+A0,177.242398,177.242398,exact count 177242398
+A1,177.242413,177.242413,exact count 177242413
+A13b,177.242398,177.242398,exact count 177242398
