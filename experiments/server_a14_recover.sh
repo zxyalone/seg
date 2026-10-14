@@ -14,19 +14,24 @@ ENV_BIN=/root/autodl-tmp/envs/mamba/bin
 OUT=$REPO/results/a14_pixel2cancer
 FOLD=Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0
 log() { echo "[$(date '+%F %T')] $*" | tee -a "$OUT/runner.log"; }
+export VOCOMNI_NNUNET_CKPT=/root/autodl-tmp/Downstream_2/VoComni_nnunet.pt   # run.sh checks it even when it skips training
+VAL=$DATA/nnUNet_results_v2/A14_s$SEED/$FOLD/validation
 
+if [[ -f $VAL/summary.json && $(ls "$VAL"/*.nii.gz | wc -l) -eq 21 ]]; then
+  log "A14_s$SEED validation already complete, continuing"
+else
 # wait until no other A14 validation is running (memory)
 while pgrep -f "nnUNetv2_train Dataset102_LiTS 3d_fullres 0 -tr nnUNetTrainer_phaser" >/dev/null; do sleep 60; done
 log "A14_s$SEED validation rerun start (previous attempt lost an export worker)"
 (
   export nnUNet_raw=$DATA/nnUNet_raw nnUNet_preprocessed=$DATA/nnUNet_preprocessed nnUNet_results=$DATA/nnUNet_results_v2/A14_s$SEED
   export PYTHONPATH=$REPO/nnUNet CUDA_VISIBLE_DEVICES=$SEED nnUNet_def_n_proc=3
-  export VOCOMNI_NNUNET_CKPT=/root/autodl-tmp/Downstream_2/VoComni_nnunet.pt
   for v in $(env | grep -o '^PHASER_[A-Z0-9_]*'); do unset "$v"; done
   set -a; source "$REPO/experiments/configs/A14.env"; set +a
   export PHASER_SEED=$SEED
   "$ENV_BIN/nnUNetv2_train" Dataset102_LiTS 3d_fullres 0 -tr nnUNetTrainer_phaser --val
 ) > "$OUT/val_rerun_A14_s$SEED.log" 2>&1 || { log "A14_s$SEED validation rerun failed"; exit 1; }
+fi
 # run.sh skips training (checkpoint_final exists) and evaluates validation/
 GPU=$SEED "$REPO/experiments/run.sh" A14 $SEED >> "$OUT/train_A14_s$SEED.log" 2>&1 && log "A14_s$SEED trained" \
   && GPU=$SEED "$REPO/experiments/predict_test.sh" A14 $SEED > "$OUT/predict_A14_s$SEED.log" 2>&1 \
