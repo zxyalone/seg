@@ -81,6 +81,7 @@ import torch.nn.functional as F
 from torch import nn, autocast
 
 from nnunetv2.training.nnUNetTrainer.nnUNetTrainer import nnUNetTrainer
+from nnunetv2.training.dataloading.nnunet_dataset import nnUNetDataset
 from nnunetv2.training.loss.compound_losses import DC_and_CE_loss, DC_and_BCE_loss
 from nnunetv2.training.loss.deep_supervision import DeepSupervisionWrapper
 from nnunetv2.training.loss.dice import MemoryEfficientSoftDiceLoss
@@ -280,6 +281,11 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             raise ValueError('PHASER_LCA_CONS_WEIGHT > 0 requires PHASER_LCA=1')
         self.enable_cc_loss = os.environ.get('PHASER_CC_LOSS', '0') == '1'
         self.cc_weight = float(os.environ.get('PHASER_CC_WEIGHT', '1.0'))
+        # A14 (plan §11, 2026-10-14): Pixel2Cancer synthetic tumours, generated
+        # offline by experiments/external/p2c_synthesize.py; a training case is
+        # replaced by one of its variants with probability PHASER_P2C_P.
+        self.p2c_dir = os.environ.get('PHASER_P2C_DIR', '')
+        self.p2c_p = float(os.environ.get('PHASER_P2C_P', '0.9'))
         if self.pfcr_use_prior:
             self.enable_small_head = True
         # Tier-1 frequency-paper ablation modules (new, independent switches)
@@ -366,6 +372,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min}, "
             f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages})\n"
             f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
+            f"  Pixel2Cancer variants: {self.p2c_dir or 'off'} (p={self.p2c_p})\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
             f"  Spectral loss: {self.enable_spectral_loss} (w={self.spectral_weight})\n"
             f"  Boundary loss: {self.enable_boundary_loss} (w={self.boundary_weight})\n"
@@ -867,6 +874,15 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
     # ------------------------------------------------------------------
     # Reproducibility: worker seeds and run manifest
     # ------------------------------------------------------------------
+    def get_tr_and_val_datasets(self):
+        dataset_tr, dataset_val = super().get_tr_and_val_datasets()
+        if self.p2c_dir:
+            dataset_tr = P2CDataset(dataset_tr, self.p2c_dir, self.p2c_p)
+            assert not set(dataset_tr.variants) & set(dataset_val.keys()), 'synthetic variants of validation cases'
+            self.print_to_log_file(f"Pixel2Cancer: {sum(map(len, dataset_tr.variants.values()))} variants for "
+                                   f"{len(dataset_tr.variants)} of {len(dataset_tr.keys())} training cases, p={self.p2c_p}")
+        return dataset_tr, dataset_val
+
     def get_dataloaders(self):
         mt_gen_train, mt_gen_val = super().get_dataloaders()
         if self.seed is not None:
@@ -1166,3 +1182,53 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             self.save_checkpoint(
                 os.path.join(self.output_folder, 'checkpoint_best_tumor_dice.pth')
             )
+
+
+class _PatchedArray:
+    """Read-only view of a (C, Z, Y, X) case array with a box replaced, for the
+    slicing done by nnUNetDataLoader3D (data[slices]); returns copies."""
+
+    def __init__(self, base, lo, patch):
+        self.base, self.lo, self.patch = base, np.asarray(lo), patch.astype(base.dtype)
+        self.shape, self.dtype = base.shape, base.dtype
+
+    def __getitem__(self, sl):
+        out = np.array(self.base[sl])
+        starts = np.array([s.start or 0 for s in sl[1:]])
+        stops = np.array([n if s.stop is None else s.stop for s, n in zip(sl[1:], self.shape[1:])])
+        a = np.maximum(starts, self.lo)
+        b = np.minimum(stops, self.lo + np.array(self.patch.shape[1:]))
+        if np.all(b > a):
+            out[(slice(None),) + tuple(slice(x - s, y - s) for x, y, s in zip(a, b, starts))] = \
+                self.patch[(sl[0],) + tuple(slice(x - p, y - p) for x, y, p in zip(a, b, self.lo))]
+        return out
+
+
+class P2CDataset(nnUNetDataset):
+    """Training dataset for A14: with probability p a case is replaced by one of
+    its offline Pixel2Cancer variants (changed box pasted over the case), and the
+    synthetic tumour voxels are added to the label-2 sampling locations."""
+
+    def __init__(self, base: nnUNetDataset, synth_dir: str, p: float):
+        self.__dict__.update(base.__dict__)
+        index = json.load(open(os.path.join(synth_dir, 'index.json')))
+        self.variants = {c: [os.path.join(synth_dir, f) for f in fs]
+                         for c, fs in index['variants'].items() if c in self.dataset}
+        self.p = p
+
+    def load_case(self, key):
+        data, seg, properties = super().load_case(key)
+        files = self.variants.get(key)
+        if not files or np.random.uniform() >= self.p:
+            return data, seg, properties
+        v = np.load(files[np.random.randint(len(files))])
+        lo = v['lo']
+        data = _PatchedArray(data, lo, v['image'][None])
+        seg = _PatchedArray(seg, lo, v['seg'][None])
+        properties = dict(properties)
+        locs = dict(properties['class_locations'])
+        old = np.asarray(locs.get(2, np.zeros((0, 4), np.int64)))
+        locs[2] = np.concatenate([old.reshape(-1, 4), v['tumour_locs']]) if len(v['tumour_locs']) else old
+        properties['class_locations'] = locs
+        return data, seg, properties
+
