@@ -1,0 +1,14 @@
+[2026-10-14 12:08:01] A14 start, HEAD bac884c
+830 variants for 83 cases
+[2026-10-14 16:11:23] A14_s1 trained
+[2026-10-14 16:12:25] A14_s2 trained
+[2026-10-14 16:13:32] A14_s0 validation rerun start (previous attempt lost an export worker)
+[2026-10-14 16:20:39] A14_s0 recovery failed
+[2026-10-14 16:24:55] A14_s0 validation already complete, continuing
+[2026-10-14 16:26:41] A14_s0 trained
+[2026-10-14 16:47:13] A14_s1 test predicted
+[2026-10-14 16:48:22] A14_s2 test predicted
+[2026-10-14 16:56:41] metrics test failed
+[2026-10-14 17:02:25] A14_s0 test predicted
+[2026-10-14 17:10:36] A14 complete (after recovery of seed 0)
+A14_EXIT 0

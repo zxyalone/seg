@@ -1,0 +1,62 @@
+153 rows for 3 runs x 27 cases
+# 边界与体积指标（test_a14；描述性）
+
+肿瘤为 4 mm 后处理后的预测；Dice/VOE/RVD 为 %，ASSD/HD95/MSSD 为 mm；每个运行取病例均值，组内种子取均值。
+
+region group  n_seeds  n_cases  pred_empty_cases  dice   voe    rvd  assd  hd95   mssd
+ liver    A0        3       27                 0 96.84  6.10   0.45  1.57 10.20  78.89
+ liver    A1        3       27                 0 96.85  6.08   0.52  1.42  7.14  82.96
+ liver   A11        3       27                 0 96.84  6.10   0.49  1.52  9.05  78.94
+ liver   A12        1       27                 0 96.50  6.73   0.22  2.06 15.41 114.76
+ liver  A13a        3       27                 0 96.83  6.12   0.46  1.42  8.28  75.24
+ liver  A13b        3       27                 0 96.82  6.14   0.35  1.42  6.03  90.27
+ liver   A14        3       27                 0 96.69  6.35   0.02  1.32  6.43  67.14
+tumour    A0        3       24                 0 74.58 38.90 -12.43  6.25 39.11  68.90
+tumour    A1        3       24                 0 74.07 39.20 -14.96  5.24 33.29  59.15
+tumour   A11        3       24                 0 74.32 39.11  -5.56  6.57 39.55  65.23
+tumour   A12        1       24                 0 73.17 40.20   0.97 10.08 58.39  86.40
+tumour  A13a        3       24                 0 74.28 39.17  -5.41  6.10 33.55  60.70
+tumour  A13b        3       24                 0 73.97 39.42  -3.38  6.24 30.03  63.97
+tumour   A14        3       24                 0 75.16 38.47   2.67  5.00 35.13  61.36
+
+## A13b 与对照的差（配对病例 bootstrap 95% CI，只描述）
+
+region comparison metric  diff  ci95_low  ci95_high
+ liver  A13b - A1   dice -0.03     -0.16       0.07
+ liver  A13b - A1    voe  0.06     -0.13       0.28
+ liver  A13b - A1    rvd -0.16     -0.36       0.00
+ liver  A13b - A1   assd  0.00     -0.17       0.15
+ liver  A13b - A1   hd95 -1.10     -2.97       0.03
+ liver  A13b - A1   mssd  7.32    -10.42      25.40
+ liver  A13b - A0   dice -0.02     -0.15       0.09
+ liver  A13b - A0    voe  0.04     -0.16       0.26
+ liver  A13b - A0    rvd -0.10     -0.34       0.10
+ liver  A13b - A0   assd -0.15     -0.59       0.13
+ liver  A13b - A0   hd95 -4.17    -15.50       2.84
+ liver  A13b - A0   mssd 11.39     -4.22      25.85
+ liver A13b - A14   dice  0.12     -0.03       0.38
+ liver A13b - A14    voe -0.21     -0.66       0.07
+ liver A13b - A14    rvd  0.34     -0.03       0.86
+ liver A13b - A14   assd  0.10     -0.08       0.32
+ liver A13b - A14   hd95 -0.40     -0.94       0.05
+ liver A13b - A14   mssd 23.13     -4.13      52.21
+tumour  A13b - A1   dice -0.10     -2.69       2.78
+tumour  A13b - A1    voe  0.23     -2.43       2.75
+tumour  A13b - A1    rvd 11.58      4.72      22.09
+tumour  A13b - A1   assd  1.01     -0.66       3.16
+tumour  A13b - A1   hd95 -3.26    -15.62       8.07
+tumour  A13b - A1   mssd  4.82    -10.16      19.91
+tumour  A13b - A0   dice -0.62     -2.85       1.51
+tumour  A13b - A0    voe  0.52     -1.70       2.80
+tumour  A13b - A0    rvd  9.06      2.63      18.64
+tumour  A13b - A0   assd -0.01     -2.38       2.35
+tumour  A13b - A0   hd95 -9.08    -28.64       7.15
+tumour  A13b - A0   mssd -4.92    -19.91       9.98
+tumour A13b - A14   dice -1.19     -4.53       1.79
+tumour A13b - A14    voe  0.95     -2.32       4.29
+tumour A13b - A14    rvd -6.05    -15.94       3.26
+tumour A13b - A14   assd  1.24     -0.38       3.12
+tumour A13b - A14   hd95 -5.10    -19.39       8.44
+tumour A13b - A14   mssd  2.61    -16.43      23.21
+
+BOUNDARY_EXIT 0

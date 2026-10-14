@@ -1,0 +1,70 @@
+Using device: cuda:0
+
+#######################################################################
+Please cite the following paper when using nnU-Net:
+Isensee, F., Jaeger, P. F., Kohl, S. A., Petersen, J., & Maier-Hein, K. H. (2021). nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation. Nature methods, 18(2), 203-211.
+#######################################################################
+
+2026-10-14 16:13:36.017357: 
+============================================================
+PhASER-GPT Trainer Configuration:
+  Seed: 0  Legacy: False  PFCR shuffle PC (A7): False
+  Aux warmup (rank/budget/prior): 5 epochs, prior w=0.1
+  PCSF: False (mode=grad, gate_sens=0.5)
+  Phase congruency: pc_max_voxels=1048576, spacing=None, noise_rel_kappa=0.0
+  PFCR: False (prior=False, budget=False, w=0.05)
+  PC boundary loss: False (w=0.2, margin=0.2, ramp=PHASER_AUX_WARMUP, active from epoch 0)
+  LWFD: False
+  LWFD Mode: full
+  T-RAF: none
+  ACG:  False
+  LA-ACG: False
+  Small-Tumor Head: False
+  LMC contrast gate: False (shuffle=False, liver head w=0.1, spacing=[1.0, 0.7791720032691956, 0.7791720032691956])
+  Architecture: plainunet (deep supervision=True, lr=0.005, autocast=float16)
+  Lesion contrast aug: False (p=0.5, alpha_min=0.3, target=uniform, consistency w=0.0, stages=2)
+  Component DiceCE: False (w=1.0)
+  Pixel2Cancer variants: /root/autodl-tmp/nnUNet_data/p2c_synth/Dataset102_fold0 (p=0.9)
+  CFF Fusion: none
+  Spectral loss: False (w=0.05)
+  Boundary loss: False (w=0.05)
+  Gate supervision: False (w=0.03)
+  Inside-liver penalty: False (w=0.02)
+  BoundaryW Dice: False (w=0.05)
+  Lesion weight: False (w=0.2)
+  Focal Tversky: w=0.0 (alpha=0.3, beta=0.7)
+  Aux loss warmup: 50 epochs
+  Three-phase: 0-59 (A), 60-79 (B), 80-200 (C)
+  Total epochs: 200
+  Initial LR: 0.005
+  Oversample: 0.66
+============================================================
+
+2026-10-14 16:13:36.687881: Optimizer groups: 48 params lr=1.50e-03 wd=3e-05, 60 params lr=2.50e-03 wd=3e-05
+2026-10-14 16:13:37.023162: Using splits from existing split file: /root/autodl-tmp/nnUNet_data/nnUNet_preprocessed/Dataset102_LiTS/splits_final.json
+2026-10-14 16:13:37.023468: The split file contains 1 splits.
+2026-10-14 16:13:37.023512: Desired fold for training: 0
+2026-10-14 16:13:37.023543: This split has 83 training and 21 validation cases.
+2026-10-14 16:13:37.023690: predicting LiTS_006
+2026-10-14 16:13:56.610632: predicting LiTS_009
+2026-10-14 16:14:14.124827: predicting LiTS_017
+2026-10-14 16:14:31.145765: predicting LiTS_024
+2026-10-14 16:14:38.764001: predicting LiTS_034
+2026-10-14 16:14:53.134765: predicting LiTS_038
+2026-10-14 16:15:15.269936: predicting LiTS_039
+2026-10-14 16:15:28.995472: predicting LiTS_042
+2026-10-14 16:15:32.859021: predicting LiTS_053
+2026-10-14 16:15:46.230203: predicting LiTS_056
+2026-10-14 16:16:01.557809: predicting LiTS_061
+2026-10-14 16:16:13.296645: predicting LiTS_067
+2026-10-14 16:16:23.401798: predicting LiTS_073
+2026-10-14 16:16:43.110963: predicting LiTS_076
+2026-10-14 16:16:53.378208: predicting LiTS_090
+2026-10-14 16:17:12.971059: predicting LiTS_094
+2026-10-14 16:17:34.949096: predicting LiTS_102
+2026-10-14 16:17:46.878941: predicting LiTS_105
+2026-10-14 16:18:08.960947: predicting LiTS_120
+2026-10-14 16:18:31.474499: predicting LiTS_124
+2026-10-14 16:18:54.474507: predicting LiTS_129
+2026-10-14 16:20:38.028167: Validation complete
+2026-10-14 16:20:38.028267: Mean Validation Dice:  0.7739221081468153
