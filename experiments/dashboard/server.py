@@ -38,11 +38,16 @@ MSD08_EXT = REPO.parent / 'ext_data/msd08'
 MSD08_DATA = MSD08_EXT / 'Dataset104_MSD08'
 MSD08_RUNS = tuple(f'{g}_s{s}' for g in ('A0', 'A1', 'A13b') for s in range(3))   # GPU = index % 3
 NATIVE_GROUPS = ('A0', 'A1', 'A11', 'A13a', 'A13b')
+# A14: Pixel2Cancer comparator (plan §11, 2026-10-14), run from its own worktree
+A14_WORKTREE = REPO.parent / 'Downstream_2_p2c'
+A14_OUT = A14_WORKTREE / 'results/a14_pixel2cancer'
+P2C_SYNTH = REPO.parent / 'nnUNet_data/p2c_synth/Dataset102_fold0'
+A14_RUNS = ('A14_s0', 'A14_s1', 'A14_s2')
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
 CST = timezone(timedelta(hours=8))
 HTML = Path(__file__).with_name('index.html')
-RUN_NAME = re.compile(r'(?:A(?:[0-9]|1[0-2]|13[ab])|ResEnc)_s[0-9]+|E16_cost')
+RUN_NAME = re.compile(r'(?:A(?:[0-9]|1[0-2]|13[ab]|14)|ResEnc)_s[0-9]+|E16_cost')
 ANALYSIS_LOGS = {'analysis_scheduler': 'analysis_scheduler.log', 'analysis_selftest': 'analysis_selftest.log',
                  'E11_joint': 'analysis_E11_joint.log', 'E11_joint_summary': 'analysis_E11_joint_summary.log',
                  'analysis_followup': 'analysis_followup.log',
@@ -97,6 +102,9 @@ def transfer_training_log(name):
 
 
 def run_log(name):
+    if name in A14_RUNS:
+        logs = sorted((ROOT/name/FOLD).glob('training_log_*.txt'))
+        return logs[-1] if logs else A14_OUT/f'train_{name}.log'
     if name in TRANSFER_RUNS:
         return transfer_training_log(name) or TRANSFER/f'{name}.log'
     if name in REPLICATION_RUNS:
@@ -478,6 +486,76 @@ def estimates(state, runs):
             'projected': projected, 'basis': '最近 10 轮耗时中位数；每 run 预留 15 分钟验证。仅估算有效训练 / 成本队列，已取消任务不计入。'}
 
 
+def a14_info(now):
+    if not (A14_OUT.exists() or P2C_SYNTH.exists()):
+        return None
+    runner = tail(A14_OUT/'runner.log', 200000)
+    n_variants = len(list(P2C_SYNTH.glob('*.npz'))) if P2C_SYNTH.exists() else 0
+    procs, runner_alive, eval_alive = {}, False, False
+    for directory in Path('/proc').iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            argv = (directory/'cmdline').read_bytes().decode().split('\0')
+            if not process_alive(directory.name):
+                continue
+            joined = ' '.join(argv)
+            runner_alive |= 'server_a14.sh' in joined
+            eval_alive |= 'a14_eval.py' in joined
+            for script, kind in (('experiments/run.sh', 'train'), ('experiments/predict_test.sh', 'predict')):
+                idx = next((i for i, a in enumerate(argv) if a.endswith(script)), None)
+                if idx is not None and len(argv) > idx + 2 and argv[idx+1] == 'A14':
+                    env = dict(x.split('=', 1) for x in (directory/'environ').read_bytes().decode().split('\0') if '=' in x)
+                    procs[f'A14_s{argv[idx+2]}'] = (int(env.get('GPU', argv[idx+2])), kind)
+        except (OSError, ValueError, UnicodeError):
+            continue
+    rows, left = [], []
+    for name in A14_RUNS:
+        fold = ROOT/name/FOLD
+        trained = (fold/'checkpoint_final.pth').is_file()
+        val_done = (fold/'eval_val/summary.json').is_file()
+        test_n = len(list((fold/'test_pred').glob('*.nii.gz'))) if (fold/'test_pred').exists() else 0
+        test_done = (fold/'eval_test/summary.json').is_file()
+        gpu, kind = procs.get(name, (int(name[-1]), None))
+        status = 'complete' if test_done else 'running' if name in procs else 'failed' if re.search(re.escape(name) + r'.*fail', runner) else 'pending'
+        row = run_info(name, dict(status=status, gpu=gpu))
+        if kind == 'predict' or (trained and val_done and not test_done):
+            row['phase'] = f'测试集预测 {test_n} / 27'
+        elif trained and not val_done and status == 'running':
+            row['phase'] = '验证集推理与评估'
+        elif status == 'complete':
+            row['phase'] = '训练、验证与测试预测完成'
+        row.update(val_done=val_done, test_predicted=test_n, test_done=test_done, trained=trained)
+        rows.append(row)
+        if status in ('running', 'pending'):
+            rate = row['epoch_seconds'] or 70.0
+            left.append(max(0, row['total_epochs'] - row['completed_epochs']) * rate
+                        + (0 if val_done else 600) + (0 if test_done else 900))
+    complete = 'A14_EXIT 0' in runner
+    remaining = None if complete else round(max(left, default=0) + 900)
+    per_group, comparisons, strata = {}, {}, {}
+    for split in ('val', 'test'):
+        try:
+            with (A14_OUT/f'{split}_per_group.csv').open() as f: per_group[split] = list(csv.DictReader(f))
+        except OSError:
+            pass
+    stats = read_json(A14_OUT/'a14_stats.json', {})
+    index = read_json(P2C_SYNTH/'index.json', {})
+    steps = [
+        dict(name=f'合成变体 {n_variants} / 830', done=n_variants >= 830),
+        dict(name='变体索引', done=bool(index)),
+        dict(name=f'训练 {sum(r["trained"] for r in rows)} / 3', done=all(r['trained'] for r in rows)),
+        dict(name=f'验证集评估 {sum(r["val_done"] for r in rows)} / 3', done=all(r['val_done'] for r in rows)),
+        dict(name=f'测试集预测 {sum(r["test_done"] for r in rows)} / 3', done=all(r['test_done'] for r in rows)),
+        dict(name='描述性统计', done=bool(stats)),
+    ]
+    return dict(runs=rows, steps=steps, alive=runner_alive, eval_alive=eval_alive, complete=complete,
+                error=bool(re.search(r'failed|Traceback', runner)), n_variants=n_variants,
+                remaining_seconds=remaining,
+                eta=(datetime.now(CST) + timedelta(seconds=remaining)).strftime('%H:%M') if remaining else None,
+                per_group=per_group, stats=stats)
+
+
 def msd08_info(now):
     if not MSD08_OUT.exists():
         return None
@@ -576,6 +654,7 @@ def snapshot():
         test_protocol = test_protocol_info(now)
         transfer = transfer_info(now)
         msd08 = msd08_info(now)
+        a14 = a14_info(now)
         a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
         if a13_curves:
             a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
@@ -688,13 +767,21 @@ def snapshot():
                 status='complete' if msd08['complete'] else 'failed' if msd08['error'] else 'running' if msd08['alive'] else 'analysis_pending',
                 detail=f"{pred} / {tot} 例推理；{sum(r['evaluated'] for r in msd08['runs'])} / 9 评估；独立性核查通过；A0 / A1 / A13b × 3 seeds",
                 source='server_external_msd08.sh、预测目录与评估结果', progress=100 if msd08['complete'] else round(pred / tot * 95, 1)))
+        if a14:
+            tr = [r for r in a14['runs']]
+            stages.append(dict(id='C', title='Pixel2Cancer 对比（A14）',
+                status='complete' if a14['complete'] else 'failed' if a14['error'] else 'running' if a14['alive'] else 'analysis_pending',
+                detail=(f"{sum(r['trained'] for r in tr)} / 3 训练完成，{sum(r['test_done'] for r in tr)} / 3 测试预测完成；"
+                        f"830 个离线合成变体，p = 0.9；其余设置同 A0；描述性对比"),
+                source='server_a14.sh、训练日志与 results/a14_pixel2cancer',
+                progress=100 if a14['complete'] else round(sum(r['progress'] for r in tr) / 3 * 0.9 + 10 * (a14['n_variants'] >= 830), 1)))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
-            'stages': stages, 'runs': list(runs.values()) + (transfer['runs'] if transfer else []), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
+            'stages': stages, 'runs': list(runs.values()) + (transfer['runs'] if transfer else []) + (a14['runs'] if a14 else []), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'a13_curves': a13_curves,
-            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer, 'msd08': msd08,
+            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer, 'msd08': msd08, 'a14': a14,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -751,6 +838,14 @@ class Handler(BaseHTTPRequestHandler):
                     path=out if 'RUN_EXIT' in tail(out, 4096) else run_log(name[9:])
                 elif name == 'transfer_eval':
                     path=TRANSFER_RESULTS/'runner.log'
+                elif name == 'a14_runner':
+                    path=A14_OUT/'runner.log'
+                elif name in ('a14_metrics_val', 'a14_metrics_test', 'a14_stats'):
+                    path=A14_OUT/(f'metrics_{name[12:]}.log' if 'metrics' in name else 'stats.log')
+                elif name.startswith('a14_predict_') and name[12:] in A14_RUNS:
+                    path=A14_OUT/f'predict_{name[12:]}.log'
+                elif name.startswith('a14_train_') and name[10:] in A14_RUNS:
+                    path=A14_OUT/f'train_{name[10:]}.log'
                 elif name == 'msd08_runner':
                     path=MSD08_OUT/'runner.log'
                 elif name in ('msd08_reference', 'msd08_metrics', 'msd08_stats'):
