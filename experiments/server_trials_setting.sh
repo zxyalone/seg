@@ -9,6 +9,7 @@ set -uo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 ENV_BIN=${ENV_BIN:-/root/autodl-tmp/envs/mamba/bin}
 OUT=$REPO/results/trials_setting
+export VOCOMNI_NNUNET_CKPT=   # from scratch (run.sh checks this before it reads the config)
 export nnUNet_def_n_proc=3   # three final validations at once stay below the 90 GB container limit
 mkdir -p "$OUT"
 log() { echo "[$(date '+%F %T')] $*" | tee -a "$OUT/runner.log"; }
