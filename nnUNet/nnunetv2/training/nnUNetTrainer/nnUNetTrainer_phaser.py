@@ -1227,8 +1227,9 @@ class P2CDataset(nnUNetDataset):
         seg = _PatchedArray(seg, lo, v['seg'][None])
         properties = dict(properties)
         locs = dict(properties['class_locations'])
-        old = np.asarray(locs.get(2, np.zeros((0, 4), np.int64)))
-        locs[2] = np.concatenate([old.reshape(-1, 4), v['tumour_locs']]) if len(v['tumour_locs']) else old
+        # cases without real tumour store an empty (float) array; keep integer coordinates
+        old = np.asarray(locs.get(2, np.zeros((0, 4), np.int64))).reshape(-1, 4).astype(np.int64)
+        locs[2] = np.concatenate([old, np.asarray(v['tumour_locs'], np.int64).reshape(-1, 4)])
         properties['class_locations'] = locs
         return data, seg, properties
 

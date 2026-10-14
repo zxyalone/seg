@@ -59,22 +59,29 @@ def main():
                           np.asarray(data[(slice(None),) + tuple(slice(l, l + n) for l, n in zip(lo, sh))]))
     print('2. p=1 uses variants with extra label-2 locations, p=0 never does; arrays on disk unchanged')
 
-    # 3. loader batches
+    # 2b. a case without real tumour: label-2 locations stay integer after merging
+    no_tumour = [c for c in sorted(ds1.variants) if len(base[c]['properties']['class_locations'].get(2, [])) == 0]
+    if no_tumour:
+        _, _, pn = ds1.load_case(no_tumour[0])
+        assert np.issubdtype(np.asarray(pn['class_locations'][2]).dtype, np.integer)
+        print(f'2b. {no_tumour[0]} (no real tumour): merged locations are integer')
+
+    # 3. loader batches (all cases, p = 1 so every sample uses a variant)
     np.random.seed(0)
-    ds = P2CDataset(base, a.synth, 0.9)
+    ds = P2CDataset(base, a.synth, 1.0)
     lm = PlansManager(json.load(open(os.path.join(PRE, 'nnUNetPlans.json')))).get_label_manager(
         json.load(open(os.path.join(PRE, 'dataset.json'))))
     dl = nnUNetDataLoader3D(ds, 2, (128, 128, 128), (128, 128, 128), lm, 0.66, None, None)
     n_syn = n_tum = 0
-    for _ in range(60):
+    for _ in range(150):
         b = dl.generate_train_batch()
         assert b['data'].shape == (2, 1, 128, 128, 128) and set(np.unique(b['seg'])) <= {-1, 0, 1, 2}
         for j, k in enumerate(b['keys']):
             n_tum += bool((b['seg'][j] == 2).any())
         n_syn += sum(len(p['class_locations'][2]) > len(base[k]['properties']['class_locations'][2])
                      for p, k in zip(b['properties'], b['keys']))
-    print(f'3. 60 batches: {n_syn}/120 samples from variants (expected about 108 if all cases have variants), '
-          f'{n_tum}/120 patches contain tumour')
+    print(f'3. 150 batches with p=1: {n_syn}/300 samples from variants, '
+          f'{n_tum}/300 patches contain tumour')
 
 
 if __name__ == '__main__':
