@@ -36,6 +36,9 @@ SPLITS = {
                            cases=Path('/root/autodl-tmp/ext_data/msd08/Dataset104_MSD08/cases.txt'),
                            liver=False),
 }
+# A14 (Pixel2Cancer, plan §11 2026-10-14): computed for A14 only, summarised together with the archived test rows
+SPLITS['test_a14'] = dict(SPLITS['test'], groups=('A0', 'A1', 'A11', 'A13a', 'A13b', 'A14'), compute=('A14',), extra=(),
+                          merge=REPO / 'results/boundary_metrics/test/boundary_cases.csv')
 METRICS = ('dice', 'voe', 'rvd', 'assd', 'hd95', 'mssd')
 N_BOOT, BOOT_SEED = 10_000, 20261012
 
@@ -63,7 +66,7 @@ def region_metrics(p, g, sp, diag):
 
 def runs_of(split):
     c = SPLITS[split]
-    return [f'{g}_s{s}' for g in c['groups'] for s in range(3)] + list(c['extra'])
+    return [f'{g}_s{s}' for g in c.get('compute', c['groups']) for s in range(3)] + list(c['extra'])
 
 
 def one(args):
@@ -97,6 +100,8 @@ def cmd_cases(a):
 def cmd_summary(a):
     out = Path(a.out)
     D = pd.read_csv(out / 'boundary_cases.csv')
+    if 'merge' in SPLITS[a.split]:
+        D = pd.concat([pd.read_csv(SPLITS[a.split]['merge']), D], ignore_index=True)
     groups = SPLITS[a.split]['groups']
     D['group'] = D.run.str.rsplit('_s', n=1).str[0]
     rows, comps = [], []
@@ -110,8 +115,8 @@ def cmd_summary(a):
         cm = R[R.group.isin(groups)].groupby(['group', 'case'])[list(METRICS)].mean()
         cases = sorted(R.case.unique())
         ix = np.random.default_rng(BOOT_SEED).integers(0, len(cases), size=(N_BOOT, len(cases)))
-        for b in ('A1', 'A0'):
-            if 'A13b' not in groups:
+        for b in ('A1', 'A0', 'A14'):
+            if 'A13b' not in groups or b not in groups:
                 continue
             for m in METRICS:
                 d = (cm.loc['A13b'].loc[cases, m] - cm.loc[b].loc[cases, m]).values
