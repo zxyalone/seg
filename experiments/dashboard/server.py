@@ -567,7 +567,7 @@ def ts_info(now):
     if not TS_OUT.exists():
         return None
     runner = tail(TS_OUT/'runner.log', 200000)
-    procs, runner_alive, eval_alive = {}, False, False
+    procs, runner_alive, eval_alive, recovering = {}, False, False, False
     for directory in Path('/proc').iterdir():
         if not directory.name.isdigit():
             continue
@@ -577,6 +577,7 @@ def ts_info(now):
                 continue
             joined = ' '.join(argv)
             runner_alive |= 'server_trials_setting.sh' in joined
+            recovering |= 'server_trials_setting_recover.sh' in joined
             eval_alive |= 'trials_setting_eval.py' in joined
             for script, kind in (('experiments/run.sh', 'train'), ('experiments/predict_test.sh', 'predict')):
                 idx = next((i for i, a in enumerate(argv) if a.endswith(script)), None)
@@ -596,7 +597,7 @@ def ts_info(now):
         test_n = len(list((fold/sub).glob('*.nii.gz'))) if (fold/sub).exists() else 0
         gpu, kind = procs.get(name, (int(name[-1]), None))
         status = ('complete' if test_done else 'running' if name in procs
-                  else 'failed' if re.search(re.escape(name) + r' FAILED', runner) else 'pending')
+                  else 'failed' if re.search(re.escape(name) + r' FAILED', runner) and not recovering else 'pending')
         row = run_info(name, dict(status=status, gpu=gpu))
         if kind == 'predict' or (trained and val_done and not test_done):
             row['phase'] = f"测试集预测（{'final' if best_done else 'best'}）{test_n} / 27"
@@ -627,8 +628,10 @@ def ts_info(now):
         dict(name=f'测试预测 final {sum(r["test_done"] for r in rows)} / {n}', done=all(r['test_done'] for r in rows)),
         dict(name='描述性统计', done=bool(stats)),
     ]
-    return dict(runs=rows, steps=steps, alive=runner_alive, eval_alive=eval_alive, complete=complete,
-                error=bool(re.search(r'FAILED|failed|Traceback', runner)), remaining_seconds=remaining,
+    return dict(runs=rows, steps=steps, alive=runner_alive or recovering, eval_alive=eval_alive, complete=complete,
+                recovering=recovering,
+                error=bool(re.search(r'FAILED|failed|Traceback', runner)) and not recovering and not complete,
+                remaining_seconds=remaining,
                 eta=(datetime.now(CST) + timedelta(seconds=remaining)).strftime('%m-%d %H:%M') if remaining else None,
                 per_group=per_group, stats=stats)
 
@@ -925,6 +928,8 @@ class Handler(BaseHTTPRequestHandler):
                     path=out if 'RUN_EXIT' in tail(out, 4096) else run_log(name[9:])
                 elif name == 'transfer_eval':
                     path=TRANSFER_RESULTS/'runner.log'
+                elif name.startswith('ts_valrerun_'):
+                    path=TS_OUT/f'val_rerun_{name[12:]}.log'
                 elif name == 'ts_runner':
                     path=TS_OUT/'runner.log'
                 elif name in ('ts_metrics_val', 'ts_metrics_test_best', 'ts_metrics_test_final', 'ts_stats'):
