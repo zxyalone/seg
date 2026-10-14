@@ -21,6 +21,7 @@ import numpy as np
 from nnunetv2.training.dataloading.data_loader_3d import nnUNetDataLoader3D
 from nnunetv2.training.dataloading.nnunet_dataset import nnUNetDataset
 from nnunetv2.training.nnUNetTrainer.nnUNetTrainer_phaser import P2CDataset, _PatchedArray
+from nnunetv2.utilities.plans_handling.plans_handler import PlansManager
 
 PRE = '/root/autodl-tmp/nnUNet_data/nnUNet_preprocessed/Dataset102_LiTS'
 
@@ -61,13 +62,14 @@ def main():
     # 3. loader batches
     np.random.seed(0)
     ds = P2CDataset(base, a.synth, 0.9)
-    dl = nnUNetDataLoader3D(ds, 2, (128, 128, 128), (128, 128, 128), 0.66, None, None)
+    lm = PlansManager(json.load(open(os.path.join(PRE, 'nnUNetPlans.json')))).get_label_manager(
+        json.load(open(os.path.join(PRE, 'dataset.json'))))
+    dl = nnUNetDataLoader3D(ds, 2, (128, 128, 128), (128, 128, 128), lm, 0.66, None, None)
     n_syn = n_tum = 0
     for _ in range(60):
         b = dl.generate_train_batch()
         assert b['data'].shape == (2, 1, 128, 128, 128) and set(np.unique(b['seg'])) <= {-1, 0, 1, 2}
         for j, k in enumerate(b['keys']):
-            real = base.load_case(k)
             n_tum += bool((b['seg'][j] == 2).any())
         n_syn += sum(len(p['class_locations'][2]) > len(base[k]['properties']['class_locations'][2])
                      for p, k in zip(b['properties'], b['keys']))
