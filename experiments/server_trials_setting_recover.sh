@@ -14,6 +14,7 @@
 #
 #   tmux new -d -s ts-recover 'experiments/server_trials_setting_recover.sh'
 set -uo pipefail
+# Also restarts cleanly after a container restart (step 1 is skipped when the main runner is gone).
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 DATA=/root/autodl-tmp/nnUNet_data
 ENV_BIN=/root/autodl-tmp/envs/mamba/bin
@@ -44,8 +45,28 @@ while pgrep -f "server_trials_setting.sh" >/dev/null; do
   sleep 60
 done
 
-# 2. recover incomplete runs, one at a time
+# 2a. runs whose validation is complete but whose test predictions are missing or
+#     were interrupted (e.g. a container restart): predicted in parallel, one GPU each;
+#     nnUNetv2_predict rewrites every case, so partially written files are replaced
+PAR=" "
 for run in $RUNS; do
+  g=${run%_s*}; s=${run##*_s}; f=$(fold $run)
+  val_done $run && [[ -f $f/eval_val/summary.json ]] || continue
+  [[ -f $f/eval_test_best/summary.json && -f $f/eval_test/summary.json ]] && continue
+  PAR+="$run "
+  (
+    if [[ ! -f $f/eval_test_best/summary.json ]]; then
+      GPU=$s CHK=checkpoint_best.pth SUFFIX=_best "$REPO/experiments/predict_test.sh" $g $s > "$OUT/predict_${run}_best.log" 2>&1 \
+        || { log "$run recovery failed (test best)"; exit 1; }
+    fi
+    GPU=$s "$REPO/experiments/predict_test.sh" $g $s > "$OUT/predict_${run}_final.log" 2>&1 \
+      && log "$run test predicted (recovery)" || { log "$run recovery failed (test final)"; exit 1; }
+  ) &
+done
+
+# 2b. recover the other incomplete runs, one at a time
+for run in $RUNS; do
+  [[ $PAR == *" $run "* ]] && continue
   g=${run%_s*}; s=${run##*_s}; f=$(fold $run)
   [[ -f $f/checkpoint_final.pth ]] || { log "$run has no checkpoint_final"; exit 1; }
   if ! val_done $run; then
@@ -71,6 +92,13 @@ for run in $RUNS; do
     GPU=$s "$REPO/experiments/predict_test.sh" $g $s > "$OUT/predict_${run}_final.log" 2>&1 \
       && log "$run test predicted (best, final)" || { log "$run recovery failed (test final)"; exit 1; }
   fi
+done
+
+wait
+for run in $RUNS; do
+  for e in eval_val eval_test_best eval_test; do
+    [[ -f $(fold $run)/$e/summary.json ]] || { log "$run $e missing after recovery"; exit 1; }
+  done
 done
 
 # 3. descriptive evaluation
