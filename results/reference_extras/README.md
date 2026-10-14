@@ -4,7 +4,7 @@ TriALS 测试集预测由 `TriALS-main/train_new_split/09_test_inference.sh` 生
 
 脚本 `experiments/analysis/reference_extras.py`，日志 `run.log`。
 
-- `params.csv`：各 checkpoint 网络权重的参数量。SAMed 的 checkpoint 只存 LoRA 与解码器权重，总数 = 原始 SAM 权重 + LoRA。本研究模型 177,242,398（A1 多 15 个门控参数）。
+- `params.csv`：各 checkpoint 网络权重的参数量。SAMed 的 checkpoint 只存 LoRA 与解码器权重，总数 = 原始 SAM 权重 + LoRA。本研究模型 31,196,399（A1 多 15 个门控参数）。2026-10-14 更正：nnU-Net 类解码器保存了对编码器的引用，同一张量在 state dict 中出现多次（encoder.* 与 decoder.encoder.*），初版逐键求和导致重复计数（本研究模型、nnU-Net 3D/2D、U-Mamba 偏大）；现按存储去重、不计整数缓冲，结果与优化器中的参数数一致。
 - `tta_table.csv`（及 `tta_*_pp4mm.csv`）：nnU-Net 3D、SegResNet、U-Mamba 已有的镜像 TTA 预测（checkpoint_best）按冻结协议同一流程评估。MedNeXt-L 的 TTA 预测只有 2 例，不用。
 - `boundary_cases.csv`、`boundary_summary.csv`：全部 8 个参考模型无 TTA 测试预测的边界与体积指标（与 `boundary_metrics.py` 同一定义）。
 

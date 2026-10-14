@@ -6,7 +6,8 @@ differ from this study).
 The TriALS test predictions come from train_new_split/09_test_inference.sh:
 checkpoint_best (EMA pseudo Dice on the validation fold), --disable_tta.
 
-params    trainable/stored parameters from each checkpoint's network weights;
+params    trainable/stored parameters from each checkpoint's network weights
+          (shared tensors counted once);
           SAMed checkpoints store only the LoRA and decoder weights, so the
           frozen SAM image encoder is added from the original SAM checkpoint.
 tta       existing mirror-TTA test predictions (checkpoint_best) of nnU-Net
@@ -35,7 +36,17 @@ TTA = ('nnUNet3D', 'SegResNet', 'UMambaBot')
 
 
 def numel(sd):
-    return sum(v.numel() for k, v in sd.items() if 'running_' not in k and 'num_batches' not in k)
+    """Parameters in a saved state dict. nnU-Net-style decoders keep a reference to
+    the encoder, so the same tensor can appear under several keys (encoder.* and
+    decoder.encoder.*); each storage is counted once. Integer buffers (e.g. Swin
+    relative-position indices) and BatchNorm statistics are not parameters.
+    Corrected 2026-10-14 (plan §11): the first version summed every key."""
+    seen = {}
+    for k, v in sd.items():
+        if 'running_' in k or 'num_batches' in k or not v.is_floating_point():
+            continue
+        seen.setdefault((v.untyped_storage().data_ptr(), v.storage_offset(), tuple(v.shape)), v.numel())
+    return sum(seen.values())
 
 
 def cmd_params(a):
