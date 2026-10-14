@@ -1,0 +1,142 @@
+{
+ "split": "external_msd08",
+ "groups": [
+  {
+   "region": "tumour",
+   "group": "A0",
+   "n_seeds": 3,
+   "n_cases": 303,
+   "pred_empty_cases": 13,
+   "dice": 58.39879256879718,
+   "voe": 53.66896581761856,
+   "rvd": 70.11675986854777,
+   "assd": 21.51404283245076,
+   "hd95": 55.30412309715322,
+   "mssd": 82.35076276579927
+  },
+  {
+   "region": "tumour",
+   "group": "A1",
+   "n_seeds": 3,
+   "n_cases": 303,
+   "pred_empty_cases": 6,
+   "dice": 58.41335010323372,
+   "voe": 53.759620965334726,
+   "rvd": 63.04879445086189,
+   "assd": 18.18940030348111,
+   "hd95": 53.181547763822124,
+   "mssd": 81.65861792864148
+  },
+  {
+   "region": "tumour",
+   "group": "A13b",
+   "n_seeds": 3,
+   "n_cases": 303,
+   "pred_empty_cases": 0,
+   "dice": 62.25163822505599,
+   "voe": 50.51771872058624,
+   "rvd": 66.57142727286845,
+   "assd": 12.836431081664495,
+   "hd95": 55.616911523790314,
+   "mssd": 94.4813721018647
+  }
+ ],
+ "comparisons": [
+  {
+   "region": "tumour",
+   "comparison": "A13b - A1",
+   "metric": "dice",
+   "diff": 3.8382881218222784,
+   "ci95_low": 2.588733630009932,
+   "ci95_high": 5.167906401579368
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A1",
+   "metric": "voe",
+   "diff": -3.2419022447484793,
+   "ci95_low": -4.401218473347105,
+   "ci95_high": -2.138578468343873
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A1",
+   "metric": "rvd",
+   "diff": 3.522632822006577,
+   "ci95_low": -24.064475807003202,
+   "ci95_high": 20.32996560752718
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A1",
+   "metric": "assd",
+   "diff": -5.352969221816617,
+   "ci95_low": -10.465194259074341,
+   "ci95_high": -1.2488339996616997
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A1",
+   "metric": "hd95",
+   "diff": 2.4353637599681917,
+   "ci95_low": -3.3130556364722916,
+   "ci95_high": 7.676052125884107
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A1",
+   "metric": "mssd",
+   "diff": 12.822754173223236,
+   "ci95_low": 6.907864982563111,
+   "ci95_high": 18.19568400104616
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A0",
+   "metric": "dice",
+   "diff": 3.8528456562588205,
+   "ci95_low": 2.616968141438743,
+   "ci95_high": 5.174725245360431
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A0",
+   "metric": "voe",
+   "diff": -3.1512470970323334,
+   "ci95_low": -4.322054603925909,
+   "ci95_high": -2.039951489129227
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A0",
+   "metric": "rvd",
+   "diff": -3.5453325956793376,
+   "ci95_low": -36.654512115610316,
+   "ci95_high": 16.876100984123983
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A0",
+   "metric": "assd",
+   "diff": -8.677611750786262,
+   "ci95_low": -16.612995205394867,
+   "ci95_high": -2.2768075880229977
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A0",
+   "metric": "hd95",
+   "diff": 0.3127884266370924,
+   "ci95_low": -7.518659897170625,
+   "ci95_high": 7.315032988233799
+  },
+  {
+   "region": "tumour",
+   "comparison": "A13b - A0",
+   "metric": "mssd",
+   "diff": 12.130609336065433,
+   "ci95_low": 3.988557896999125,
+   "ci95_high": 19.503829110066114
+  }
+ ]
+}
