@@ -576,7 +576,7 @@ def ts_info(now):
             if not process_alive(directory.name):
                 continue
             joined = ' '.join(argv)
-            runner_alive |= 'server_trials_setting.sh' in joined
+            runner_alive |= 'server_trials_setting' in joined
             recovering |= 'server_trials_setting_recover.sh' in joined
             eval_alive |= 'trials_setting_eval.py' in joined
             for script, kind in (('experiments/run.sh', 'train'), ('experiments/predict_test.sh', 'predict')):
