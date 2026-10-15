@@ -13,14 +13,20 @@
 # 3. The descriptive evaluation of all six runs.
 #
 #   tmux new -d -s ts-recover 'experiments/server_trials_setting_recover.sh'
+#
+# Defaults are the 100-epoch runs; the 200-epoch runs (plan §11, 2026-10-15) set
+# TS_GROUPS="T13bL T0L" TS_OUT=results/trials_setting_200
+# TS_RUNNER="[s]erver_trials_setting_200.sh" (a regex that cannot match its own tmux command) TS_EVAL_GROUPS=T0L,T13bL.
 set -uo pipefail
 # Also restarts cleanly after a container restart (step 1 is skipped when the main runner is gone).
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 DATA=/root/autodl-tmp/nnUNet_data
 ENV_BIN=/root/autodl-tmp/envs/mamba/bin
-OUT=$REPO/results/trials_setting
+OUT=$REPO/${TS_OUT:-results/trials_setting}
+RUNNER=${TS_RUNNER:-server_trials_setting.sh}
+EVAL_GROUPS=${TS_EVAL_GROUPS:-T0,T13b}
 FOLD=Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0
-RUNS="T13b_s0 T13b_s1 T13b_s2 T0_s0 T0_s1 T0_s2"
+RUNS=$(for g in ${TS_GROUPS:-T13b T0}; do for s in 0 1 2; do printf '%s ' ${g}_s$s; done; done)
 STALL=1500   # seconds without a new validation file
 log() { echo "[$(date '+%F %T')] $*" | tee -a "$OUT/runner.log"; }
 fold() { echo "$DATA/nnUNet_results_v2/$1/$FOLD"; }
@@ -29,7 +35,8 @@ export VOCOMNI_NNUNET_CKPT=   # from scratch
 export nnUNet_def_n_proc=3
 
 # 1. watchdog
-while pgrep -f "server_trials_setting.sh" >/dev/null; do
+sleep 30   # let the runner start when both are launched together
+while pgrep -f "$RUNNER" >/dev/null; do
   for pid in $(pgrep -f "nnUNetv2_train Dataset102_LiTS 3d_fullres 0 -tr nnUNetTrainer_phaser"); do
     res=$(tr '\0' '\n' < /proc/$pid/environ 2>/dev/null | sed -n 's/^nnUNet_results=//p')
     run=$(basename "$res" 2>/dev/null); [[ " $RUNS " == *" $run "* ]] || continue
@@ -104,9 +111,9 @@ done
 # 3. descriptive evaluation
 cd "$REPO/experiments/analysis"
 for split in val test_best test_final; do
-  "$ENV_BIN/python" trials_setting_eval.py metrics --split $split --out "$OUT/${split}_tables" --jobs 3 > "$OUT/metrics_$split.log" 2>&1 \
+  "$ENV_BIN/python" trials_setting_eval.py metrics --groups $EVAL_GROUPS --split $split --out "$OUT/${split}_tables" --jobs 3 > "$OUT/metrics_$split.log" 2>&1 \
     || { log "metrics $split failed (recovery)"; exit 1; }
 done
-"$ENV_BIN/python" trials_setting_eval.py stats --out "$OUT" > "$OUT/stats.log" 2>&1 || { log "stats failed (recovery)"; exit 1; }
+"$ENV_BIN/python" trials_setting_eval.py stats --groups $EVAL_GROUPS --out "$OUT" > "$OUT/stats.log" 2>&1 || { log "stats failed (recovery)"; exit 1; }
 log "TriALS-setting complete (after recovery)"
 echo "TRIALS_SETTING_EXIT 0" >> "$OUT/runner.log"

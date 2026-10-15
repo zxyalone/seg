@@ -18,6 +18,9 @@ stats    per-run / per-group endpoints, CNR x size strata, and paired case-
 
     python trials_setting_eval.py metrics --split test_best --out <dir>/test_best_tables --jobs 3
     python trials_setting_eval.py stats --out <dir>
+
+--groups BASE,METHOD selects the pair (default T0,T13b); the 200-epoch runs
+(plan §11, 2026-10-15) use --groups T0L,T13bL.
 """
 import argparse
 import json
@@ -29,13 +32,17 @@ import a14_eval as A
 import test_protocol as TP
 
 REPO = Path(__file__).resolve().parents[2]
-GROUPS = ('T0', 'T13b')
+GROUPS = ('T0', 'T13b')   # (baseline, method); --groups overrides
 REF = REPO / 'results/reference_baselines'
 REF_RUNS = ('nnUNet3D', 'nnUNet2D', 'SegResNet', 'UMambaBot', 'MedNeXt-L', 'SAMed-H', 'SwinUNETR', 'SAMed-B')
 ARCHIVED = {'val': REPO / 'results/test_protocol_dryrun_val/tables', 'test': REPO / 'results/test_protocol/tables'}
 TP.SPLITS['test_best'] = dict(TP.SPLITS['test'], pred_subdir='test_pred_best', eval_subdir='eval_test_best')
 TP.SPLITS['test_final'] = dict(TP.SPLITS['test'])
-COMPARISONS = (('T13b', 'T0'), ('T13b', 'nnUNet3D'), ('T0', 'nnUNet3D'))
+
+
+def comparisons():
+    base, method = GROUPS
+    return ((method, base), (method, 'nnUNet3D'), (base, 'nnUNet3D'))
 
 
 def group_of(run):
@@ -48,7 +55,7 @@ def cmd_metrics(a):
 
 
 def cmd_stats(a):
-    out = Path(a.out); md = ['# TriALS 训练设置下的比较（100 epoch、从头训练、标准 nnU-Net 优化器；描述性）', '']
+    out = Path(a.out); md = [f'# TriALS 训练设置下的比较（{"/".join(GROUPS)}：从头训练、标准 nnU-Net 优化器；描述性）', '']
     result = {}
     for split in ('val', 'test_best', 'test_final'):
         L = pd.read_csv(out / f'{split}_tables/lesions_pp4mm.csv'); C = pd.read_csv(out / f'{split}_tables/cases_pp4mm.csv')
@@ -77,7 +84,7 @@ def cmd_stats(a):
                     .unstack(['cnr_stratum', 'size_stratum']).reindex(order))
         strata.to_csv(out / f'{split}_strata.csv')
         cases = sorted(C.case.unique())
-        comps = {f'{x} - {y}': A.boot(L, C, x, y, cases) for x, y in COMPARISONS if {x, y} <= set(S.group)}
+        comps = {f'{x} - {y}': A.boot(L, C, x, y, cases) for x, y in comparisons() if {x, y} <= set(S.group)}
         result[split] = {k: {m: [float(t) for t in v] for m, v in d.items()} for k, d in comps.items()}
         md += [f'## {split}', '', G.round(2).to_string(), '', '| 比较 | 低 CNR 召回 | 全部召回 | FP/scan | 肿瘤 Dice |', '|---|---|---|---|---|']
         for k, d in comps.items():
@@ -96,7 +103,11 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--jobs', type=int, default=3)
     ap.add_argument('--results-root', default='/root/autodl-tmp/nnUNet_data/nnUNet_results_v2')
+    ap.add_argument('--groups', default='T0,T13b', help='baseline,method')
     a = ap.parse_args()
+    global GROUPS
+    GROUPS = tuple(a.groups.split(','))
+    assert len(GROUPS) == 2
     (cmd_metrics if a.cmd == 'metrics' else cmd_stats)(a)
 
 
