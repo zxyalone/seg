@@ -1,0 +1,13 @@
+{
+  "split": "msd08",
+  "runs": [
+    "A13b_s0",
+    "A13b_s1",
+    "A13b_s2"
+  ],
+  "git_head": "3a1bcfd566bb484c1b3b18be5190dfeacf262ecb",
+  "git_dirty": false,
+  "plan_sha256": "140519752591355540901b14571fbfbfcaf92db4f13429d56499a74cc5859c5e",
+  "script_sha256": "4c5bf3e49d2cb54fabf1702793df658709ea42b70ee33a827f4d0e9b2f0906ac",
+  "started": "2026-10-16 03:29:10"
+}

@@ -1,0 +1,6 @@
+A13b_s0 deep {'n_pos': 5586, 'n_neg': 165305, 'train_auc': 0.9935254471567616}
+A13b_s0 shallow {'n_pos': 5586, 'n_neg': 165305, 'train_auc': 0.929198037764454}
+A13b_s1 deep {'n_pos': 5586, 'n_neg': 165305, 'train_auc': 0.9937698607721757}
+A13b_s1 shallow {'n_pos': 5586, 'n_neg': 165305, 'train_auc': 0.9287825990544684}
+A13b_s2 deep {'n_pos': 5586, 'n_neg': 165305, 'train_auc': 0.9940207228827512}
+A13b_s2 shallow {'n_pos': 5586, 'n_neg': 165305, 'train_auc': 0.9296820073707887}

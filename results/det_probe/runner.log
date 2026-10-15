@@ -1,0 +1,31 @@
+[2026-10-15 23:12:36] D0 start, HEAD 5adf469, plan 5adf469, GPUs 0 1 2, 6 shards
+selftest PASS
+[2026-10-15 23:12:50] train: extract
+[2026-10-15 23:21:55] stopped after the padding error in shards 1 and 5; restarting at 66581e5 (completed cases are skipped)
+[2026-10-15 23:21:55] D0 start, HEAD 66581e5, plan 66581e5, GPUs 0 1 2, 6 shards
+selftest PASS
+[2026-10-15 23:22:09] train: extract
+[2026-10-15 23:50:31] train: 83 cases extracted
+[2026-10-15 23:50:48] heads fitted (heads_info.json)
+[2026-10-15 23:50:48] msd08: extract
+[2026-10-16 00:40:02] fix: msd08 shard 0/6 rerun on GPU 0 with the OOM fallback (aaffc4c)
+[2026-10-16 02:28:37] fix: shard 0 done; waiting for the first runner to exit
+[2026-10-16 02:32:15] msd08: 303 cases extracted
+[2026-10-16 02:32:22] msd08: done; /root/autodl-tmp/seg/results/det_probe/msd08/SUMMARY.md
+[2026-10-16 02:32:22] lits_val: extract
+[2026-10-16 03:28:09] lits_val: 21 cases extracted
+[2026-10-16 03:28:15] lits_val: done; /root/autodl-tmp/seg/results/det_probe/lits_val/SUMMARY.md
+[2026-10-16 03:28:15] D0 finished; decision in results/det_probe/msd08/SUMMARY.md
+[2026-10-16 03:28:41] fix: pulled 3a1bcfd; restarting the runner (completed cases and the fitted heads are kept)
+[2026-10-16 03:28:41] D0 start, HEAD 3a1bcfd, plan aaffc4c, GPUs 0 1 2, 6 shards
+selftest PASS
+[2026-10-16 03:28:56] train: extract
+[2026-10-16 03:29:03] train: 83 cases extracted
+[2026-10-16 03:29:03] heads.npz exists; not refitted (cases already scored keep the same heads)
+[2026-10-16 03:29:03] msd08: extract
+[2026-10-16 03:29:11] msd08: 303 cases extracted
+[2026-10-16 03:29:18] msd08: done; /root/autodl-tmp/seg/results/det_probe/msd08/SUMMARY.md
+[2026-10-16 03:29:18] lits_val: extract
+[2026-10-16 03:29:26] lits_val: 21 cases extracted
+[2026-10-16 03:29:31] lits_val: done; /root/autodl-tmp/seg/results/det_probe/lits_val/SUMMARY.md
+[2026-10-16 03:29:31] D0 finished; decision in results/det_probe/msd08/SUMMARY.md

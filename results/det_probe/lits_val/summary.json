@@ -1,0 +1,68 @@
+{
+  "split": "lits_val",
+  "decision_split": false,
+  "n_cases": 21,
+  "n_lesions": 92,
+  "integrity": null,
+  "decision": {
+    "R_head": 0.0,
+    "R_thr": 0.06405228758169934,
+    "diff": -0.06405228758169934,
+    "ci": [
+      NaN,
+      NaN
+    ],
+    "per_run": {
+      "A13b_s0": {
+        "n_missed": 15,
+        "t_deep": null,
+        "R_deep": 0.0,
+        "t_shallow": null,
+        "R_shallow": 0.0,
+        "t_thr": 0.1,
+        "R_thr": 0.06666666666666667
+      },
+      "A13b_s1": {
+        "n_missed": 17,
+        "t_deep": null,
+        "R_deep": 0.0,
+        "t_shallow": null,
+        "R_shallow": 0.0,
+        "t_thr": 0.2,
+        "R_thr": 0.058823529411764705
+      },
+      "A13b_s2": {
+        "n_missed": 15,
+        "t_deep": null,
+        "R_deep": 0.0,
+        "t_shallow": null,
+        "R_shallow": 0.0,
+        "t_thr": 0.2,
+        "R_thr": 0.06666666666666667
+      }
+    },
+    "GO": null
+  },
+  "descriptive": {
+    "low_cnr": {
+      "n_missed": 28,
+      "R_deep": 0.0,
+      "R_thr": 0.1074074074074074
+    },
+    "partially_lit": {
+      "n_missed": 18,
+      "R_deep": 0.0,
+      "R_thr": 0.16984126984126982
+    },
+    "unlit": {
+      "n_missed": 29,
+      "R_deep": 0.0,
+      "R_thr": 0.0
+    },
+    "budget_1.0": {
+      "R_deep": 0.0,
+      "R_shallow": 0.0,
+      "R_thr": 0.10326797385620916
+    }
+  }
+}

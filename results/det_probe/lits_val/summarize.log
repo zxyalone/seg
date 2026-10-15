@@ -1,0 +1,27 @@
+/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/root/autodl-tmp/envs/mamba/lib/python3.10/site-packages/numpy/core/_methods.py:129: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+# D0 检出探针：lits_val
+
+21 例，92 个病灶。判据见 docs/解码端病灶检出计划.md §3.4；本队列只作描述。
+
+## 判据（新增假阳性 ≤ 0.5 个/例，A13b 3 个 seed 平均）
+
+- R_head = 0.000，R_thr = 0.064，差 -0.064，95% CI [nan, nan] → **None**
+
+| run | 漏检病灶 | t* 头部 | R 头部 | t* 浅层对照 | R 浅层 | t'* 基线 | R 基线 |
+|---|---|---|---|---|---|---|---|
+| A13b_s0 | 15 | None | 0.000 | None | 0.000 | 0.1 | 0.067 |
+| A13b_s1 | 17 | None | 0.000 | None | 0.000 | 0.2 | 0.059 |
+| A13b_s2 | 15 | None | 0.000 | None | 0.000 | 0.2 | 0.067 |
+
+## 描述性
+
+| 子集 | 漏检数（3 seed 合计） | R 头部 | R 基线 |
+|---|---|---|---|
+| low_cnr | 28 | 0.000 | 0.107 |
+| partially_lit | 18 | 0.000 | 0.170 |
+| unlit | 29 | 0.000 | 0.000 |
+| budget_1.0 |  | 0.000 | 0.103 |
+

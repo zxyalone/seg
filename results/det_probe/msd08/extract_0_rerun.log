@@ -1,0 +1,54 @@
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+[1/51] hepaticvessel_001: done, skipped
+[2/51] hepaticvessel_010: done, skipped
+[3/51] hepaticvessel_020: done, skipped
+[4/51] hepaticvessel_028: done, skipped
+[5/51] hepaticvessel_039: done, skipped
+[6/51] hepaticvessel_050: done, skipped
+[7/51] hepaticvessel_059: done, skipped
+[8/51] hepaticvessel_068: done, skipped
+[9/51] hepaticvessel_078: done, skipped
+[10/51] hepaticvessel_084: done, skipped
+[11/51] hepaticvessel_090: done, skipped
+[12/51] hepaticvessel_097: done, skipped
+[13/51] hepaticvessel_108: done, skipped
+[14/51] hepaticvessel_116: done, skipped
+[15/51] hepaticvessel_125: done, skipped
+[16/51] hepaticvessel_133: done, skipped
+[17/51] hepaticvessel_141: 3 lesions, 648s
+[18/51] hepaticvessel_148: 1 lesions, 179s
+[19/51] hepaticvessel_159: 1 lesions, 149s
+[20/51] hepaticvessel_166: 1 lesions, 175s
+[21/51] hepaticvessel_175: 2 lesions, 183s
+[22/51] hepaticvessel_184: 1 lesions, 94s
+[23/51] hepaticvessel_194: 1 lesions, 117s
+[24/51] hepaticvessel_200: 1 lesions, 86s
+[25/51] hepaticvessel_209: 1 lesions, 221s
+[26/51] hepaticvessel_217: 1 lesions, 197s
+[27/51] hepaticvessel_224: 1 lesions, 144s
+[28/51] hepaticvessel_233: 1 lesions, 203s
+[29/51] hepaticvessel_240: 1 lesions, 222s
+[30/51] hepaticvessel_255: 1 lesions, 199s
+[31/51] hepaticvessel_265: 1 lesions, 173s
+[32/51] hepaticvessel_272: 1 lesions, 165s
+[33/51] hepaticvessel_281: 1 lesions, 209s
+[34/51] hepaticvessel_289: 2 lesions, 100s
+[35/51] hepaticvessel_297: 4 lesions, 184s
+[36/51] hepaticvessel_308: 3 lesions, 183s
+[37/51] hepaticvessel_321: 1 lesions, 183s
+[38/51] hepaticvessel_329: 1 lesions, 173s
+[39/51] hepaticvessel_338: 1 lesions, 136s
+[40/51] hepaticvessel_349: 1 lesions, 138s
+[41/51] hepaticvessel_361: 1 lesions, 186s
+[42/51] hepaticvessel_371: 2 lesions, 141s
+[43/51] hepaticvessel_379: 1 lesions, 222s
+[44/51] hepaticvessel_388: 5 lesions, 235s
+[45/51] hepaticvessel_398: 2 lesions, 154s
+[46/51] hepaticvessel_407: 4 lesions, 209s
+[47/51] hepaticvessel_419: 1 lesions, 173s
+[48/51] hepaticvessel_427: 2 lesions, 122s
+[49/51] hepaticvessel_437: 5 lesions, 238s
+[50/51] hepaticvessel_444: 2 lesions, 191s
+[51/51] hepaticvessel_455: 2 lesions, 179s

@@ -1,0 +1,102 @@
+{
+  "split": "msd08",
+  "decision_split": true,
+  "n_cases": 303,
+  "n_lesions": 544,
+  "integrity": {
+    "ok": true,
+    "rows": [
+      {
+        "run": "A13b_s0",
+        "n_lesions": 544,
+        "n_archive": 544,
+        "recall_all": 85.11029411764706,
+        "archive_all": 85.11029411764706,
+        "recall_low": 79.04761904761905,
+        "archive_low": 79.04761904761905,
+        "ok": 1.0
+      },
+      {
+        "run": "A13b_s1",
+        "n_lesions": 544,
+        "n_archive": 544,
+        "recall_all": 84.74264705882352,
+        "archive_all": 84.74264705882352,
+        "recall_low": 77.77777777777779,
+        "archive_low": 77.77777777777779,
+        "ok": 1.0
+      },
+      {
+        "run": "A13b_s2",
+        "n_lesions": 544,
+        "n_archive": 544,
+        "recall_all": 85.11029411764706,
+        "archive_all": 85.11029411764706,
+        "recall_low": 78.41269841269842,
+        "archive_low": 78.41269841269842,
+        "ok": 1.0
+      }
+    ]
+  },
+  "decision": {
+    "R_head": 0.0,
+    "R_thr": 0.04884286884286884,
+    "diff": -0.04884286884286884,
+    "ci": [
+      -0.07984390236709199,
+      -0.024160477280681887
+    ],
+    "per_run": {
+      "A13b_s0": {
+        "n_missed": 75,
+        "t_deep": null,
+        "R_deep": 0.0,
+        "t_shallow": null,
+        "R_shallow": 0.0,
+        "t_thr": 0.2,
+        "R_thr": 0.04
+      },
+      "A13b_s1": {
+        "n_missed": 77,
+        "t_deep": null,
+        "R_deep": 0.0,
+        "t_shallow": null,
+        "R_shallow": 0.0,
+        "t_thr": 0.2,
+        "R_thr": 0.03896103896103896
+      },
+      "A13b_s2": {
+        "n_missed": 74,
+        "t_deep": null,
+        "R_deep": 0.0,
+        "t_shallow": null,
+        "R_shallow": 0.0,
+        "t_thr": 0.2,
+        "R_thr": 0.06756756756756757
+      }
+    },
+    "GO": false
+  },
+  "descriptive": {
+    "low_cnr": {
+      "n_missed": 195,
+      "R_deep": 0.0,
+      "R_thr": 0.04602020422915945
+    },
+    "partially_lit": {
+      "n_missed": 98,
+      "R_deep": 0.0,
+      "R_thr": 0.11108208522001627
+    },
+    "unlit": {
+      "n_missed": 128,
+      "R_deep": 0.0,
+      "R_thr": 0.0
+    },
+    "budget_1.0": {
+      "R_deep": 0.0,
+      "R_shallow": 0.0,
+      "R_thr": 0.08890760890760892
+    }
+  }
+}
