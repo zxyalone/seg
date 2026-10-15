@@ -27,11 +27,11 @@ PhASER-3D is implemented in the nnU-Net v2 framework \cite{isensee2021nnunet} ([
 
 **Backbone.** The backbone is the nnU-Net 3D `PlainConvUNet` with six stages (32, 64, 128, 256, 320, 320 channels) and deep supervision. The first stage does not downsample, so encoder features have resolutions 128³, 64³, 32³, 16³, 8³, and 4³ for a 128³ patch. The encoder is initialized from VoComni pretrained weights \cite{wu2024voco,wu2024largescale}. Of the 292 parameter tensors, 282 are loaded; the 10 segmentation-head tensors are re-initialized because VoComni predicts 21 classes and our task has 3.
 
-**PhASER modules.** One PFCR module is inserted on each of the five non-bottleneck encoder skips (128³ to 8³). Phase congruency (PC) uses S = 3 learnable log-Gabor scales, initial center wavelengths 3.0, 6.3 and 13.2 voxels, and bandwidth σ_onf = 0.55. The noise multiplier is initialized at k = 2.0. The fast Fourier transforms run in fp32 under automatic mixed precision (AMP). PC resolution at the 128³ skip: [[V2-pending: full resolution, or capped at 2²⁰ voxels]]. Noise threshold form: [[V2-pending: hard (Kovesi) or soft]]. The router's last layer and the residual scale γ are zero-initialized. Each module is therefore an exact identity at initialization.
+**PhASER modules.** One PFCR module is inserted on each of the five non-bottleneck encoder skips (128³ to 8³). Phase congruency (PC) uses S = 3 learnable log-Gabor scales, initial center wavelengths 3.0, 6.3 and 13.2 voxels, and bandwidth σ_onf = 0.55. The noise multiplier is initialized at k = 2.0. The fast Fourier transforms run in fp32 under automatic mixed precision (AMP). PC resolution at the 128³ skip: capped at 2²⁰ voxels, so the 128³ skip is computed at 64³. Noise threshold form: hard (Kovesi). The router's last layer and the residual scale γ are zero-initialized. Each module is therefore an exact identity at initialization.
 
 **Training.** Table 2 lists all settings. The same settings are used for every ablation group (Section 4.6) unless the group definition changes them. Final-epoch weights are reported for every model; there is no checkpoint selection.
 
-**Table 2.** Implementation and configuration of PhASER-3D on LiTS. Items marked `[[V2-pending]]` may still change before the final runs.
+**Table 2.** Implementation and configuration of PhASER-3D on LiTS. Settings are those of the trained V2 runs (`experiments/configs/A*.env`).
 
 | Item | Setting |
 |---|---|
@@ -43,8 +43,8 @@ PhASER-3D is implemented in the nnU-Net v2 framework \cite{isensee2021nnunet} ([
 | Feature proxy | 1×1×1 conv C → 1, initialized to the channel mean |
 | Log-Gabor scales | S = 3; λ_init = 3.0 / 6.3 / 13.2 voxels (min. wavelength 3, multiplier 2.1); σ_onf = 0.55 |
 | Reparameterization | ρ_s = 0.5·sigmoid(·); σ_s = 0.05 + 0.9·sigmoid(·); k = softplus(·), k_init = 2.0 |
-| PC noise threshold | Kovesi estimate from the median amplitude of the finest scale \cite{kovesi1999phase}; [[V2-pending: hard vs soft]] |
-| PC computation resolution | [[V2-pending: full resolution vs 2²⁰-voxel cap]] |
+| PC noise threshold | Kovesi estimate from the median amplitude of the finest scale \cite{kovesi1999phase}; hard threshold (no relative cap; a cap at κ·ΣA_s was tested and rejected, Section 3) |
+| PC computation resolution | Voxel cap 2²⁰ (`PHASER_PC_MAX_VOXELS`): the 128³ skip is computed at 64³ and upsampled; all other skips at full resolution |
 | Band grouping | Single-level 3D Haar DWT; low = LLL, mid = 3 subbands with one high-pass axis, high = 4 subbands with ≥ 2 high-pass axes |
 | Residual scale | out = x + tanh(γ)·routed, γ_init = 0 |
 | Tumor-prior head | Two 3×3×3 convs on the two shallowest skips; prior = softmax(logits)[tumor] |
@@ -65,9 +65,9 @@ PhASER-3D is implemented in the nnU-Net v2 framework \cite{isensee2021nnunet} ([
 | Model selection | None; final-epoch weights |
 | Inference | Sliding window, Gaussian weighting, tile step 0.5; no test-time augmentation |
 | Post-processing | [[TBD: none, or nnU-Net largest-component rule if selected on validation]] |
-| Random seeds | 0, 1, 2 for A0 and A6; 0 for all other groups. The seed fixes network initialization and the augmentation workers; batch order across workers is not deterministic |
-| Hardware / software | 1 × NVIDIA RTX 3090 24 GB; PyTorch 2.1, CUDA 11.8 |
-| Training time per run | [[TBD]] h |
+| Random seeds | 0, 1, 2 for A0, A1 and A6; 0 for A7. The seed fixes network initialization and the augmentation workers; batch order across workers is not deterministic |
+| Hardware / software | NVIDIA RTX 3080 Ti 12 GB (one GPU per run; three runs in parallel); PyTorch 2.1, CUDA 11.8 |
+| Training time per run | A0 ≈ 4.8 h, A1 ≈ 5.1 h, A6/A7 ≈ 7.7 h (mean epoch 80–88 s for A0/A1, 133 s for A6/A7) |
 
 ## 4.3 Evaluation protocol and statistics
 
@@ -88,7 +88,7 @@ We follow the recommendations of Metrics Reloaded \cite{maierhein2024metrics} an
 
 Lesion recall and the Dice of matched lesions are reported per stratum. FPs have no reference lesion and hence no reference size or CNR, so FP per scan is reported overall and by predicted-component size.
 
-**Statistical analysis.** A0 and A6, the groups of the main comparison, are trained with three seeds (0, 1, 2). All other groups use one seed (0); their comparisons with A6 are therefore less precise, which we state where it matters. For each case, metrics are averaged over seeds before paired tests; per-seed results are reported in the supplement. Paired differences between two methods are summarized by the mean difference with a 95% confidence interval (CI) from a paired bootstrap over cases (10,000 resamples). Significance uses the two-sided Wilcoxon signed-rank test \cite{bilic2023lits}. The effect size is the matched-pairs rank-biserial correlation. For lesion-level quantities, the bootstrap resamples cases, not lesions, because lesions within a patient are correlated. Pre-specified comparisons are A6 vs. A0, A6 vs. A1, A6 vs. A7 and A6 vs. A8; their p-values are Holm-corrected. The primary endpoint is [[TBD: choose before test evaluation, e.g., recall of < 10 mm lesions at matched FP per scan, or per-case tumor Dice on Tumor24]].
+**Statistical analysis.** A0, A1 and A6, the groups of the main comparisons, are trained with three seeds (0, 1, 2). A7 uses one seed (0) and is compared with the seed-0 runs of the other groups; this comparison is therefore less precise, which we state where it matters. For each case, metrics are averaged over seeds before paired tests; per-seed results are reported in the supplement. Paired differences between two methods are summarized by the mean difference with a 95% confidence interval (CI) from a paired bootstrap over cases (10,000 resamples). Significance uses the two-sided Wilcoxon signed-rank test \cite{bilic2023lits}. The effect size is the matched-pairs rank-biserial correlation. For lesion-level quantities, the bootstrap resamples cases, not lesions, because lesions within a patient are correlated. Pre-specified comparisons are A6 vs. A0, A6 vs. A1, A6 vs. A7 and A6 vs. A8; their p-values are Holm-corrected. The primary endpoint is [[TBD: choose before test evaluation, e.g., recall of < 10 mm lesions at matched FP per scan, or per-case tumor Dice on Tumor24]].
 
 **Model selection and test-set discipline.** All design, hyperparameter and post-processing decisions use the 21 validation cases only. Patch-level pseudo-Dice logged during training is not used for any decision, because on this dataset it does not track full-volume Dice. Every model is evaluated with its final-epoch weights. The 27 test cases and the external cohort are evaluated once, after the full protocol in this section was frozen. The freeze is recorded as a commit of the code repository; the test-prediction script refuses to run before it. The mechanism analyses in Section 4.8 use validation cases only.
 
@@ -110,15 +110,25 @@ The external baselines start from random initialization, whereas PhASER-3D start
 
 ## 4.5 Comparison results
 
-Table 3 reports the comparison on the internal test set (part a) and the external test set (part b). Methods are grouped by architecture family, following \cite{bian2026mambaclinix}. Fig. 4 shows qualitative results for [[TBD: number]] test cases, chosen to span the three CNR tertiles and the three size strata. Case selection rule: [[TBD: e.g., the case closest to the median per-case Dice of A0 within each stratum]].
+Table 3 reports the comparison on the validation set (part v, development data, available now), the internal test set (part a) and the external test set (part b). Methods are grouped by architecture family, following \cite{bian2026mambaclinix}. Fig. 4 shows qualitative results for [[TBD: number]] test cases, chosen to span the three CNR tertiles and the three size strata. Case selection rule: [[TBD: e.g., the case closest to the median per-case Dice of A0 within each stratum]].
 
-[[TBD: results narrative. Report per-case tumor Dice of PhASER-3D vs. A0 with paired 95% CI and Wilcoxon p; then the strongest external baseline; then lesion recall, FP per scan and HD95. State explicitly where differences are within the CI.]]
+**Validation set (Table 3v).** Whole-liver Dice was 96.3–96.4% for both models; the difference of 0.11 points was small but consistent (95% CI [0.02, 0.25], n = 21). On the 18 tumor-bearing validation cases, PhASER-3D reached a per-case tumor Dice of 68.30 ± 3.45% (mean ± SD over three seeds) against 66.05 ± 4.41% for A0. The paired difference of +2.25 points has a 95% CI of [−1.16, +6.01] (Wilcoxon p = 0.17, Holm-adjusted p = 0.33), so it is not distinguishable from zero. Lesion recall was identical (76.45% for both). The change was in precision: PhASER-3D produced fewer false-positive components (2.93 vs. 3.48 per scan; Δ −0.56, 95% CI [−1.07, −0.07]), which raised lesion precision by 4.30 points [0.80, 8.07] and lesion F1 by 2.91 points [0.43, 5.38]. HD95 fell by 4.2 mm, with a CI spanning zero ([−15.9, +7.9]). Section 4.6 tests whether this precision gain is specific to phase evidence.
 
-[[CLAIM-PENDING: depends on A6 vs A0/A1/A7]] Any statement that PhASER-3D improves over A0 must cite the paired CI, not only the means.
+**Test sets (Table 3a, 3b).** [[TBD: one-shot test results after the protocol freeze. Report per-case tumor Dice of PhASER-3D vs. A0 with paired 95% CI and Wilcoxon p; then the strongest external baseline; then lesion recall, FP per scan and HD95. State explicitly where differences are within the CI.]]
 
 <!-- Expected reading: The hypothesis is supported if A6 exceeds A0 in per-case tumor Dice (paired CI excluding 0, consistent sign across seeds) without higher FP per scan, and its gap to external baselines stays when they are compared at matched pretraining status. It is refuted if the A6 − A0 CI includes 0 on both internal and external test sets, or if gains appear only in global Dice. -->
 
 **Table 3.** Comparison on the LiTS internal test set (a) and the external test set (b). Liver: All27, whole liver (label > 0). Tumor overlap and boundary: Tumor24. Lesion metrics: IoU > 0.1 one-to-one matching, pooled; FP/scan over All27. Values are mean ± SD over cases, averaged over seeds. "Params" counts trainable parameters. Bold marks the best value only where the paired CI vs. the runner-up excludes 0.
+
+*(v) Validation set, development data (21 cases; 18 tumor-bearing). Mean ± SD over three seeds (0, 1, 2). Liver: all 21 cases. Tumor overlap, boundary and lesion metrics, including FP/scan: the 18 tumor-bearing cases. Δ: paired difference with 95% bootstrap CI over cases after averaging seeds per case (10,000 resamples).*
+
+| Family | Method | Params (M) | Liver DSC (%) | Liver IoU (%) | Tumor DSC (%) | Tumor IoU (%) | Tumor global DSC (%) | Lesion recall (%) | Lesion precision (%) | FP/scan | Tumor HD95 (mm) | Tumor NSD (%) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| CNN-based | nnU-Net + VoComni (A0) | 31.20 | 96.26 ± 0.20 | 92.91 ± 0.33 | 66.05 ± 4.41 | 54.57 ± 4.09 | 83.14 ± 1.02 | 76.45 ± 1.26 | 53.14 ± 4.89 | 3.48 ± 0.65 | 28.04 ± 3.69 | 66.87 ± 4.67 |
+| Frequency-aware | PhASER-3D (ours, A6) | 31.34 | 96.37 ± 0.19 | 93.12 ± 0.32 | 68.30 ± 3.45 | 56.30 ± 3.25 | 84.24 ± 0.86 | 76.45 ± 1.26 | 57.19 ± 1.36 | 2.93 ± 0.12 | 23.88 ± 9.19 | 69.12 ± 3.23 |
+| | Δ A6 − A0 [95% CI] | – | +0.11 [+0.02, +0.25] | [[TBD]] | +2.25 [−1.16, +6.01] | +1.73 [−1.32, +4.85] | [[TBD]] | 0.00 [−1.03, +1.19] | +4.30 [+0.80, +8.07] | −0.56 [−1.07, −0.07] | −4.17 [−15.92, +7.95] | +2.25 [−1.09, +6.16] |
+
+External baselines (MedNeXt, U-Mamba, Swin UNETR) were not trained on the validation set: [[TBD]].
 
 *(a) LiTS internal test set (27 cases; 24 tumor-bearing)*
 
@@ -157,25 +167,29 @@ The ablation adds one component at a time, in the incremental style of \cite{bia
 
 Because A3 → A6 add one loss term at a time, the same table also serves as the loss ablation. Following \cite{bian2026mambaclinix}, it reports both DSC and recall, since an auxiliary term can trade one for the other.
 
-[[TBD: results narrative, in the order A1 vs. A0, A2 vs. A1, A3 vs. A2, A4 vs. A3, A5 vs. A4, A6 vs. A5, A7 vs. A6, A8 vs. A6. For each contrast, state the paired Δ tumor DSC with 95% CI and the Δ lesion recall.]]
+Of the planned groups, A0, A1 and A6 were trained with three seeds and A7 with one; A2–A5 were not trained, and A8 was cancelled. Table 4 reports their validation results. The decision rule for the study direction was frozen before these results were inspected: the full model had to exceed the gradient gate in tumor Dice and, at the same time, improve lesion F1 or reduce FP per scan. On seed 0, A6 exceeded A1 in tumor Dice by 2.1 points but lowered lesion F1 by 3.1 points and raised FP per scan by 0.22, so the rule was not met.
+
+The three-seed results agree with that outcome. **Phase vs. amplitude (A6 vs. A1).** Tumor Dice differed by +0.25 points (95% CI [−3.65, +3.65]; Holm-adjusted p = 0.35). Lesion F1 (−0.93 [−6.40, +6.34]), FP per scan (+0.02 [−1.02, +1.11]) and recall (−1.45 [−3.53, +0.62]) showed no consistent difference either. **Any gate vs. none (A1 vs. A0, exploratory).** The gradient gate alone moved tumor Dice by +2.01 points ([−1.05, +5.60]) and FP per scan by −0.57 ([−1.89, +0.37]), about the same as A6 vs. A0 (+2.25 and −0.56). **Capacity control (A6 vs. A7, seed 0).** With PC spatially shuffled, tumor Dice changed by −0.89 points relative to A6 ([−5.19, +3.60]; p = 0.55) and lesion F1 by +0.98 ([−6.62, +6.64]). A7 also reduced FP per scan relative to A0 (seed 0: −1.00 [−2.00, −0.17]).
+
+Taken together, the precision gain of A6 over A0 is reproduced by an amplitude gate (A1) and by PFCR with spatially meaningless PC (A7). It is therefore not attributable to phase evidence. It more plausibly reflects the added skip gating and the auxiliary losses, which A1 and A7 share in part with A6. These are validation results on 18 tumor-bearing cases, and the CIs are wide; the one-shot test evaluation (Section 4.3) will report the same contrasts.
 
 <!-- Expected reading: The phase-routing hypothesis is supported if (i) A2 > A1 and A6 > A1 with CIs excluding 0, (ii) A7 falls back towards A0/A1 (so the gain is not capacity), and (iii) each of A4, A5, A6 adds a non-negative step. It is refuted if A1 ≈ A6 (amplitude gating explains the gain), if A7 ≈ A6 (capacity/regularization explains it), or if the gain disappears in A8 relative to nnU-Net from scratch (pretraining interaction). -->
 
-**Table 4.** Incremental ablation on the LiTS internal test set. ✓ = component present. "Rank" = L_PC-rank. FLOPs per 128³ forward pass. DSC and recall in %. Δ is the paired difference to A0 with 95% bootstrap CI.
+**Table 4.** Incremental ablation on the validation set (18 tumor-bearing cases; lesion metrics and FP/scan on the same 18 cases). ✓ = component present. "Rank" = L_PC-rank. FLOPs per 128³ forward pass. DSC, IoU, recall and F1 in %, mean ± SD over three seeds unless marked. Δ is the paired difference to A0 with 95% bootstrap CI over cases (seeds averaged per case). The same table on the internal test set will follow the one-shot evaluation: [[TBD]].
 
 | ID | Gate signal | PFCR routing | Prior | L_budget | Rank | VoComni | Params (M) | FLOPs (G) | Tumor DSC | Tumor IoU | Lesion recall | Lesion F1 | FP/scan | Δ DSC vs. A0 [95% CI] |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A0 | – | – | – | – | – | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | – |
-| A1 | \|∇f\| | – | – | – | – | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A2 | PC | – | – | – | – | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A3 | PC | ✓ | – | – | – | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A4 | PC | ✓ | ✓ | – | – | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A5 | PC | ✓ | ✓ | ✓ | – | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A6 (full) | PC | ✓ | ✓ | ✓ | ✓ | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A7 (shuffled PC) | PC, shuffled | ✓ | ✓ | ✓ | ✓ | ✓ | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
-| A8 (scratch) | PC | ✓ | ✓ | ✓ | ✓ | – | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] | [[TBD]] |
+| A0 | – | – | – | – | – | ✓ | 31.20 | [[TBD]] | 66.05 ± 4.41 | 54.57 ± 4.09 | 76.45 ± 1.26 | 62.64 ± 3.87 | 3.48 ± 0.65 | – |
+| A1 | \|∇f\| | – | – | – | – | ✓ | 31.20 | [[TBD]] | 68.06 ± 1.91 | 56.32 ± 1.68 | 77.90 ± 1.66 | 66.38 ± 1.04 | 2.91 ± 0.34 | +2.01 [−1.05, +5.60] |
+| A2 | PC | – | – | – | – | ✓ | – | – | not trained | | | | | |
+| A3 | PC | ✓ | – | – | – | ✓ | – | – | not trained | | | | | |
+| A4 | PC | ✓ | ✓ | – | – | ✓ | – | – | not trained | | | | | |
+| A5 | PC | ✓ | ✓ | ✓ | – | ✓ | – | – | not trained | | | | | |
+| A6 (full) | PC | ✓ | ✓ | ✓ | ✓ | ✓ | 31.34 | [[TBD]] | 68.30 ± 3.45 | 56.30 ± 3.25 | 76.45 ± 1.26 | 65.43 ± 1.34 | 2.93 ± 0.12 | +2.25 [−1.16, +6.01] |
+| A7 (shuffled PC) | PC, shuffled | ✓ | ✓ | ✓ | ✓ | ✓ | 31.34 | [[TBD]] | 67.72 † | 55.77 † | 78.26 † | 64.86 † | 3.22 † | +2.67 [−2.41, +8.60] † |
+| A8 (scratch) | PC | ✓ | ✓ | ✓ | ✓ | – | – | – | cancelled | | | | | |
 
-Seeds per group: [[TBD]]. Validation-set results for all groups are given in the supplement.
+† Single seed (0); Δ vs. A0 uses the seed-0 run of A0. Parameter counts: A1 adds 15 parameters to A0, A6 and A7 add 141,641 (0.454%). Pre-specified paired contrasts (three seeds, Holm-adjusted over A6 vs. A0 and A6 vs. A1): A6 − A0 tumor Dice p = 0.33; A6 − A1 p = 0.35. Per-seed values are in `results/stage0_6_runs.csv`.
 
 ## 4.7 Stratified analysis (lesion size and CNR)
 
@@ -216,7 +230,7 @@ This section asks what the PC evidence does, separately from the segmentation sc
 
 *(iv) Real lesions show the same pattern.* We cropped 91 lesions (≥ 50 voxels) from the 21 validation cases, resampled with their CT to 1.0 × 0.78 × 0.78 mm in HU. Of these, 87 were analyzed (4 exceeded the crop size). We compared each operator's mean response on the lesion boundary shell with its mean response on the peritumoral liver ring (2–6 voxels outside, label 1). In the low-CNR tertile (n = 36, median CNR 0.959), the median boundary-to-ring ratio was 0.651 for PC and 0.967 for |∇f|. Both operators responded less at the lesion boundary than in the surrounding liver; the effect was stronger for PC. In the high-CNR tertile (n = 22), the ratios were 1.678 for PC and 1.111 for |∇f|. PC had the higher ratio for 9 of 36 low-CNR lesions and 15 of 22 high-CNR lesions. The boundary–ring separation correlated with CNR for both operators (Spearman ρ = 0.530 for PC, 0.708 for |∇f|).
 
-*Reading of Fig. 3.* With its initial parameters, the PC operator is contrast-invariant but not noise-invariant. Under CT-like noise it abstains at low CNR and responds selectively at strong edges. It therefore does not, by itself, supply low-contrast boundary evidence on raw intensities. Any low-CNR benefit of PhASER-3D would have to come from what training changes: learned scales and noise multiplier, PC computed on learned feature proxies rather than HU, and the tumor prior. Figs. 3 (trained panel) and 5 test this. [[V2-pending: if the V2 noise threshold is changed (e.g., soft threshold), repeat (iii) for the V2 operator and report both.]] Caveat: the synthetic noise was white and additive, whereas CT noise is spatially correlated and intensity-dependent. The direction of the effect follows from the threshold mechanism, but the exact CNR at which PC switches on may differ.
+*Reading of Fig. 3.* With its initial parameters, the PC operator is contrast-invariant but not noise-invariant. Under CT-like noise it abstains at low CNR and responds selectively at strong edges. It therefore does not, by itself, supply low-contrast boundary evidence on raw intensities. Any low-CNR benefit of PhASER-3D would have to come from what training changes: learned scales and noise multiplier, PC computed on learned feature proxies rather than HU, and the tumor prior. Figs. 3 (trained panel) and 5 test this. The V2 runs keep the hard threshold, so this reading applies to the trained operator as well, up to its learned parameters. Caveat: the synthetic noise was white and additive, whereas CT noise is spatially correlated and intensity-dependent. The direction of the effect follows from the threshold mechanism, but the exact CNR at which PC switches on may differ.
 
 **Fig. 3 (trained panel) and Fig. 5: what training changes ([[TBD]]).** For the final A5 and A6 models (all seeds), on the validation cases:
 1. *Learned filters.* Center wavelength λ_s and bandwidth σ_s per log-Gabor scale and per skip level, against the initial 3.0 / 6.3 / 13.2 voxels; learned noise multiplier k. We report the relative shift |Δλ|/λ_init and the spread of λ across the five skip levels. Comparing A6 with A5 isolates the effect of L_PC-rank.
