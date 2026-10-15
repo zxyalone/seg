@@ -73,6 +73,13 @@ LAMBDA = 1e-2
 W_SHALLOW, W_DEEP = (0, 1), 3
 W_MIN_EFFECT = 0.10
 W_MIN_SHALLOW_AUC = 0.80
+# v2（计划 §3.5，v1 失效后登记）
+OUT_DIR = "freq_probe_v2"
+NEG_PATCHES = 8              # 每例负样本块数：远处肝实质中心
+NEG_CENTER_SEP_MM = 30.0     # 负样本块中心两两最小间距
+CTRL_POS_CAP = 32            # 位置对照：块中心体素最多取几个
+W_MIN_ABS_DROP = 0.05        # 小病灶自身的 drop 中位数下限
+W_MIN_STRATUM_N = 3          # 分层 W：每个 CNR 层小、大病灶各至少 3 个才计入
 S_DEEP = (3, 4)
 S_MIN_EFFECT = 0.05
 S_MIN_VALID = 0.60
@@ -137,6 +144,88 @@ def stage_samples(feat: np.ndarray, les_frac: np.ndarray, bg_frac: np.ndarray, s
         neg = np.sort(rng.choice(neg, NEG_CAP, replace=False))
     flat = feat.reshape(feat.shape[0], -1)
     return flat[:, pos].T.astype(np.float16), flat[:, neg].T.astype(np.float16)
+
+
+def pos_indices(les_frac: np.ndarray, rng):
+    """正样本体素（stage 网格的扁平下标）：占比 ≥ 0.5；没有时取占比最大（> 0）的一个；最多 POS_CAP 个。"""
+    lf = les_frac.ravel()
+    pos = np.flatnonzero(lf >= POS_FRAC)
+    if pos.size == 0:
+        j = int(np.argmax(lf))
+        if lf[j] <= 0:
+            return None
+        pos = np.array([j])
+    if pos.size > POS_CAP:
+        pos = np.sort(rng.choice(pos, POS_CAP, replace=False))
+    return pos
+
+
+def stage_samples_v2(feat: np.ndarray, les_frac: np.ndarray, neg_feats: list, neg_ok: list, rng):
+    """v2 位置匹配采样。正样本同 v1；负样本取各负样本块（远处肝实质为中心）中与正样本**相同扁平下标**的体素，
+    只保留 neg_ok 为真者（远处肝实质占比达标、无肿瘤），最多 NEG_CAP 个，< MIN_NEG 记为无效。
+    正负样本在块内的位置分布因此相同，探针不能靠块内位置区分。"""
+    pos = pos_indices(les_frac, rng)
+    if pos is None:
+        return None
+    ks, ids = [], []
+    for k, ok in enumerate(neg_ok):
+        sel = pos[ok[pos]]
+        ks.append(np.full(sel.size, k))
+        ids.append(sel)
+    ks, ids = np.concatenate(ks) if ks else np.zeros(0, int), np.concatenate(ids) if ids else np.zeros(0, int)
+    if ids.size < MIN_NEG:
+        return None
+    if ids.size > NEG_CAP:
+        pick = np.sort(rng.choice(ids.size, NEG_CAP, replace=False))
+        ks, ids = ks[pick], ids[pick]
+    c = feat.shape[0]
+    neg = np.stack([neg_feats[k].reshape(c, -1)[:, i] for k, i in zip(ks, ids)])
+    return feat.reshape(c, -1)[:, pos].T.astype(np.float16), neg.astype(np.float16)
+
+
+def control_samples(feat: np.ndarray, ok: np.ndarray, rng):
+    """位置对照：同一个远处肝实质块内，块中心（各维 |g − c| ≤ max(0.5, n/16)）对比四周
+    （某一维 |g − c| ≥ n/4）的体素，只取 ok 者。两组都是远处肝实质，探针若能区分，靠的只是块内位置。"""
+    sp = feat.shape[1:]
+    g = np.indices(sp).reshape(len(sp), -1).astype(float)
+    c = (np.array(sp, float)[:, None] - 1) / 2
+    n = np.array(sp, float)[:, None]
+    d = np.abs(g - c)
+    center = (d <= np.maximum(0.5, n / 16)).all(0) & ok
+    edge = (d >= n / 4).any(0) & ok
+    pos, neg = np.flatnonzero(center), np.flatnonzero(edge)
+    if pos.size < 1 or neg.size < MIN_NEG:
+        return None
+    if pos.size > CTRL_POS_CAP:
+        pos = np.sort(rng.choice(pos, CTRL_POS_CAP, replace=False))
+    if neg.size > NEG_CAP:
+        neg = np.sort(rng.choice(neg, NEG_CAP, replace=False))
+    flat = feat.reshape(feat.shape[0], -1)
+    return flat[:, pos].T.astype(np.float16), flat[:, neg].T.astype(np.float16)
+
+
+def pick_neg_centers(far: np.ndarray, spacing, k: int = NEG_PATCHES, min_sep_mm: float = NEG_CENTER_SEP_MM):
+    """远处肝实质内离其边界最远的点，贪心取 k 个，两两相距 ≥ min_sep_mm（v2 负样本块的中心）。"""
+    if not far.any():
+        return []
+    idx = np.argwhere(far)
+    lo = np.maximum(idx.min(0) - 1, 0)
+    hi = np.minimum(idx.max(0) + 2, np.array(far.shape))
+    sl = tuple(slice(int(a), int(b)) for a, b in zip(lo, hi))
+    d = ndi.distance_transform_edt(far[sl], sampling=spacing)
+    r = [int(np.ceil(min_sep_mm / sp)) for sp in spacing]
+    centers = []
+    for _ in range(k):
+        j = int(np.argmax(d))
+        if d.flat[j] <= 0:
+            break
+        c = np.unravel_index(j, d.shape)
+        centers.append(tuple(int(v + o) for v, o in zip(c, lo)))
+        box = tuple(slice(max(ci - ri, 0), ci + ri + 1) for ci, ri in zip(c, r))
+        grids = np.ogrid[tuple(slice(b.start, min(b.stop, n)) for b, n in zip(box, d.shape))]
+        dist2 = sum(((gi - ci) * sp) ** 2 for gi, ci, sp in zip(grids, c, spacing))
+        d[box][dist2 < min_sep_mm ** 2] = 0
+    return centers
 
 
 def centered_patch(arr: np.ndarray, center, size, fill):
@@ -297,23 +386,40 @@ def boot_ci(df, stat, n_boot=N_BOOT, seed=BOOT_SEED):
     return point, float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
 
 
+def w_stratified(x) -> float:
+    """v2：在每个 CNR 层内比较小、大病灶的 drop 中位数，按该层小病灶数加权平均（消除两组 CNR 构成不同的影响）。"""
+    num = den = 0.0
+    for c in ("low", "mid", "high"):
+        xs = x[(x.cnr_stratum == c) & (x.size_stratum == "<10")]
+        xl = x[(x.cnr_stratum == c) & (x.size_stratum == ">20")]
+        if len(xs) >= W_MIN_STRATUM_N and len(xl) >= W_MIN_STRATUM_N:
+            num += len(xs) * (_median(xs["drop"]) - _median(xl["drop"]))
+            den += len(xs)
+    return num / den if den else float("nan")
+
+
 def decide_w(les) -> dict:
-    """les：每个病灶一行（判据组 seed 平均后的 auc_0 … auc_5、size_stratum）。"""
+    """les：每个病灶一行（判据组 seed 平均后的 auc_0 … auc_5、size_stratum、cnr_stratum）。
+    v2 判据（计划 §3.5）：分层 W ≥ 0.10 且 CI 下限 > 0；小病灶浅层 AUC 中位数 ≥ 0.80；
+    小病灶自身 drop 中位数 ≥ 0.05（下采样后确实丢了可分性）。"""
     d = les.copy()
     d["shallow"] = d[[f"auc_{s}" for s in W_SHALLOW]].max(axis=1, skipna=False)
     d["drop"] = d["shallow"] - d[f"auc_{W_DEEP}"]
     d = d[np.isfinite(d["drop"])]
     small, large = d[d.size_stratum == "<10"], d[d.size_stratum == ">20"]
-
-    def stat(x):
-        return _median(x.loc[x.size_stratum == "<10", "drop"]) - _median(x.loc[x.size_stratum == ">20", "drop"])
-
-    w, lo, hi = boot_ci(d[d.size_stratum.isin(["<10", ">20"])], stat)
-    shallow_small = _median(small["shallow"])
-    go = bool(np.isfinite(lo) and w >= W_MIN_EFFECT and lo > 0 and shallow_small >= W_MIN_SHALLOW_AUC)
-    return dict(W=w, ci=[lo, hi], n_small=int(len(small)), n_large=int(len(large)),
-                median_drop_small=_median(small["drop"]), median_drop_large=_median(large["drop"]),
-                median_shallow_auc_small=shallow_small, GO=go)
+    w, lo, hi = boot_ci(d[d.size_stratum.isin(["<10", ">20"])], w_stratified)
+    shallow_small, drop_small = _median(small["shallow"]), _median(small["drop"])
+    w_unstrat = drop_small - _median(large["drop"])
+    go = bool(np.isfinite(lo) and w >= W_MIN_EFFECT and lo > 0 and shallow_small >= W_MIN_SHALLOW_AUC
+              and drop_small >= W_MIN_ABS_DROP)
+    per = {c: dict(n_small=int(((d.cnr_stratum == c) & (d.size_stratum == "<10")).sum()),
+                   n_large=int(((d.cnr_stratum == c) & (d.size_stratum == ">20")).sum()),
+                   drop_small=_median(d.loc[(d.cnr_stratum == c) & (d.size_stratum == "<10"), "drop"]),
+                   drop_large=_median(d.loc[(d.cnr_stratum == c) & (d.size_stratum == ">20"), "drop"]))
+           for c in ("low", "mid", "high")}
+    return dict(W=w, ci=[lo, hi], W_unstratified_v1=w_unstrat, n_small=int(len(small)), n_large=int(len(large)),
+                median_drop_small=drop_small, median_drop_large=_median(large["drop"]),
+                median_shallow_auc_small=shallow_small, per_cnr=per, GO=go)
 
 
 def decide_s(les) -> dict:
@@ -349,7 +455,7 @@ def encoder_features(net, x: np.ndarray, device):
         h.remove()
     if isinstance(out, (list, tuple)):
         out = out[0]
-    enc = [f[0].float().cpu().numpy() for f in cap["enc"]]
+    enc = [f[0].cpu().numpy() for f in cap["enc"]]   # AMP 下为 fp16，采样时统一存 fp16
     return enc, out[0].float().argmax(0).cpu().numpy()
 
 
@@ -362,7 +468,7 @@ def cmd_extract(a):
     import common as C
     import evaluate as E
 
-    out = Path(a.out or REPO / "results" / "freq_probe" / a.cohort)
+    out = Path(a.out or REPO / "results" / OUT_DIR / a.cohort)
     cfg = COHORTS[a.cohort]
     image_dir, label_dir = Path(a.image_dir or cfg["image_dir"]), Path(a.label_dir or cfg["label_dir"])
     device = torch.device(a.device)
@@ -379,6 +485,7 @@ def cmd_extract(a):
         C.write_json(dict(cohort=a.cohort, runs=[m.name for m in models], git_head=head.strip(),
                           git_dirty=bool(dirty.strip()), plan_sha256=sha256(PLAN), script_sha256=sha256(__file__),
                           spacing=spacing, patch=patch, image_dir=str(image_dir), label_dir=str(label_dir),
+                          probe_version=2, neg_patches=NEG_PATCHES, neg_center_sep_mm=NEG_CENTER_SEP_MM,
                           started=time.strftime("%F %T")), out / "run_manifest.json")
     for ci, case in enumerate(cases):
         if (out / "cases" / f"{case}.json").is_file():
@@ -399,35 +506,69 @@ def cmd_extract(a):
         rng = np.random.default_rng(int(hashlib.sha256(case.encode()).hexdigest()[:8], 16))
         arrays, meta = {}, []
         fill = float(data.min())
+        # v2 负样本块：以远处肝实质最深处为中心（与病灶块同大小），每个模型各前向一次
+        neg_centers = pick_neg_centers(far, spacing)
+        tum = s0 == 2
+        neg_x = [centered_patch(data, c, patch, fill) for c in neg_centers]
+        neg_far = [centered_patch(far, c, patch, False) for c in neg_centers]
+        neg_tum = [centered_patch(tum, c, patch, False) for c in neg_centers]
+        neg_ok = {}   # stage -> [每个负样本块的扁平可用掩膜]
+        recs = []
         for les in lesions:
             center = [int((lo + hi) // 2) for lo, hi in les["bbox"]]
-            x = centered_patch(data, center, patch, fill)
-            lp = centered_patch(lab, center, patch, 0) == les["label"]
-            fp = centered_patch(far, center, patch, False)
             rec = dict(case=case, lesion=int(les["label"]), voxels=int(les["voxels"]), cnr=les["cnr"],
                        cnr_stratum=les["stratum"], diameter_mm=les["diameter_mm"],
                        size_stratum=les["size_stratum"], ims_auc=float("nan"), coverage={}, stages={})
-            if ims is not None and les["need_ims"]:
-                ip = centered_patch(ims, center, patch, np.nan)
-                rec["ims_auc"] = auc(ip[lp], ip[fp])
-            for m in models:
+            if ims is not None and les["need_ims"] and neg_centers:
+                lp = centered_patch(lab, center, patch, 0) == les["label"]
+                pv = centered_patch(ims, center, patch, np.nan)[lp]
+                nv = np.concatenate([centered_patch(ims, c, patch, np.nan)[lp & nf]
+                                     for c, nf in zip(neg_centers, neg_far)])
+                pv, nv = pv[np.isfinite(pv)], nv[np.isfinite(nv)]
+                if pv.size > 50000:
+                    pv = rng.choice(pv, 50000, replace=False)
+                if nv.size > 50000:
+                    nv = rng.choice(nv, 50000, replace=False)
+                rec["ims_auc"] = auc(pv, nv)
+            recs.append((les, center, rec))
+        control = {}
+        for m in models:
+            neg_enc = [encoder_features(m.network, x, device)[0] for x in neg_x]
+            if neg_enc and not neg_ok:
+                for s, f in enumerate(neg_enc[0][:N_STAGES]):
+                    shp = f.shape[1:]
+                    neg_ok[s] = [((block_fraction(nf, shp) >= NEG_FRAC[s]) & (block_fraction(nt, shp) == 0)).ravel()
+                                 for nf, nt in zip(neg_far, neg_tum)]
+            control[m.name] = []
+            if neg_enc:
+                for s, f in enumerate(neg_enc[0][:N_STAGES]):
+                    smp = control_samples(f, neg_ok[s][0], rng)
+                    if smp is not None:
+                        arrays[f"{m.name}/ctrl/{s}/pos"], arrays[f"{m.name}/ctrl/{s}/neg"] = smp
+                        control[m.name].append(s)
+            for les, center, rec in recs:
+                x = centered_patch(data, center, patch, fill)
+                lp = centered_patch(lab, center, patch, 0) == les["label"]
                 enc, pred = encoder_features(m.network, x, device)
                 rec["coverage"][m.name] = float((pred[lp] == 2).mean())
                 valid = []
-                for s, f in enumerate(enc[:N_STAGES]):
-                    smp = stage_samples(f, block_fraction(lp, f.shape[1:]), block_fraction(fp, f.shape[1:]),
-                                        s, rng)
-                    if smp is None:
-                        continue
-                    key = f"{m.name}/{les['label']}/{s}"
-                    arrays[key + "/pos"], arrays[key + "/neg"] = smp
-                    valid.append(s)
+                if neg_enc:
+                    for s, f in enumerate(enc[:N_STAGES]):
+                        smp = stage_samples_v2(f, block_fraction(lp, f.shape[1:]), [e[s] for e in neg_enc],
+                                               neg_ok[s], rng)
+                        if smp is None:
+                            continue
+                        key = f"{m.name}/{les['label']}/{s}"
+                        arrays[key + "/pos"], arrays[key + "/neg"] = smp
+                        valid.append(s)
                 rec["stages"][m.name] = valid
-            meta.append(rec)
+            del neg_enc
+        meta = [rec for _, _, rec in recs]
         np.savez_compressed(out / "cases" / f"{case}.npz", **arrays)
-        C.write_json(dict(case=case, lesions=meta), out / "cases" / f"{case}.json")
-        print(f"[{ci + 1}/{len(cases)}] {case}: {len(lesions)} lesions, ims={'yes' if ims is not None else 'no'}, "
-              f"{time.time() - t0:.0f}s", flush=True)
+        C.write_json(dict(case=case, lesions=meta, neg_centers=[list(c) for c in neg_centers], control=control),
+                     out / "cases" / f"{case}.json")
+        print(f"[{ci + 1}/{len(cases)}] {case}: {len(lesions)} lesions, {len(neg_centers)} negative patches, "
+              f"ims={'yes' if ims is not None else 'no'}, {time.time() - t0:.0f}s", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -436,10 +577,14 @@ def cmd_extract(a):
 
 def load(out: Path):
     import pandas as pd
-    metas, feats = [], {}
+    metas, feats, ctrl = [], {}, {}
     for js in sorted((out / "cases").glob("*.json")):
         meta = json.loads(js.read_text())
         npz = np.load(js.with_suffix(".npz"))
+        for run, stages in meta.get("control", {}).items():
+            for s in stages:
+                ctrl.setdefault((run, s), []).append(dict(case=meta["case"], lesion=-1,
+                                                          pos=npz[f"{run}/ctrl/{s}/pos"], neg=npz[f"{run}/ctrl/{s}/neg"]))
         for rec in meta["lesions"]:
             base = {k: rec[k] for k in ("case", "lesion", "voxels", "cnr", "cnr_stratum", "diameter_mm",
                                         "size_stratum", "ims_auc")}
@@ -449,7 +594,7 @@ def load(out: Path):
                     key = f"{run}/{rec['lesion']}/{s}"
                     feats.setdefault((run, s), []).append(dict(case=rec["case"], lesion=rec["lesion"],
                                                                pos=npz[key + "/pos"], neg=npz[key + "/neg"]))
-    return pd.DataFrame(metas), feats
+    return pd.DataFrame(metas), feats, ctrl
 
 
 def lesion_table(meta, feats):
@@ -492,8 +637,8 @@ def cmd_summarize(a):
     import pandas as pd
     import common as C
 
-    out = Path(a.out or REPO / "results" / "freq_probe" / a.cohort)
-    meta, feats = load(out)
+    out = Path(a.out or REPO / "results" / OUT_DIR / a.cohort)
+    meta, feats, ctrl = load(out)
     t = lesion_table(meta, feats)
     t.to_csv(out / "lesion_auc_per_run.csv", index=False)
     groups = sorted(t.group.unique())
@@ -536,20 +681,37 @@ def cmd_summarize(a):
                                        "n<0.5": int((d.coverage < 0.5).sum()), "n>=0.5": int((d.coverage >= 0.5).sum())}
     res["stage_valid_fraction"] = {g: {s: float(np.isfinite(d[f"auc_{s}"]).mean()) for s in range(N_STAGES)}
                                    for g, d in per_group.items()}
+    # 位置对照：远处肝实质块的"中心 vs 四周"，各 run 的病例 AUC 中位数，再在组内取平均
+    folds = case_folds(meta.case.unique())
+    crow = []
+    for (run, s), recs in sorted(ctrl.items()):
+        crow.append(dict(group=run.split("_s")[0], run=run, stage=s,
+                         auc=_median([r["auc"] for r in probe_stage(recs, folds)])))
+    cdf = pd.DataFrame(crow)
+    if not cdf.empty:
+        cdf.to_csv(out / "position_control.csv", index=False)
+        res["position_control"] = {g: {int(s): float(v) for s, v in x.groupby("stage")["auc"].mean().items()}
+                                   for g, x in cdf.groupby("group")}
     C.write_json(res, out / "summary.json")
 
-    lines = [f"# F0 特征探针：{a.cohort}", "",
+    lines = [f"# F0 特征探针 v2（位置匹配负样本）：{a.cohort}", "",
              f"{res['n_cases']} 例，{res['n_lesions']} 个病灶（≥ {MIN_VOXELS} 体素）。组：{', '.join(groups)}。"
-             f"判据见 docs/频域模块计划.md §3.3；{'本队列为判据队列' if res['decision_cohort'] else '本队列只作描述'}。", ""]
+             f"判据见 docs/频域模块计划.md §3.5；{'本队列为判据队列' if res['decision_cohort'] else '本队列只作描述'}。", ""]
     if "F_W" in res:
         w, s = res["F_W"], res["F_S"]
         lines += ["## 判据（A13b，3 个 seed 平均）", "",
-                  f"- F-W：W = {w['W']:.3f}，95% CI [{w['ci'][0]:.3f}, {w['ci'][1]:.3f}]；"
+                  f"- F-W：分层 W = {w['W']:.3f}，95% CI [{w['ci'][0]:.3f}, {w['ci'][1]:.3f}]"
+                  f"（不分层 {w['W_unstratified_v1']:.3f}）；"
                   f"<10 mm drop 中位数 {w['median_drop_small']:.3f}（{w['n_small']} 个），"
                   f">20 mm {w['median_drop_large']:.3f}（{w['n_large']} 个）；"
                   f"<10 mm 浅层 AUC 中位数 {w['median_shallow_auc_small']:.3f} → **{w['GO']}**",
                   f"- F-S：S = {s['S']:.3f}，95% CI [{s['ci'][0]:.3f}, {s['ci'][1]:.3f}]；"
                   f"{s['n']} 个低 CNR > 20 mm 病灶，有效 {s['valid_fraction']:.0%} → **{s['GO']}**", ""]
+    if "position_control" in res:
+        pc = res["position_control"]
+        lines += ["## 位置对照（远处肝实质块：中心 vs 四周，病例 AUC 中位数）", "",
+                  md(pd.DataFrame([dict(group=g, **{f"stage_{s}": v for s, v in d.items()}) for g, d in pc.items()])),
+                  "", "接近 0.5 说明该层特征不含块内位置信息；接近 1 说明 v1 式采样会被位置混杂。", ""]
     lines += ["## 各层 AUC 中位数（描述性）", "", md(desc), ""]
     (out / "SUMMARY.md").write_text("\n".join(lines))
     print("\n".join(lines[:8]))
@@ -625,6 +787,25 @@ def selftest():
                                  auc_4=0.80, auc_5=np.nan, ims_auc=0.80 + gap + rng.normal(0, 0.02)))
         return pd.DataFrame(rows)
     assert decide_w(table(0.30, 0.0))["GO"] and not decide_w(table(0.15, 0.0))["GO"]
+    # v2：大病灶深层 AUC 上升造成的相对差不算 GO（小病灶自身 drop 须 ≥ 0.05）
+    t = table(0.0, 0.0)
+    big = t.size_stratum == ">20"
+    t.loc[big, ["auc_0", "auc_1"]] = 0.85
+    t.loc[big, "auc_3"] = 1.0
+    r = decide_w(t)
+    assert r["W"] >= W_MIN_EFFECT and not r["GO"]
+    # v2：CNR 构成不同造成的差异被分层消除。同一 CNR 层内小、大病灶 drop 相同（高 CNR 0，低 CNR −0.3），
+    #     但小病灶 80% 为高 CNR、大病灶 80% 为低 CNR：不分层 W ≈ 0.3，分层 W ≈ 0
+    rows = []
+    for c in range(30):
+        for sz, cn in (("<10", "high" if c < 24 else "low"), (">20", "low" if c < 24 else "high")):
+            sh = 0.95 if cn == "high" else 0.65
+            rows.append(dict(case=f"c{c}", lesion=len(rows), size_stratum=sz, cnr_stratum=cn,
+                             auc_0=sh, auc_1=sh, auc_2=0.9, auc_3=0.95 + rng.normal(0, 0.01),
+                             auc_4=0.9, auc_5=np.nan, ims_auc=0.8))
+    r = decide_w(pd.DataFrame(rows))
+    assert r["W_unstratified_v1"] > 0.2, r["W_unstratified_v1"]
+    assert abs(r["W"]) < 0.05 and not r["GO"], r["W"]
     low = table(0.30, 0.0)
     low[["auc_0", "auc_1"]] = 0.7                  # 浅层本来就弱：即使 drop 大也不 GO
     low["auc_3"] = np.where(low.size_stratum == "<10", 0.4, 0.8)
@@ -634,6 +815,43 @@ def selftest():
     t["auc_3"] = t["auc_4"] = np.nan
     r = decide_s(t)
     assert r["inconclusive"] and not r["GO"]
+    # 5b 位置混杂：特征只编码块内位置（坐标平方 + 噪声）。v1 采样（同块中心 vs 四周）AUC ≈ 1，
+    #    v2 位置匹配采样（其他块同一位置）AUC ≈ 0.5；位置对照也应 ≈ 1
+    n8 = 16
+    gz, gy, gx = np.indices((n8,) * 3) - (n8 - 1) / 2
+
+    def posfeat():
+        return np.stack([gz ** 2, gy ** 2, gx ** 2, rng.normal(0, 1, gz.shape)]).astype(np.float32) / 50
+
+    lesm = np.zeros((n8,) * 3, bool)
+    lesm[7:9, 7:9, 7:9] = True
+    far8 = (np.abs(gz) > 4) | (np.abs(gy) > 4) | (np.abs(gx) > 4)
+    v1, v2, ct = [], [], []
+    ok_all = np.ones(n8 ** 3, bool)
+    for c in range(20):
+        f = posfeat() + rng.normal(0, 0.01, (4,) + (n8,) * 3).astype(np.float32)
+        smp = stage_samples(f, lesm.astype(np.float32), far8.astype(np.float32), 0, rng)
+        v1.append(dict(case=f"c{c}", lesion=0, pos=smp[0], neg=smp[1]))
+        negs = [posfeat() for _ in range(3)]
+        smp = stage_samples_v2(f, lesm.astype(np.float32), negs, [ok_all] * 3, rng)
+        v2.append(dict(case=f"c{c}", lesion=0, pos=smp[0], neg=smp[1]))
+        smp = control_samples(negs[0], ok_all, rng)
+        ct.append(dict(case=f"c{c}", lesion=-1, pos=smp[0], neg=smp[1]))
+    fo = case_folds([f"c{c}" for c in range(20)])
+    a1 = np.median([r["auc"] for r in probe_stage(v1, fo)])
+    a2 = np.median([r["auc"] for r in probe_stage(v2, fo)])
+    a3 = np.median([r["auc"] for r in probe_stage(ct, fo)])
+    assert a1 > 0.95 and abs(a2 - 0.5) < 0.2 and a3 > 0.95, (a1, a2, a3)
+    # 5c 负样本块中心：在远处肝实质内、两两相距 ≥ 30 mm、最多 8 个
+    farm = np.zeros((60, 120, 120), bool)
+    farm[5:55, 10:110, 10:110] = True
+    cs = pick_neg_centers(farm, (1.0, 0.78, 0.78))
+    assert 1 <= len(cs) <= NEG_PATCHES and all(farm[c] for c in cs)
+    for i in range(len(cs)):
+        for j in range(i):
+            dd = np.sqrt(sum(((a - b) * sp) ** 2 for a, b, sp in zip(cs[i], cs[j], (1.0, 0.78, 0.78))))
+            assert dd >= NEG_CENTER_SEP_MM - 1e-6, dd
+    assert pick_neg_centers(np.zeros((5, 5, 5), bool), (1, 1, 1)) == []
     # 6 编码器特征抽取：hook 拿到各 stage 输出，深监督列表输出取第一个
     import torch
 
