@@ -1,0 +1,18 @@
+[2026-10-14 20:31:00] TriALS-setting start, HEAD b8de6e1
+[2026-10-14 23:07:34] T13b_s1 trained
+[2026-10-14 23:07:59] T13b_s0 trained
+[2026-10-14 23:31:32] T13b_s2 FAILED
+[2026-10-15 00:19:58] T13b_s1 test predicted (best, final)
+[2026-10-15 00:20:35] T13b_s0 test predicted (best, final)
+[2026-10-15 01:26:23] T0_s2 trained
+[2026-10-15 02:15:47] T0_s0 trained
+[2026-10-15 02:16:00] T0_s1 trained
+[2026-10-15 02:39:18] T0_s2 test predicted (best, final)
+[2026-10-15 06:21:46] container restarted (stopped ~03:19, up 06:17); recovery restarted at a842a1f
+[2026-10-15 06:21:46] T13b_s2 validation rerun start
+[2026-10-15 06:31:09] T13b_s2 trained (validation recovered)
+[2026-10-15 06:56:57] T0_s0 test predicted (recovery)
+[2026-10-15 06:57:39] T0_s1 test predicted (recovery)
+[2026-10-15 07:41:52] T13b_s2 test predicted (best, final)
+[2026-10-15 08:08:17] TriALS-setting complete (after recovery)
+TRIALS_SETTING_EXIT 0

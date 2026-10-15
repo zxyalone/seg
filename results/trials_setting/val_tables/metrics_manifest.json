@@ -1,0 +1,41 @@
+{
+  "split": "val",
+  "runs": [
+    "T0_s0",
+    "T0_s1",
+    "T0_s2",
+    "T13b_s0",
+    "T13b_s1",
+    "T13b_s2"
+  ],
+  "n_cases": 21,
+  "cases": [
+    "LiTS_006",
+    "LiTS_009",
+    "LiTS_017",
+    "LiTS_024",
+    "LiTS_034",
+    "LiTS_038",
+    "LiTS_039",
+    "LiTS_042",
+    "LiTS_053",
+    "LiTS_056",
+    "LiTS_061",
+    "LiTS_067",
+    "LiTS_073",
+    "LiTS_076",
+    "LiTS_090",
+    "LiTS_094",
+    "LiTS_102",
+    "LiTS_105",
+    "LiTS_120",
+    "LiTS_124",
+    "LiTS_129"
+  ],
+  "pred_subdir": "validation",
+  "eval_subdir": "eval_val",
+  "gt_dir": "/root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset102_LiTS/labelsTr",
+  "min_diameter_mm": 4.0,
+  "connectivity": 26,
+  "iou": 0.1
+}
