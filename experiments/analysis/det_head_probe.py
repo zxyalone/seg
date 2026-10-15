@@ -382,10 +382,11 @@ def cmd_extract(a):
             raw, props, seg_raw = C.read_raw(ref, case, image_dir, label_dir)
             data, seg, _ = C.preprocess(ref, raw, props, seg_raw)
             # 分割按与图像相同的方式填充，格子原点与特征一致；各 seed 共用
+            # 与 window_features 中的图像走同一条 torch 填充路径（numpy 输入不接受 value 参数）
             from acvl_utils.cropping_and_padding.padding import pad_nd_image
-            sp, _ = pad_nd_image(seg[0][None].astype(np.int8), ref.configuration_manager.patch_size,
-                                 "constant", {"value": 0}, True, None)
-            s0 = np.asarray(sp)[0]
+            sp, _ = pad_nd_image(torch.from_numpy(seg[0][None].astype(np.int16)),
+                                 ref.configuration_manager.patch_size, "constant", {"value": 0}, True, None)
+            s0 = sp.numpy()[0]
             grid = cell_grid(s0.shape)
             tf, lf = block_fraction_grid(s0 == 2, grid), block_fraction_grid(s0 == 1, grid)
             tl, _ = E.components(s0 == 2, 26)
@@ -398,7 +399,9 @@ def cmd_extract(a):
                 smp = train_samples(deep, shallow, tf, lf, lcells, case_rng(case))
                 for k, v in smp.items():
                     arrays[f"{m.name}/{k}"] = v
-            np.savez_compressed(done, **arrays)
+            tmp = done.with_name(done.stem + ".tmp.npz")
+            np.savez_compressed(tmp, **arrays)
+            tmp.replace(done)      # 原子替换：中断不会留下被当作"已完成"的半个文件
             print(f"[{ci + 1}/{len(cases)}] {case}: {len(lcells)} lesions, "
                   f"{arrays[f'{models[0].name}/deep_pos'].shape[0]} pos / "
                   f"{arrays[f'{models[0].name}/deep_neg'].shape[0]} neg cells, {time.time() - t0:.0f}s", flush=True)
@@ -440,7 +443,9 @@ def cmd_extract(a):
             for les in run["lesions"]:
                 les["volume_mm3"] = les["voxels"] * vox_mm3
             rec["runs"][m.name] = run
-        C.write_json(rec, done)
+        tmp = done.with_name(done.stem + ".tmp.json")
+        C.write_json(rec, tmp)
+        tmp.replace(done)
         print(f"[{ci + 1}/{len(cases)}] {case}: {n_gt} lesions, {time.time() - t0:.0f}s", flush=True)
 
 
