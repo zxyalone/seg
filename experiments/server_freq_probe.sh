@@ -13,7 +13,8 @@ REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$REPO"
 PY=${PY:-/root/autodl-tmp/envs/mamba/bin/python}
 GPU=${GPU:-0}
-SHARDS=${SHARDS:-3}
+# Each shard keeps all six networks on the GPU (~4.7 GB on a 12 GB card): at most 2 shards per GPU.
+SHARDS=${SHARDS:-2}
 OUT=$REPO/results/freq_probe
 PLAN=docs/频域模块计划.md
 SCRIPT=experiments/analysis/freq_feature_probe.py
