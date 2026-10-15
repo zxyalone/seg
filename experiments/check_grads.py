@@ -141,7 +141,8 @@ def check_group(group: str, args) -> bool:
     original_aug = trainer_mod.lesion_contrast_augment
     original_cc = trainer_mod.component_dicece_loss
     original_cons = trainer_mod.contrast_consistency_loss
-    paths = dict(augmentation_calls=0, augmented_samples=0, changed_batches=0,
+    original_rel = trainer_mod.relative_mse_consistency_loss
+    paths = dict(augmentation_calls=0, augmented_samples=0, changed_batches=0, band_calls=0,
                  component_loss_calls=0, positive_component_losses=0,
                  consistency_calls=0, positive_consistency_losses=0)
 
@@ -150,6 +151,7 @@ def check_group(group: str, args) -> bool:
         paths['augmentation_calls'] += 1
         paths['augmented_samples'] += len(applied)
         paths['changed_batches'] += int(not torch.equal(result, data))
+        paths['band_calls'] += int(kw.get('band_sigma') is not None)
         return result, applied
 
     def checked_cc(*a, **kw):
@@ -170,7 +172,16 @@ def check_group(group: str, args) -> bool:
 
     trainer_mod.lesion_contrast_augment = checked_aug
     trainer_mod.component_dicece_loss = checked_cc
+    def checked_rel(*a, **kw):
+        loss = original_rel(*a, **kw)
+        if not torch.isfinite(loss) or not loss.requires_grad:
+            raise RuntimeError('Relative-MSE consistency loss must be finite and retain its gradient path')
+        paths['consistency_calls'] += 1
+        paths['positive_consistency_losses'] += int(loss.detach() > 0)
+        return loss
+
     trainer_mod.contrast_consistency_loss = checked_cons
+    trainer_mod.relative_mse_consistency_loss = checked_rel
     env = read_env(group)
     saved = {k: os.environ.get(k) for k in env}
     for k in list(os.environ):
@@ -241,6 +252,23 @@ def check_group(group: str, args) -> bool:
         if float(env.get('PHASER_LCA_CONS_WEIGHT', '0')) > 0 and not (
                 paths['consistency_calls'] > 0 and paths['positive_consistency_losses'] > 0):
             bad.append('A13b: consistency loss path not exercised')
+        if float(env.get('PHASER_LCA_BAND_SIGMA_MM', '0')) > 0 and paths['band_calls'] != args.steps:
+            bad.append('B13: band-limited augmentation not used')
+        if env.get('PHASER_LCA_CONS_MODE') == 'ema_rmse':
+            teacher = tr._ema_teacher
+            if teacher is None:
+                bad.append('E13: EMA teacher missing')
+            else:
+                tparams = list(teacher.parameters())
+                tb = dict(teacher.encoder.named_parameters())[base_name]
+                if any(q.requires_grad or q.grad is not None for q in tparams):
+                    bad.append('E13: teacher parameters carry gradients')
+                if torch.equal(tb.detach(), base_initial):
+                    bad.append('E13: teacher was never updated')
+                if torch.equal(tb.detach(), base_param.detach()):
+                    bad.append('E13: teacher identical to the student (no EMA lag)')
+                print(f"   E13 teacher: |teacher - student| max on {base_name}: "
+                      f"{float((tb.detach() - base_param.detach()).abs().max()):.2e}")
         weak = [n for n, _ in named if got_grad[n] and max_grad[n] < 1e-6]
         groups = [(len(g["params"]), g["lr"], g["weight_decay"]) for g in tr.optimizer.param_groups]
         print(f"\n[{group}] {len(named)} PhASER tensors, loss {losses[0]:.3f} -> {losses[-1]:.3f}")
@@ -272,6 +300,7 @@ def check_group(group: str, args) -> bool:
         trainer_mod.lesion_contrast_augment = original_aug
         trainer_mod.component_dicece_loss = original_cc
         trainer_mod.contrast_consistency_loss = original_cons
+        trainer_mod.relative_mse_consistency_loss = original_rel
         for k in list(os.environ):
             if k.startswith("PHASER_"):
                 del os.environ[k]

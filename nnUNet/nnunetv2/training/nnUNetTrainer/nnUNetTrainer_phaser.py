@@ -96,7 +96,8 @@ from dynamic_network_architectures.building_blocks.helper import convert_dim_to_
 
 from .phaser.unet import PhaserUNet, load_pretrained_weights
 from .phaser.segresnet import SegResNetWithFeatures
-from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss, contrast_consistency_loss
+from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss, contrast_consistency_loss, \
+    relative_mse_consistency_loss
 from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
     compute_lesion_importance_map, lesion_weighted_loss, \
     gate_supervision_loss, inside_liver_penalty_loss, boundary_weighted_dice_loss, \
@@ -275,6 +276,19 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         self.lca_target = os.environ.get('PHASER_LCA_TARGET', 'uniform')
         self.lca_cons_weight = float(os.environ.get('PHASER_LCA_CONS_WEIGHT', '0.0'))
         self.lca_cons_stages = int(os.environ.get('PHASER_LCA_CONS_STAGES', '2'))
+        # B13 (docs/训练侧频域计划.md): low-pass of the DCA shift field, sigma in mm (0 = plain DCA).
+        self.lca_band_sigma_mm = float(os.environ.get('PHASER_LCA_BAND_SIGMA_MM', '0'))
+        # E13: consistency teacher / loss. 'cosine' = A13b (same network, no grad, 1 - cos);
+        # 'ema_rmse' = EMA teacher (momentum PHASER_LCA_EMA_M) with relative MSE.
+        self.lca_cons_mode = os.environ.get('PHASER_LCA_CONS_MODE', 'cosine')
+        self.lca_ema_m = float(os.environ.get('PHASER_LCA_EMA_M', '0.999'))
+        self._ema_teacher = None
+        if self.lca_cons_mode not in ('cosine', 'ema_rmse'):
+            raise ValueError(f"PHASER_LCA_CONS_MODE must be 'cosine' or 'ema_rmse', got {self.lca_cons_mode!r}")
+        if self.lca_band_sigma_mm > 0 and not self.enable_lca:
+            raise ValueError('PHASER_LCA_BAND_SIGMA_MM > 0 requires PHASER_LCA=1')
+        if self.lca_cons_mode == 'ema_rmse' and self.lca_cons_weight <= 0:
+            raise ValueError("PHASER_LCA_CONS_MODE=ema_rmse requires PHASER_LCA_CONS_WEIGHT > 0")
         if self.lca_target not in ('uniform', 'cnr'):
             raise ValueError(f"PHASER_LCA_TARGET must be 'uniform' or 'cnr', got {self.lca_target!r}")
         if self.lca_cons_weight > 0 and not self.enable_lca:
@@ -378,7 +392,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"  Architecture: {self.arch} (deep supervision={self.enable_deep_supervision}, lr={self.initial_lr}, "
             f"autocast={'off' if not self.use_amp else str(self.amp_dtype).replace('torch.', '')})\n"
             f"  Lesion contrast aug: {self.enable_lca} (p={self.lca_p}, alpha_min={self.lca_alpha_min}, "
-            f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages})\n"
+            f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages}, "
+            f"band sigma={self.lca_band_sigma_mm} mm, consistency mode={self.lca_cons_mode}, "
+            f"EMA m={self.lca_ema_m})\n"
             f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
             f"  Pixel2Cancer variants: {self.p2c_dir or 'off'} (p={self.p2c_p})\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
@@ -696,19 +712,26 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             clean = data
             if self.lca_cons_weight > 0:
                 cons_region = torch.zeros(full_target.shape, device=data.device, dtype=torch.float32)
+            band = None
+            if self.lca_band_sigma_mm > 0:
+                band = tuple(self.lca_band_sigma_mm / float(sp) for sp in self.configuration_manager.spacing)
             data, _ = lesion_contrast_augment(data, full_target, p=self.lca_p,
                                               alpha_min=self.lca_alpha_min,
                                               target_cnr=self.lca_target == 'cnr',
-                                              region_out=cons_region)
+                                              region_out=cons_region, band_sigma=band)
             # A13b teacher: same network on the original patch, no gradient. Run
             # before the student pass so the cached features are the student's.
+            if self.lca_cons_mode == 'ema_rmse' and self._ema_teacher is None:
+                self._init_ema_teacher()
             if cons_region is not None and bool(cons_region.any()):
                 net_c = self.network.module if self.is_ddp else self.network
                 net_c._spectral_grad_scales = 10 ** 6   # keep every decoder stage in the graph
+                teacher = self._ema_teacher if self.lca_cons_mode == 'ema_rmse' else self.network
+                teacher_c = teacher.module if (teacher is self.network and self.is_ddp) else teacher
                 with torch.no_grad():
                     with autocast(self.device.type, enabled=self.use_amp, dtype=self.amp_dtype) if self.device.type == 'cuda' else dummy_context():
-                        self.network(clean)
-                cons_teacher = [f.detach() for f in net_c._last_dec_features[:self.lca_cons_stages]]
+                        teacher(clean)
+                cons_teacher = [f.detach() for f in teacher_c._last_dec_features[:self.lca_cons_stages]]
 
         with autocast(self.device.type, enabled=self.use_amp, dtype=self.amp_dtype) if self.device.type == 'cuda' else dummy_context():
             output = self.network(data)
@@ -838,8 +861,10 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 student = net_c._last_dec_features[:self.lca_cons_stages]
                 if not all(f.requires_grad for f in student):
                     raise RuntimeError('A13b: student decoder features carry no gradient')
+                cons_fn = relative_mse_consistency_loss if self.lca_cons_mode == 'ema_rmse' \
+                    else contrast_consistency_loss
                 aux_loss = aux_loss + self.lca_cons_weight * self._v2_ramp() * \
-                    contrast_consistency_loss(student, cons_teacher, cons_region, self.lca_cons_stages)
+                    cons_fn(student, cons_teacher, cons_region, self.lca_cons_stages)
 
             # LMC liver head: BCE against liver (label > 0), from epoch 0.
             if self.enable_lmc and self.lmc_liver_weight > 0:
@@ -875,6 +900,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 return {'loss': total_loss.detach().cpu().numpy()}
             self.grad_scaler.step(self.optimizer)
             self.grad_scaler.update()
+            self._ema_update()
         else:
             total_loss.backward()
             grad_norm = torch.nn.utils.clip_grad_norm_(self.network.parameters(), 12)
@@ -883,8 +909,36 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 self.optimizer.zero_grad(set_to_none=True)
                 return {'loss': total_loss.detach().cpu().numpy()}
             self.optimizer.step()
+            self._ema_update()
 
         return {'loss': total_loss.detach().cpu().numpy()}
+
+    # ------------------------------------------------------------------
+    # E13: EMA teacher for the contrast-consistency loss
+    # ------------------------------------------------------------------
+    def _student_module(self):
+        net = self.network.module if self.is_ddp else self.network
+        return getattr(net, '_orig_mod', net)      # unwrap torch.compile if enabled
+
+    def _init_ema_teacher(self):
+        """Teacher = copy of the student at the first training step (after the
+        pretrained weights are loaded); never receives gradients."""
+        import copy
+        self._ema_teacher = copy.deepcopy(self._student_module())
+        for p in self._ema_teacher.parameters():
+            p.requires_grad_(False)
+        self.print_to_log_file(f"E13: EMA teacher initialised from the student (m={self.lca_ema_m})")
+
+    @torch.no_grad()
+    def _ema_update(self):
+        if self._ema_teacher is None:
+            return
+        m = self.lca_ema_m
+        student = self._student_module()
+        for pt, ps in zip(self._ema_teacher.parameters(), student.parameters()):
+            pt.mul_(m).add_(ps.detach(), alpha=1.0 - m)
+        for bt, bs in zip(self._ema_teacher.buffers(), student.buffers()):
+            bt.copy_(bs)
 
     # ------------------------------------------------------------------
     # Reproducibility: worker seeds and run manifest

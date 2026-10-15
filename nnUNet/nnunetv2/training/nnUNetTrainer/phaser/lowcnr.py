@@ -22,11 +22,28 @@ Target-CNR mode  (A13a, plan §6c)
     of the mild average attenuation of a uniform alpha. No parameter is chosen
     on validation data.
 
+Band-limited mode  (B-DCA, B13; docs/训练侧频域计划.md §1.2)
+    The shift field is low-passed before use: f = G_sigma_b * w, restricted to
+    the same allowed region (liver, outside other lesions). The lesion's
+    low-frequency contrast is attenuated while most of its edge step is kept,
+    and small lesions are attenuated less. Calibration keeps the mean-contrast
+    reduction of the plain operator: with a_l / a_r the mean of a field over the
+    lesion / ring, beta = (1 - alpha) * (a_l(w) - a_r(w)) / (a_l(f) - a_r(f)),
+    capped at 1 (a larger beta would invert the contrast); lesions with
+    a_l(f) <= a_r(f) are left unchanged. As sigma_b -> 0, f -> w and the operator
+    reduces to the plain one.
+
 contrast_consistency_loss  (A13b, plan §6c)
     Feature-level contrast invariance: the decoder features of the attenuated
     patch (with gradient) are pulled towards those of the original patch (same
     network, no gradient) by 1 - cosine similarity, inside the attenuated
     lesions dilated by 6 voxels, at the two finest decoder resolutions.
+
+relative_mse_consistency_loss  (E-CFC, E13)
+    Same region and stages as A13b, teacher = EMA of the student (trainer), loss
+    ||s - t||^2 / (||t||^2 + eps) per voxel. With ||s|| = ||t|| it equals
+    2 (1 - cos), so a weight of 0.5 reproduces the A13b loss; otherwise it also
+    pulls the student's feature magnitude towards the (lagging) teacher.
 
 component_dicece_loss  (A12)
     Component-wise DiceCE in the spirit of CC-DiceCE (Bouteille et al., ISBI
@@ -72,6 +89,33 @@ def _dilate(m: torch.Tensor, r: int) -> torch.Tensor:
     return F.max_pool3d(m, kernel_size=2 * r + 1, stride=1, padding=r)
 
 
+def _gauss_blur(m: torch.Tensor, sigmas) -> torch.Tensor:
+    """Separable Gaussian blur of [B, C, D, H, W] with one sigma (voxels) per axis,
+    truncated at 3 sigma, zero padding."""
+    out = m
+    for ax, sigma in enumerate(sigmas):
+        r = max(int(np.ceil(3 * sigma)), 1)
+        t = torch.arange(-r, r + 1, device=m.device, dtype=m.dtype)
+        k = torch.exp(-0.5 * (t / max(sigma, 1e-8)) ** 2)
+        k = k / k.sum()
+        shape = [1, 1, 1, 1, 1]
+        shape[2 + ax] = k.numel()
+        pad = [0, 0, 0]
+        pad[ax] = r
+        out = F.conv3d(out, k.view(shape), padding=tuple(pad))
+    return out
+
+
+def band_beta(alpha: float, a_lw: float, a_rw: float, a_lf: float, a_rf: float):
+    """B-DCA calibration: shift amplitude for the low-passed field so that the
+    lesion-minus-ring mean contrast drops as much as with the plain field; None
+    (no attenuation) when the low-passed field is not larger in the lesion than
+    in its ring; capped at 1 so the contrast is never inverted."""
+    if a_lf - a_rf <= 0:
+        return None
+    return min(1.0, (1.0 - alpha) * (a_lw - a_rw) / (a_lf - a_rf))
+
+
 def _soften(m: torch.Tensor, sigma: float = 1.0) -> torch.Tensor:
     r = max(int(np.ceil(3 * sigma)), 1)
     t = torch.arange(-r, r + 1, device=m.device, dtype=m.dtype)
@@ -92,7 +136,8 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
                             alpha_min: float = 0.3, min_voxels: int = 20,
                             ring=(2, 6), generator: torch.Generator = None,
                             target_cnr: bool = False, region_out: torch.Tensor = None,
-                            region_dilate: int = 6):
+                            region_dilate: int = 6, band_sigma=None, fixed_target: float = None,
+                            report: list = None):
     """data [B, 1, D, H, W] (modified copy returned); target [B, 1, D, H, W] labels.
     Returns (augmented data, list of applied (sample, alpha) pairs).
 
@@ -101,7 +146,10 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
     records the mean alpha of the attenuated lesions, and only samples with at
     least one attenuated lesion are listed.
     region_out: optional float tensor shaped like target; set to 1 inside every
-    attenuated lesion dilated by `region_dilate` voxels (for A13b)."""
+    attenuated lesion dilated by `region_dilate` voxels (for A13b).
+    band_sigma: per-axis sigma in voxels of the B-DCA low-pass (None = plain DCA).
+    fixed_target: use this target CNR instead of sampling one (operator check only).
+    report: optional list; one dict per attenuated lesion is appended."""
     if data.dim() != 5:
         return data, []
     out = data.clone()
@@ -119,6 +167,8 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
         comp_t = torch.from_numpy(comp).to(data.device)
         x = out[b:b + 1].float()
         margin = ring[1] + 4
+        if band_sigma is not None:   # room for the low-pass tails
+            margin += int(np.ceil(3 * max(band_sigma)))
         for k, sl in enumerate(ndi.find_objects(comp), start=1):
             if sl is None:
                 continue
@@ -137,10 +187,12 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
             xb = x[box]
             mu_l = (xb * m).sum() / m.sum()
             mu_r = (xb * ring_m).sum() / ring_m.sum()
+            cnr0 = t_cnr = None
             if target_cnr:
                 sd_r = (((xb - mu_r) ** 2 * ring_m).sum() / ring_m.sum()).sqrt()
                 cnr0 = ((mu_l - mu_r).abs() / (sd_r + 1e-8)).item()
-                alpha = min(1.0, sample_target_cnr(generator) / max(cnr0, 1e-8))
+                t_cnr = fixed_target if fixed_target is not None else sample_target_cnr(generator)
+                alpha = min(1.0, t_cnr / max(cnr0, 1e-8))
                 if alpha >= 1.0:
                     continue
             # Preserve tissue outside the liver and every other tumor component.
@@ -148,8 +200,21 @@ def lesion_contrast_augment(data: torch.Tensor, target: torch.Tensor, p: float =
             # overlapping tails can change the texture of a neighboring lesion.
             allowed = (target[b:b + 1][box] > 0) & ~(others > 0)
             weight = _soften(m) * allowed
-            x[box] = xb - (1.0 - alpha) * (mu_l - mu_r) * weight
+            if band_sigma is None:
+                beta = 1.0 - alpha
+                x[box] = xb - beta * (mu_l - mu_r) * weight
+            else:
+                field = _gauss_blur(_soften(m), band_sigma) * allowed
+                a_lw, a_rw = (weight * m).sum() / m.sum(), (weight * ring_m).sum() / ring_m.sum()
+                a_lf, a_rf = (field * m).sum() / m.sum(), (field * ring_m).sum() / ring_m.sum()
+                beta = band_beta(alpha, float(a_lw), float(a_rw), float(a_lf), float(a_rf))
+                if beta is None:
+                    continue
+                x[box] = xb - beta * (mu_l - mu_r) * field
             alphas.append(alpha)
+            if report is not None:
+                report.append(dict(sample=b, label=k, voxels=int(m.sum().item()), cnr0=cnr0, target=t_cnr,
+                                   alpha=alpha, beta=beta))
             if region_out is not None:
                 r = region_out[b:b + 1][box]
                 region_out[b:b + 1][box] = torch.maximum(r, _dilate(m, region_dilate).to(r.dtype))
@@ -181,6 +246,27 @@ def contrast_consistency_loss(student: list, teacher: list, region: torch.Tensor
         t_v = t_f.detach().movedim(1, -1)[sel].float()
         cos = F.cosine_similarity(s_v, t_v, dim=-1, eps=1e-6)
         losses.append((1.0 - cos).mean())
+    if not losses:
+        return student[0].new_tensor(0.0, dtype=torch.float32)
+    return torch.stack(losses).mean()
+
+
+def relative_mse_consistency_loss(student: list, teacher: list, region: torch.Tensor,
+                                  n_stages: int = 2, eps: float = 1e-6) -> torch.Tensor:
+    """E-CFC: mean over stages of the region-averaged ||s - t||^2 / (||t||^2 + eps);
+    teacher detached. Same gathering as contrast_consistency_loss."""
+    losses = []
+    for s_f, t_f in list(zip(student, teacher))[:n_stages]:
+        m = region.float()
+        if m.shape[2:] != s_f.shape[2:]:
+            m = F.adaptive_max_pool3d(m, s_f.shape[2:])
+        sel = m[:, 0] > 0
+        if not bool(sel.any()):
+            continue
+        s_v = s_f.movedim(1, -1)[sel].float()
+        t_v = t_f.detach().movedim(1, -1)[sel].float()
+        rel = ((s_v - t_v) ** 2).sum(-1) / ((t_v ** 2).sum(-1) + eps)
+        losses.append(rel.mean())
     if not losses:
         return student[0].new_tensor(0.0, dtype=torch.float32)
     return torch.stack(losses).mean()

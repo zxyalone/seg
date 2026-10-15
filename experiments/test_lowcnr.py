@@ -15,8 +15,8 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nnUNet"))
 from nnunetv2.training.nnUNetTrainer.phaser.lowcnr import (  # noqa: E402
-    LOW_CNR_QUANTILES, component_dicece_loss, contrast_consistency_loss, lesion_contrast_augment,
-    sample_target_cnr, voronoi_partition)
+    LOW_CNR_QUANTILES, _gauss_blur, band_beta, component_dicece_loss, contrast_consistency_loss,
+    lesion_contrast_augment, relative_mse_consistency_loss, sample_target_cnr, voronoi_partition)
 
 SHAPE = (48, 64, 64)
 
@@ -211,6 +211,108 @@ def test_consistency_through_network():
     print("✓ A13b gradient reaches the encoder through the finest decoder features")
 
 
+BAND = (2.0, 2.0 / 0.779172, 2.0 / 0.779172)   # sigma_b = 2 mm on the plan grid, in voxels
+
+
+def test_bdca():
+    """B-DCA (B13, docs/训练侧频域计划.md §3.1)."""
+    x, lab, big, small = volume()
+    # 1 sigma_b -> 0 reduces to the plain operator (same target draws)
+    plain, _ = lesion_contrast_augment(x, lab, p=1.0, target_cnr=True, generator=torch.Generator().manual_seed(3))
+    tiny, _ = lesion_contrast_augment(x, lab, p=1.0, target_cnr=True, band_sigma=(1e-4,) * 3,
+                                      generator=torch.Generator().manual_seed(3))
+    assert (plain - tiny).abs().max() <= 1e-5, (plain - tiny).abs().max()
+    # 2 the field stays in the allowed region (liver); nothing changes outside the liver
+    rep_ = []
+    out, _ = lesion_contrast_augment(x, lab, p=1.0, target_cnr=True, band_sigma=BAND,
+                                     generator=torch.Generator().manual_seed(3), report=rep_)
+    d = (out - x)[0, 0]
+    assert d[lab[0, 0] == 0].abs().max() == 0 and d[big].abs().max() > 0
+    # 3 texture: the change inside the lesion is smooth (no high-frequency part)
+    core = (F.max_pool3d((~big).float()[None, None], 5, 1, 2)[0, 0] == 0)
+    hp = (d - _gauss_blur(d[None, None], (1.0,) * 3)[0, 0])[core]
+    assert hp.abs().max() <= 0.05 * d[core].abs().mean(), (hp.abs().max(), d[core].abs().mean())
+    # 5 small lesions are attenuated less than with the plain field (mean contrast kept higher)
+    xs, labs, _, sm = volume(seed=2)
+    po, _ = lesion_contrast_augment(xs, labs, p=1.0, target_cnr=True, fixed_target=0.4)
+    bo, _ = lesion_contrast_augment(xs, labs, p=1.0, target_cnr=True, fixed_target=0.4, band_sigma=BAND)
+    cp, cb = ring_cnr(po[0, 0], sm, labs[0, 0]), ring_cnr(bo[0, 0], sm, labs[0, 0])
+    assert cb > cp, (cb, cp)
+    print(f"  small lesion (r = 4 voxels) at target 0.4: plain DCA CNR {cp:.2f}, B-DCA {cb:.2f}")
+    # 6 calibration helper: no attenuation when the low-passed field is not larger in the lesion; cap at 1
+    assert band_beta(0.5, 1.0, 0.1, 0.2, 0.3) is None and band_beta(0.5, 1.0, 0.1, 0.3, 0.3) is None
+    assert band_beta(0.1, 1.0, 0.0, 0.3, 0.0) == 1.0
+    assert abs(band_beta(0.5, 1.0, 0.0, 0.9, 0.0) - 0.5 / 0.9) < 1e-12
+    assert rep_ and all(r["beta"] is not None for r in rep_)
+    print("✓ B-DCA band-limited contrast attenuation")
+
+
+def test_bdca_calibration():
+    """§3.1 calibration test of B-DCA (target within 5% on a large synthetic lesion).
+    KNOWN TO FAIL with the registered design (docs/训练侧频域计划.md §9, 2026-10-16): the
+    low-passed field also lifts the liver ring, the calibrated amplitude exceeds the cap of 1
+    and high-CNR lesions stay above the target. Not part of the passing suite; run on its own."""
+    g = torch.Generator().manual_seed(1)
+    lab2 = torch.zeros(SHAPE, dtype=torch.long)
+    lab2[2:46, 2:62, 2:62] = 1
+    les = ball((24, 32, 32), 13)
+    lab2[les] = 2
+    x2 = 1.0 + 0.1 * torch.randn(SHAPE, generator=g)
+    x2[lab2 == 0] = -1.0
+    x2[les] -= 0.5
+    c0 = ring_cnr(x2, les, lab2)
+    ok = True
+    for t in (0.3, 0.6, 1.0):
+        o, _ = lesion_contrast_augment(x2[None, None], lab2[None, None], p=1.0, target_cnr=True,
+                                       band_sigma=BAND, fixed_target=t)
+        c1 = ring_cnr(o[0, 0], les, lab2)
+        ok &= abs(c1 - t) <= 0.05 * t
+        print(f"  B-DCA large lesion (r = 13 voxels): CNR {c0:.2f} -> {c1:.3f} (target {t})")
+    print("✓ B-DCA calibration" if ok else "✗ B-DCA calibration (known failure, plan §9)")
+    return ok
+
+
+def test_ecfc():
+    """E-CFC (E13, docs/训练侧频域计划.md §3.1)."""
+    g = torch.Generator().manual_seed(0)
+    t = [torch.randn((1, 8, 12, 12, 12), generator=g), torch.randn((1, 6, 6, 6, 6), generator=g)]
+    raw = [torch.randn(f.shape, generator=g) for f in t]
+    # rescale the student to the teacher's norm voxel by voxel
+    s = [r * (f.norm(dim=1, keepdim=True) / r.norm(dim=1, keepdim=True)) for r, f in zip(raw, t)]
+    region = torch.zeros((1, 1, 12, 12, 12))
+    region[..., 2:9, 2:9, 2:9] = 1
+    rel = relative_mse_consistency_loss(s, t, region, 2)
+    cos = contrast_consistency_loss(s, t, region, 2)
+    assert abs(0.5 * rel.item() - cos.item()) < 1e-6, (0.5 * rel.item(), cos.item())
+    # magnitude sensitivity: cosine ignores a rescaled student, relative MSE does not
+    s2 = [2.0 * f for f in t]
+    assert contrast_consistency_loss(s2, t, region, 2).item() < 1e-6
+    assert abs(relative_mse_consistency_loss(s2, t, region, 2).item() - 1.0) < 1e-5
+    # no gradient outside the region
+    sg = [f.clone().requires_grad_(True) for f in raw]
+    relative_mse_consistency_loss(sg, t, region, 1).backward()
+    gmap = sg[0].grad.abs().sum(1)[0]
+    assert gmap[region[0, 0] == 0].max() == 0 and gmap[region[0, 0] > 0].max() > 0
+    # EMA teacher: copy at start, no gradients, m-weighted update
+    from types import SimpleNamespace
+    from nnunetv2.training.nnUNetTrainer.nnUNetTrainer_phaser import nnUNetTrainer_phaser as Tr
+    net = torch.nn.Sequential(torch.nn.Conv3d(1, 4, 3), torch.nn.InstanceNorm3d(4, affine=True))
+    ns = SimpleNamespace(network=net, is_ddp=False, lca_ema_m=0.9, _ema_teacher=None,
+                         print_to_log_file=lambda *a, **k: None)
+    ns._student_module = lambda: Tr._student_module(ns)
+    Tr._init_ema_teacher(ns)
+    tp = list(ns._ema_teacher.parameters())
+    assert all(torch.equal(a, b) for a, b in zip(tp, net.parameters())) and not any(p.requires_grad for p in tp)
+    old = [p.detach().clone() for p in tp]
+    with torch.no_grad():
+        for p in net.parameters():
+            p.add_(1.0)
+    Tr._ema_update(ns)
+    for o, p, q in zip(old, tp, net.parameters()):
+        assert torch.allclose(p, 0.9 * o + 0.1 * q, atol=1e-6)
+    print("✓ E-CFC relative MSE and EMA teacher")
+
+
 def test_speed():
     lab = torch.zeros((2, 1, 128, 128, 128), dtype=torch.long)
     lab[:, :, 10:118, 10:118, 10:118] = 1
@@ -230,5 +332,9 @@ if __name__ == "__main__":
     test_target_cnr()
     test_consistency()
     test_consistency_through_network()
+    test_bdca()
+    test_ecfc()
     test_speed()
     print("全部通过")
+    # Known failure of the registered B-DCA design, reported separately (plan §9):
+    test_bdca_calibration()
