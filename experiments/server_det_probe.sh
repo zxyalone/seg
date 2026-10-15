@@ -51,8 +51,12 @@ extract() {  # split expected_count
 }
 
 extract train 83
-"$PY" "$SCRIPT" fit > "$OUT/fit.log" 2>&1 || { log "fit FAILED"; exit 1; }
-log "heads fitted (heads_info.json)"
+if [[ -f $OUT/heads.npz && -f $OUT/heads_info.json ]]; then
+  log "heads.npz exists; not refitted (cases already scored keep the same heads)"
+else
+  "$PY" "$SCRIPT" fit > "$OUT/fit.log" 2>&1 || { log "fit FAILED"; exit 1; }
+  log "heads fitted (heads_info.json)"
+fi
 for split in msd08 lits_val; do
   want=$(grep -c . "$( [[ $split == msd08 ]] && echo /root/autodl-tmp/ext_data/msd08/Dataset104_MSD08/cases.txt \
          || echo experiments/eval/val_cases.txt)")
