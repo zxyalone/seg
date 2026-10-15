@@ -22,3 +22,5 @@ opencode.json
 
 # Probe feature caches (per-case npz/json; ~1 GB). Summaries, CSVs and logs are committed.
 results/freq_probe*/*/cases/
+# D0 per-case caches (training samples, per-case JSON). Summaries, CSVs, heads and logs are committed.
+results/det_probe/*/cases/
