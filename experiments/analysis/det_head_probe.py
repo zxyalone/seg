@@ -323,6 +323,24 @@ def export_map(map_pp: np.ndarray, pred, props: dict) -> np.ndarray:
     return out.transpose(pm.transpose_backward)
 
 
+def predict_logits_safe(C, m, data):
+    """nnU-Net 滑窗 logits（与协议相同）。整卷 logits 放不进显存时（同卡两个分片 + 大体积病例），
+    改为在 CPU 内存里累加（dtype 仍为 fp16，块的前向仍在 GPU），返回所用路径。"""
+    import torch
+    try:
+        return C.predict_logits(m, data, preserve_dtype=True), "gpu"
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        p = m.predictor
+        old = p.perform_everything_on_gpu
+        p.perform_everything_on_gpu = False
+        try:
+            return C.predict_logits(m, data, preserve_dtype=True), "cpu_accumulate"
+        finally:
+            p.perform_everything_on_gpu = old
+            torch.cuda.empty_cache()
+
+
 def case_rng(case: str):
     return np.random.default_rng(int(hashlib.sha256(case.encode()).hexdigest()[:8], 16))
 
@@ -420,7 +438,7 @@ def cmd_extract(a):
         data, _, props_pp = C.preprocess(ref, raw, props)
         rec = dict(case=case, n_gt=int(n_gt), runs={})
         for m in models:
-            logits = C.predict_logits(m, data, preserve_dtype=True)
+            logits, logits_path = predict_logits_safe(C, m, data)
             seg, probs = convert_predicted_logits_to_segmentation_with_correct_shape(
                 logits, m.predictor.plans_manager, m.predictor.configuration_manager,
                 m.predictor.label_manager, props_pp, return_probabilities=True)
@@ -432,7 +450,7 @@ def cmd_extract(a):
             pred_pp = M._drop_small(seg == 2, vox_mm3, M.MIN_DIAM_PP_MM)
             block = (gt == 2) | pred_pp
             deep, shallow, pshape, revert = window_features(m, data, device)
-            run = dict(rules=res["rules"], lesions=res["lesions"], head={})
+            run = dict(rules=res["rules"], lesions=res["lesions"], head={}, logits_path=logits_path)
             for h, F in (("deep", deep), ("shallow", shallow)):
                 pc = apply_head(F, heads[(m.name, h)])
                 hr = export_map(cells_to_voxels(pc, pshape, revert), m.predictor, props_pp)
