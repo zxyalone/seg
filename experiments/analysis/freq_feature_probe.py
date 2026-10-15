@@ -681,8 +681,9 @@ def cmd_summarize(a):
                                        "n<0.5": int((d.coverage < 0.5).sum()), "n>=0.5": int((d.coverage >= 0.5).sum())}
     res["stage_valid_fraction"] = {g: {s: float(np.isfinite(d[f"auc_{s}"]).mean()) for s in range(N_STAGES)}
                                    for g, d in per_group.items()}
-    # 位置对照：远处肝实质块的"中心 vs 四周"，各 run 的病例 AUC 中位数，再在组内取平均
-    folds = case_folds(meta.case.unique())
+    # 位置对照：远处肝实质块的"中心 vs 四周"，各 run 的病例 AUC 中位数，再在组内取平均。
+    # 分折包含无病灶病例（它们只有对照样本）；MSD08 每例都有病灶，分折与病灶探针相同。
+    folds = case_folds(set(meta.case) | {r["case"] for recs in ctrl.values() for r in recs})
     crow = []
     for (run, s), recs in sorted(ctrl.items()):
         crow.append(dict(group=run.split("_s")[0], run=run, stage=s,
