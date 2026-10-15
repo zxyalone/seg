@@ -47,6 +47,12 @@ A14_RUNS = ('A14_s0', 'A14_s1', 'A14_s2')
 TS_OUT = REPO.parent / 'Downstream_2_trials/results/trials_setting'
 TS_GROUPS = ('T13b', 'T0')
 TS_RUNS = tuple(f'{g}_s{s}' for g in TS_GROUPS for s in range(3))
+# 200-epoch from-scratch runs T0L / T13bL (plan §11, 2026-10-15), same worktree
+TS2_OUT = REPO.parent / 'Downstream_2_trials/results/trials_setting_200'
+TS2_GROUPS = ('T13bL', 'T0L')
+TS2_RUNS = tuple(f'{g}_s{s}' for g in TS2_GROUPS for s in range(3))
+TS_SETS = {'ts': (TS_OUT, TS_GROUPS, TS_RUNS, 'server_trials_setting.sh', 'results/trials_setting'),
+           'ts200': (TS2_OUT, TS2_GROUPS, TS2_RUNS, 'server_trials_setting_200.sh', 'results/trials_setting_200')}
 FOLD = 'Dataset102_LiTS/nnUNetTrainer_phaser__nnUNetPlans__3d_fullres/fold_0'
 RESFOLD = 'Dataset102_LiTS/nnUNetTrainer_200epochs__nnUNetResEncUNetPlans__3d_fullres/fold_0'
 CST = timezone(timedelta(hours=8))
@@ -109,9 +115,9 @@ def run_log(name):
     if name in A14_RUNS:
         logs = sorted((ROOT/name/FOLD).glob('training_log_*.txt'))
         return logs[-1] if logs else A14_OUT/f'train_{name}.log'
-    if name in TS_RUNS:
+    if name in TS_RUNS or name in TS2_RUNS:
         logs = sorted((ROOT/name/FOLD).glob('training_log_*.txt'))
-        return logs[-1] if logs else TS_OUT/f'train_{name}.log'
+        return logs[-1] if logs else (TS_OUT if name in TS_RUNS else TS2_OUT)/f'train_{name}.log'
     if name in TRANSFER_RUNS:
         return transfer_training_log(name) or TRANSFER/f'{name}.log'
     if name in REPLICATION_RUNS:
@@ -563,7 +569,8 @@ def a14_info(now):
                 per_group=per_group, stats=stats)
 
 
-def ts_info(now):
+def ts_info(now, key='ts'):
+    TS_OUT, TS_GROUPS, TS_RUNS, runner_script, out_rel = TS_SETS[key]
     if not TS_OUT.exists():
         return None
     runner = tail(TS_OUT/'runner.log', 200000)
@@ -576,9 +583,12 @@ def ts_info(now):
             if not process_alive(directory.name):
                 continue
             joined = ' '.join(argv)
-            runner_alive |= 'server_trials_setting.sh' in joined
-            recovering |= 'server_trials_setting_recover.sh' in joined
-            eval_alive |= 'trials_setting_eval.py' in joined
+            runner_alive |= runner_script in joined
+            if 'server_trials_setting_recover.sh' in joined or 'trials_setting_eval.py' in joined:
+                env = dict(x.split('=', 1) for x in (directory/'environ').read_bytes().decode().split('\0') if '=' in x)
+                mine = env.get('TS_OUT', 'results/trials_setting') == out_rel
+                recovering |= mine and 'server_trials_setting_recover.sh' in joined
+                eval_alive |= mine and 'trials_setting_eval.py' in joined
             for script, kind in (('experiments/run.sh', 'train'), ('experiments/predict_test.sh', 'predict')):
                 idx = next((i for i, a in enumerate(argv) if a.endswith(script)), None)
                 if idx is not None and len(argv) > idx + 2 and argv[idx+1] in TS_GROUPS:
@@ -736,6 +746,7 @@ def snapshot():
         msd08 = msd08_info(now)
         a14 = a14_info(now)
         ts = ts_info(now)
+        ts200 = ts_info(now, 'ts200')
         a13_curves = read_json(REPLICATION/'probability_curves_A13/state.json', {})
         if a13_curves:
             a13_curves['controller_alive'] = process_alive(a13_curves.get('pid'))
@@ -865,13 +876,22 @@ def snapshot():
                 source='server_trials_setting.sh、训练日志与 results/trials_setting',
                 progress=100 if ts['complete'] else round(sum(r['progress'] for r in tr) / len(tr) * 0.9
                                                           + sum(r['test_done'] for r in tr) / len(tr) * 10, 1)))
+        if ts200:
+            tr = ts200['runs']
+            stages.append(dict(id='T2', title='200 epoch 从头训练（T0L / T13bL）',
+                status='complete' if ts200['complete'] else 'failed' if ts200['error'] else 'running' if ts200['alive'] else 'analysis_pending',
+                detail=(f"{sum(r['trained'] for r in tr)} / 6 训练完成，{sum(r['test_done'] for r in tr)} / 6 测试预测完成；"
+                        f"从头训练、SGD lr 1e-2、200 epoch；三张卡错开 15 分钟；描述性对比"),
+                source='server_trials_setting_200.sh、训练日志与 results/trials_setting_200',
+                progress=100 if ts200['complete'] else round(sum(r['progress'] for r in tr) / len(tr) * 0.9
+                                                             + sum(r['test_done'] for r in tr) / len(tr) * 10, 1)))
         CACHE['data'] = {
             'now': datetime.now(CST).isoformat(), 'updated_at': state.get('updated_at'),
             'state_age_seconds': round(now - mtime) if mtime else None,
             'controller_alive': process_alive(state.get('pid')), 'stage': state.get('stage', 'unknown'),
-            'stages': stages, 'runs': list(runs.values()) + (transfer['runs'] if transfer else []) + (a14['runs'] if a14 else []) + (ts['runs'] if ts else []), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
+            'stages': stages, 'runs': list(runs.values()) + (transfer['runs'] if transfer else []) + (a14['runs'] if a14 else []) + (ts['runs'] if ts else []) + (ts200['runs'] if ts200 else []), 'analysis': analysis, 'pilots': pilots, 'replication': replication,
             'a13_curves': a13_curves,
-            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer, 'msd08': msd08, 'a14': a14, 'ts': ts,
+            'native_curves': native_curves, 'test_protocol': test_protocol, 'transfer': transfer, 'msd08': msd08, 'a14': a14, 'ts': ts, 'ts200': ts200,
             'gpus': CACHE['gpu'], 'gpu_error': CACHE['gpu_error'],
             'gpu_age_seconds': round(now - CACHE['gpu_time']),
             'pending': [name_for(e) for e in state.get('stage6_pending_queue', [])],
@@ -928,6 +948,16 @@ class Handler(BaseHTTPRequestHandler):
                     path=out if 'RUN_EXIT' in tail(out, 4096) else run_log(name[9:])
                 elif name == 'transfer_eval':
                     path=TRANSFER_RESULTS/'runner.log'
+                elif name.startswith('ts2_valrerun_'):
+                    path=TS2_OUT/f'val_rerun_{name[13:]}.log'
+                elif name == 'ts2_runner':
+                    path=TS2_OUT/'runner.log'
+                elif name in ('ts2_metrics_val', 'ts2_metrics_test_best', 'ts2_metrics_test_final', 'ts2_stats'):
+                    path=TS2_OUT/(f'metrics_{name[12:]}.log' if 'metrics' in name else 'stats.log')
+                elif name.startswith('ts2_predict_') and name[12:].rsplit('_', 1)[0] in TS2_RUNS:
+                    path=TS2_OUT/f'predict_{name[12:]}.log'
+                elif name.startswith('ts2_train_') and name[10:] in TS2_RUNS:
+                    path=TS2_OUT/f'train_{name[10:]}.log'
                 elif name.startswith('ts_valrerun_'):
                     path=TS_OUT/f'val_rerun_{name[12:]}.log'
                 elif name == 'ts_runner':
