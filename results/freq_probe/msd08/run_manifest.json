@@ -1,0 +1,28 @@
+{
+  "cohort": "msd08",
+  "runs": [
+    "A13b_s0",
+    "A13b_s1",
+    "A13b_s2",
+    "A0_s0",
+    "A0_s1",
+    "A0_s2"
+  ],
+  "git_head": "0cb91124c5235ba999c6218353335f8bab01f9fd",
+  "git_dirty": true,
+  "plan_sha256": "eaa645dfc3c3e5c2a8bafe07f85cad73a7d7989b80ac596356a16eed48e097c8",
+  "script_sha256": "6d4aeda6cb23356c6dd8c26839ec0a8c29219426845ca8df6f2daea040ca9a72",
+  "spacing": [
+    1.0,
+    0.7791720032691956,
+    0.7791720032691956
+  ],
+  "patch": [
+    128,
+    128,
+    128
+  ],
+  "image_dir": "/root/autodl-tmp/ext_data/msd08/Dataset104_MSD08/imagesTs",
+  "label_dir": "/root/autodl-tmp/ext_data/msd08/Dataset104_MSD08/labelsTs",
+  "started": "2026-10-15 21:06:13"
+}

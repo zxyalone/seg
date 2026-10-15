@@ -1,0 +1,31 @@
+{
+  "cohort": "lits_val",
+  "runs": [
+    "A13b_s0",
+    "A13b_s1",
+    "A13b_s2",
+    "A0_s0",
+    "A0_s1",
+    "A0_s2"
+  ],
+  "git_head": "e509fccdfd49e337bb388f41f9dc60ae7a81074b",
+  "git_dirty": true,
+  "plan_sha256": "5acd2b4c5ca6e0557f3f8b1838af7400671eab76b34b5c5e0c95a8c30bf52e8b",
+  "script_sha256": "dc4e016ab439fa8cff08aaddf414e312481b65760f0cc00f6574b26662dd6285",
+  "spacing": [
+    1.0,
+    0.7791720032691956,
+    0.7791720032691956
+  ],
+  "patch": [
+    128,
+    128,
+    128
+  ],
+  "image_dir": "/root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset102_LiTS/imagesTr",
+  "label_dir": "/root/autodl-tmp/nnUNet_data/nnUNet_raw/Dataset102_LiTS/labelsTr",
+  "probe_version": 2,
+  "neg_patches": 8,
+  "neg_center_sep_mm": 30.0,
+  "started": "2026-10-15 22:20:39"
+}

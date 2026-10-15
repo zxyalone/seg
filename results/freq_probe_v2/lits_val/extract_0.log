@@ -1,0 +1,10 @@
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+[1/4] LiTS_006: 7 lesions, 8 negative patches, ims=no, 166s
+[2/4] LiTS_039: 1 lesions, 8 negative patches, ims=yes, 129s
+[3/4] LiTS_073: 1 lesions, 8 negative patches, ims=no, 77s
+[4/4] LiTS_120: 5 lesions, 8 negative patches, ims=no, 131s

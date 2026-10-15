@@ -1,0 +1,57 @@
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+Pretrained weights: none (trained from scratch)
+[1/51] hepaticvessel_001: 1 lesions, 8 negative patches, ims=no, 45s
+[2/51] hepaticvessel_010: 1 lesions, 8 negative patches, ims=no, 35s
+[3/51] hepaticvessel_020: 1 lesions, 8 negative patches, ims=yes, 54s
+[4/51] hepaticvessel_028: 1 lesions, 8 negative patches, ims=yes, 46s
+[5/51] hepaticvessel_039: 1 lesions, 8 negative patches, ims=yes, 47s
+[6/51] hepaticvessel_050: 1 lesions, 8 negative patches, ims=yes, 51s
+[7/51] hepaticvessel_059: 1 lesions, 8 negative patches, ims=yes, 31s
+[8/51] hepaticvessel_068: 1 lesions, 8 negative patches, ims=yes, 48s
+[9/51] hepaticvessel_078: 1 lesions, 8 negative patches, ims=yes, 65s
+[10/51] hepaticvessel_084: 1 lesions, 8 negative patches, ims=yes, 63s
+[11/51] hepaticvessel_090: 1 lesions, 8 negative patches, ims=no, 41s
+[12/51] hepaticvessel_097: 1 lesions, 8 negative patches, ims=yes, 58s
+[13/51] hepaticvessel_108: 1 lesions, 8 negative patches, ims=no, 28s
+[14/51] hepaticvessel_116: 1 lesions, 8 negative patches, ims=yes, 39s
+[15/51] hepaticvessel_125: 1 lesions, 8 negative patches, ims=no, 36s
+[16/51] hepaticvessel_133: 1 lesions, 8 negative patches, ims=yes, 42s
+[17/51] hepaticvessel_141: 3 lesions, 8 negative patches, ims=no, 111s
+[18/51] hepaticvessel_148: 1 lesions, 8 negative patches, ims=yes, 60s
+[19/51] hepaticvessel_159: 1 lesions, 8 negative patches, ims=yes, 49s
+[20/51] hepaticvessel_166: 1 lesions, 8 negative patches, ims=yes, 67s
+[21/51] hepaticvessel_175: 1 lesions, 8 negative patches, ims=no, 32s
+[22/51] hepaticvessel_184: 1 lesions, 8 negative patches, ims=no, 24s
+[23/51] hepaticvessel_194: 1 lesions, 8 negative patches, ims=no, 31s
+[24/51] hepaticvessel_200: 1 lesions, 8 negative patches, ims=no, 23s
+[25/51] hepaticvessel_209: 1 lesions, 8 negative patches, ims=yes, 51s
+[26/51] hepaticvessel_217: 1 lesions, 8 negative patches, ims=yes, 55s
+[27/51] hepaticvessel_224: 1 lesions, 8 negative patches, ims=yes, 41s
+[28/51] hepaticvessel_233: 1 lesions, 8 negative patches, ims=yes, 65s
+[29/51] hepaticvessel_240: 1 lesions, 8 negative patches, ims=yes, 53s
+[30/51] hepaticvessel_255: 1 lesions, 8 negative patches, ims=yes, 62s
+[31/51] hepaticvessel_265: 1 lesions, 8 negative patches, ims=no, 39s
+[32/51] hepaticvessel_272: 1 lesions, 8 negative patches, ims=no, 37s
+[33/51] hepaticvessel_281: 1 lesions, 8 negative patches, ims=no, 54s
+[34/51] hepaticvessel_289: 2 lesions, 8 negative patches, ims=no, 26s
+[35/51] hepaticvessel_297: 4 lesions, 8 negative patches, ims=no, 48s
+[36/51] hepaticvessel_308: 3 lesions, 8 negative patches, ims=yes, 62s
+[37/51] hepaticvessel_321: 1 lesions, 8 negative patches, ims=yes, 48s
+[38/51] hepaticvessel_329: 1 lesions, 8 negative patches, ims=no, 39s
+[39/51] hepaticvessel_338: 1 lesions, 8 negative patches, ims=no, 29s
+[40/51] hepaticvessel_349: 1 lesions, 8 negative patches, ims=yes, 42s
+[41/51] hepaticvessel_361: 1 lesions, 8 negative patches, ims=no, 41s
+[42/51] hepaticvessel_371: 2 lesions, 8 negative patches, ims=yes, 39s
+[43/51] hepaticvessel_379: 1 lesions, 8 negative patches, ims=no, 59s
+[44/51] hepaticvessel_388: 5 lesions, 8 negative patches, ims=no, 66s
+[45/51] hepaticvessel_398: 2 lesions, 8 negative patches, ims=no, 36s
+[46/51] hepaticvessel_407: 3 lesions, 8 negative patches, ims=no, 57s
+[47/51] hepaticvessel_419: 1 lesions, 8 negative patches, ims=no, 35s
+[48/51] hepaticvessel_427: 2 lesions, 8 negative patches, ims=no, 33s
+[49/51] hepaticvessel_437: 5 lesions, 8 negative patches, ims=no, 77s
+[50/51] hepaticvessel_444: 2 lesions, 8 negative patches, ims=no, 34s
+[51/51] hepaticvessel_455: 2 lesions, 8 negative patches, ims=no, 48s

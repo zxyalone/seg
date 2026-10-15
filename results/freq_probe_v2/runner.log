@@ -1,0 +1,7 @@
+[2026-10-15 21:33:16] F0 probe v2 start, HEAD e509fcc, plan e509fcc, GPUs 0 1 2, 6 shards
+selftest PASS
+[2026-10-15 21:33:49] msd08: extract
+[2026-10-15 22:20:31] msd08: done (303 cases); /root/autodl-tmp/seg/results/freq_probe_v2/msd08/SUMMARY.md
+[2026-10-15 22:20:31] lits_val: extract
+[2026-10-15 22:29:27] lits_val: summarize FAILED
+[2026-10-15 22:32:53] lits_val: summarize rerun after the fold fix (f9ae5e3)
