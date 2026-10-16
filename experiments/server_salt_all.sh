@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-shot SALT runner (docs/SALT模型设计.md): G0 (preflight + anchor probe), then the seed-0 pilots on every
-# idle GPU. Q4, Q1, F1 start first; Q2, Q3 only after Q4 passes (§4). Idempotent: finished steps are skipped,
+# idle GPU. Q4, Q1, F1 start first; Q3 only after Q4 passes (§4; Q2 removed after the G0 NO-GO). Idempotent: finished steps are skipped,
 # so simply restart it after an interruption.
 #
 #   tmux new -d -s salt 'bash /root/autodl-tmp/salt_work/seg/experiments/server_salt_all.sh'
@@ -28,8 +28,9 @@ if [[ ! -f $OUT/g0/summary.json ]]; then
 fi
 log "G0: $(grep -o 'G0（.*' "$OUT/g0/G0.md" | head -1)"
 if grep -q '"GO": false' "$OUT/g0/summary.json"; then
-  log "G0 NO-GO: per §3.2 the anchors are dropped for Q2-Q4; record this in §11 and edit the configs, then rerun"
-  exit 0
+  grep -q "^PHASER_LQD_SEM=16" experiments/configs/Q4.env \
+    && { log "G0 NO-GO but Q4.env still uses anchors: apply §3.2 (32 free queries) first"; exit 1; }
+  log "G0 NO-GO: anchors dropped per §3.2 / §11 (Q2 removed, Q3 / Q4 with 32 free queries)"
 fi
 
 # --- pilots: a simple GPU queue --------------------------------------------------------------------------
@@ -47,7 +48,7 @@ free_gpu() {
   done
 }
 QUEUE=(Q4 Q1 F1)
-LATE=(Q2 Q3)
+LATE=(Q3)
 while :; do
   if (( ${#QUEUE[@]} )); then
     g=$(free_gpu)
@@ -66,7 +67,7 @@ while :; do
   fi
   sleep 120
 done
-for grp in Q4 Q1 F1 Q2 Q3; do
+for grp in Q4 Q1 F1 Q3; do
   done_run "$grp" && log "$grp: $(python3 -c "import json; print(json.load(open('$OUT/pilot_msd08_${grp}_s0/decision.json'))['runs']['${grp}_s0']['CONTINUE'])")"
 done
 log "all pilots finished; tables in $OUT/pilot_msd08_*_s0/DECISION.md"
