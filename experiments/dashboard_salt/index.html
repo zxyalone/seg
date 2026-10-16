@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SALT 实验进度</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#162335;--muted:#69788a;--line:#e4e9f0;--track:#eaeef4;
+--blue:#2764e7;--green:#178268;--amber:#b87a13;--red:#be384b;--violet:#7a4cc9;--grey:#8a96a6;
+--c-Q4:#2764e7;--c-Q1:#178268;--c-F1:#b87a13;--c-Q3:#7a4cc9;--c-A0:#8a96a6}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--card:#171e28;--ink:#e3e9f1;--muted:#8d9aab;--line:#263141;--track:#232d3b;
+--blue:#6c9bff;--green:#3fbf9a;--amber:#e3a53d;--red:#ef6b7f;--violet:#a98bf0;--grey:#7d8a9b;
+--c-Q4:#6c9bff;--c-Q1:#3fbf9a;--c-F1:#e3a53d;--c-Q3:#a98bf0;--c-A0:#7d8a9b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1360px;margin:auto;padding:20px 16px 40px}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+h1{font-size:20px;margin:0}
+h2{font-size:15px;margin:0 0 10px}
+.muted{color:var(--muted)}.small{font-size:12px}
+.grid{display:grid;gap:14px}
+.runs{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+@media (max-width:480px){.two{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.run-h{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.tag{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.t-train{color:var(--blue)}.t-validate,.t-predict,.t-eval{color:var(--violet)}.t-done{color:var(--green)}.t-failed{color:var(--red)}.t-queued{color:var(--muted)}
+.bar{height:8px;background:var(--track);border-radius:99px;overflow:hidden;margin:10px 0 6px}
+.bar>i{display:block;height:100%;border-radius:99px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px}
+.kv b{font-weight:600;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.alert{border-radius:10px;padding:10px 14px;margin-bottom:14px;border:1px solid}
+.alert.red{color:var(--red);background:color-mix(in srgb,var(--red) 8%,transparent)}
+.alert.amber{color:var(--amber);background:color-mix(in srgb,var(--amber) 8%,transparent)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--muted);font-size:11px}
+.gpu{display:grid;grid-template-columns:60px 1fr 90px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+pre{margin:0;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-all;color:var(--muted);max-height:300px;overflow:auto}
+details summary{cursor:pointer;color:var(--blue);font-size:13px;margin-top:8px}
+table{border-collapse:collapse;font-size:13px;width:100%}
+td,th{padding:3px 6px;text-align:left;border-bottom:1px solid var(--line)}
+.err{color:var(--red)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>SALT 实验进度</h1><div class="muted small">谱尺度空间锚定的病灶 Transformer · seed 0 pilot · docs/SALT模型设计.md</div></div>
+  <div class="muted small" id="meta">加载中…</div>
+</header>
+<div id="alerts"></div>
+<div class="grid runs" id="runs"></div>
+<div class="grid two" style="margin-top:14px">
+  <div class="card"><h2>肿瘤伪 Dice（EMA，LiTS 验证）</h2><div id="ch-dice"></div><div class="legend" id="lg-dice"></div>
+    <div class="muted small" style="margin-top:4px">nnU-Net 训练中每 epoch 的肿瘤伪 Dice，按 0.9 平滑；灰线为 A0_s0 参照。只看趋势，判定以 MSD08 为准。</div></div>
+  <div class="card"><h2>训练损失</h2><div id="ch-loss"></div><div class="legend" id="lg-loss"></div>
+    <div class="muted small" style="margin-top:4px">Q 组含查询集合损失，量纲与 A0 / F1 不同，组间只比较趋势。</div></div>
+</div>
+<div class="grid two" style="margin-top:14px">
+  <div class="card"><h2>GPU 与系统</h2><div id="gpus"></div><div id="sys" class="small muted" style="margin-top:8px"></div></div>
+  <div class="card"><h2>G0 锚点门控</h2><div id="g0"></div></div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Runner 日志（results/salt/all.log）</h2><pre id="log"></pre></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const col=g=>`var(--c-${g})`;
+const STAGE={train:"训练中",validate:"验证中",predict:"MSD08 推理",eval:"评测判定",done:"已完成",failed:"失败",queued:"排队"};
+function dur(s){if(s==null)return"—";s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h} 小时 ${m} 分`:`${m} 分`}
+function clock(t){const d=new Date(t*1000);return d.toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false})}
+const f=(x,n=4)=>x==null?"—":Number(x).toFixed(n);
+
+function chart(el,series,key,{yfmt=v=>v.toFixed(2),xmax=200}={}){
+  const W=640,H=250,L=44,R=10,T=10,B=26;
+  const pts=series.flatMap(s=>s.data.map(d=>d[key]).filter(v=>v!=null&&isFinite(v)));
+  if(!pts.length){el.innerHTML='<div class="muted small">暂无数据</div>';return}
+  let lo=Math.min(...pts),hi=Math.max(...pts);if(hi-lo<1e-6){hi+=.5;lo-=.5}const pad=(hi-lo)*.06;lo-=pad;hi+=pad;
+  const X=e=>L+(W-L-R)*e/xmax,Y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  let g="";
+  for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,y=Y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+4}" text-anchor="end">${yfmt(v)}</text>`}
+  for(let e=0;e<=xmax;e+=50){g+=`<text x="${X(e)}" y="${H-8}" text-anchor="middle">${e}</text>`}
+  for(const s of series){const d=s.data.filter(p=>p[key]!=null&&isFinite(p[key]));if(!d.length)continue;
+    g+=`<polyline fill="none" stroke="${s.color}" stroke-width="${s.ref?1.5:2}" ${s.ref?'stroke-dasharray="5 4"':''} stroke-linejoin="round" points="${d.map(p=>X(p.e).toFixed(1)+","+Y(p[key]).toFixed(1)).join(" ")}"/>`;
+    const p=d[d.length-1];if(!s.ref)g+=`<circle cx="${X(p.e)}" cy="${Y(p[key])}" r="3" fill="${s.color}"/>`}
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+}
+function legend(el,series){el.innerHTML=series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("")}
+
+function render(d){
+  const sys=d.system;
+  $("meta").innerHTML=`更新于 ${clock(d.now)} · HEAD ${esc(d.head)} · runner ${sys.runner_alive?'<span style="color:var(--green)">运行中</span>':'<span style="color:var(--red)">未运行</span>'}`;
+  // alerts
+  const al=[];const freePct=sys.disk_free/sys.disk_total*100;
+  if(sys.disk_free<30)al.push(`<div class="alert ${sys.disk_free<15?'red':'amber'}">磁盘 ${esc(sys.disk_path)} 只剩 ${sys.disk_free.toFixed(1)} GB（${freePct.toFixed(0)}%）。每个 pilot 还要写 MSD08 预测与 checkpoint，空间不足会让推理失败。</div>`);
+  for(const r of d.runs){if(r.stage==="failed")al.push(`<div class="alert red">${r.run} 失败：${esc(r.detail)}</div>`);
+    if(r.stale)al.push(`<div class="alert amber">${r.run} 的训练日志超过 20 分钟没有更新，可能已中断。</div>`);}
+  if(!sys.runner_alive&&d.runs.some(r=>r.stage!=="done"))al.push(`<div class="alert amber">tmux 会话 salt 不在运行，未完成的 pilot 不会自动推进。</div>`);
+  $("alerts").innerHTML=al.join("");
+  // run cards
+  $("runs").innerHTML=d.runs.map(r=>{
+    const pct=r.stage==="train"?r.epochs_done/r.epochs_total*100:r.stage==="queued"?0:r.stage==="predict"?100:100;
+    const l=r.last||{},dice=l.dice||[];
+    let body="";
+    if(r.stage==="queued")body=`<div class="muted small" style="margin-top:8px">${esc(r.detail)}</div>`;
+    else{
+      body=`<div class="bar"><i style="width:${pct.toFixed(1)}%;background:${col(r.group)}"></i></div>
+      <div class="small muted" style="margin-bottom:8px">${esc(r.detail)}${r.stage==="train"?` · epoch <b class="num" style="color:var(--ink)">${r.epochs_done}</b> / ${r.epochs_total}`:""}${r.stage==="predict"?"":""}</div>
+      <div class="kv">
+        <span class="muted">每 epoch</span><b>${r.avg_epoch_s?r.avg_epoch_s.toFixed(0)+" s":"—"}</b>
+        <span class="muted">训练剩余</span><b>${r.stage==="train"?dur(r.eta_s)+(r.eta_s?` <span class="muted small">（约 ${clock(d.now+r.eta_s)}）</span>`:""):"—"}</b>
+        <span class="muted">train / val loss</span><b>${f(l.train_loss)} / ${f(l.val_loss)}</b>
+        <span class="muted">伪 Dice 肝 / 肿瘤</span><b>${f(dice[0])} / ${f(dice[1])}</b>
+        <span class="muted">肿瘤 EMA · 最高</span><b>${f(l.tumour_ema)} · ${f(r.best_tumour)}</b>
+        <span class="muted">非有限梯度跳过</span><b style="${r.nonfinite>5?'color:var(--amber)':''}">${r.nonfinite} 次</b>
+      </div>`;
+      if(r.decision)body+=`<div style="margin-top:8px;font-weight:600;color:${r.decision.continue?'var(--green)':'var(--red)'}">判定：${r.decision.continue?'通过（CONTINUE）':'未通过（STOP）'}</div><details><summary>DECISION.md</summary><pre>${esc(r.decision.md)}</pre></details>`;
+      if(r.runner_tail.length)body+=`<details><summary>runner 日志</summary><pre>${esc(r.runner_tail.join("\n"))}</pre></details>`;
+    }
+    return `<div class="card"><div class="run-h"><span class="dot" style="background:${col(r.group)}"></span><h2 style="margin:0">${r.group}</h2><span class="tag t-${r.stage}">${STAGE[r.stage]}</span></div>
+      <div class="muted small">${esc(d.desc[r.group])}</div>${body}</div>`}).join("");
+  // charts
+  const xmax=Math.max(200,...d.runs.map(r=>r.epochs_total));
+  const ref={name:"A0_s0（参照）",color:col("A0"),ref:true,data:d.reference.series};
+  const ss=d.runs.filter(r=>r.series.length).map(r=>({name:r.group,color:col(r.group),data:r.series}));
+  chart($("ch-dice"),[ref,...ss],"te",{xmax});legend($("lg-dice"),[...ss,ref]);
+  chart($("ch-loss"),[ref,...ss],"tl",{xmax});legend($("lg-loss"),[...ss,ref]);
+  // gpus
+  const owner={};for(const l of d.all_log){const m=l.match(/pilot (\w+) on GPU (\d+)/);if(m)owner[m[2]]=m[1]}
+  $("gpus").innerHTML=d.gpus.map(g=>`<div class="gpu"><span>GPU ${g.index}${owner[g.index]?` <span style="color:${col(owner[g.index])}">${owner[g.index]}</span>`:""}</span>
+    <div><div class="bar" style="margin:0 0 3px"><i style="width:${g.util}%;background:var(--blue)"></i></div><div class="bar" style="margin:0"><i style="width:${g.mem_used/g.mem_total*100}%;background:var(--violet)"></i></div></div>
+    <span class="num small">${g.util}% · ${(g.mem_used/1024).toFixed(1)}/${(g.mem_total/1024).toFixed(0)} G<br><span class="muted">${g.temp}°C · ${g.power==null?"—":g.power.toFixed(0)+" W"}</span></span></div>`).join("")+
+    `<div class="legend"><span><i style="background:var(--blue)"></i>利用率</span><span><i style="background:var(--violet)"></i>显存</span></div>`;
+  $("sys").innerHTML=`负载 ${sys.load.map(x=>x.toFixed(1)).join(" / ")}（${sys.ncpu} 核） · 内存可用 ${sys.mem_avail?.toFixed(0)} / ${sys.mem_total?.toFixed(0)} GB · 磁盘剩余 <b style="color:${sys.disk_free<15?'var(--red)':'inherit'}">${sys.disk_free.toFixed(1)}</b> / ${sys.disk_total.toFixed(0)} GB`;
+  // g0
+  const m=d.g0&&d.g0.msd08;
+  $("g0").innerHTML=m?`<div style="font-weight:600;color:${m.GO?'var(--green)':'var(--red)'};margin-bottom:6px">${m.GO?'GO':'NO-GO'} → ${m.GO?'保留 SSA 锚点':'去掉 SSA 锚点，Q3 / Q4 用 32 个自由查询，Q2 删除（§11）'}</div>
+    <table><tr><th>MSD08（${m.n} 个病灶，A0 漏检 ${m.n_missed}）</th><th>实测</th><th>判据</th></tr>
+    <tr><td>漏检覆盖（SSA）</td><td class="num">${m.cov_missed.toFixed(1)}%</td><td>≥ 50%</td></tr>
+    <tr><td>漏检覆盖（随机锚点）</td><td class="num">${m.cov_missed_random.toFixed(1)}%</td><td>SSA ≥ 2×</td></tr>
+    <tr><td>已检出覆盖</td><td class="num">${m.cov_detected.toFixed(1)}%</td><td>≥ 90%</td></tr></table>`:'<div class="muted">尚无 G0 结果</div>';
+  $("log").textContent=d.all_log.join("\n");
+}
+async function tick(){
+  try{const r=await fetch("api/status",{cache:"no-store"});const d=await r.json();if(d.error)throw new Error(d.error);render(d)}
+  catch(e){$("meta").innerHTML=`<span class="err">刷新失败：${esc(e.message)}</span>`}
+}
+tick();setInterval(tick,20000);
+</script>
+</body>
+</html>
