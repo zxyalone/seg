@@ -1,0 +1,81 @@
+{
+  "case": "LiTS_120",
+  "n_anchors": {
+    "ssa": 7067,
+    "sem": 242,
+    "img": 6825,
+    "rand": 7067
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 547,
+      "radius_mm": 4.295909581192952,
+      "diameter_mm": 8.591819162385905,
+      "cnr": 3.9802097862242287,
+      "iou": 0.4990859232175503,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    },
+    {
+      "lesion": 2,
+      "voxels": 3432,
+      "radius_mm": 7.923342866176244,
+      "diameter_mm": 15.846685732352489,
+      "cnr": 2.0875980335500213,
+      "iou": 0.6119034036889143,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 3,
+      "voxels": 140,
+      "radius_mm": 2.7275247597593566,
+      "diameter_mm": 5.455049519518713,
+      "cnr": 2.4289899271694835,
+      "iou": 0.0,
+      "pmax": 1.4951702951293555e-06,
+      "status": "unlit",
+      "covered_ssa": false,
+      "covered_sem": false,
+      "covered_img": false,
+      "covered_rand": false
+    },
+    {
+      "lesion": 6,
+      "voxels": 165,
+      "radius_mm": 2.881071288827687,
+      "diameter_mm": 5.762142577655374,
+      "cnr": 1.172341846390239,
+      "iou": 0.5168539325842697,
+      "pmax": 0.9997075200080872,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    },
+    {
+      "lesion": 8,
+      "voxels": 2790,
+      "radius_mm": 7.394816885392217,
+      "diameter_mm": 14.789633770784434,
+      "cnr": 0.8086934312108561,
+      "iou": 0.6579634464751958,
+      "pmax": 0.9999833106994629,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": false,
+      "covered_rand": true
+    }
+  ]
+}

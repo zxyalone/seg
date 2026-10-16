@@ -1,0 +1,39 @@
+{
+  "case": "LiTS_053",
+  "n_anchors": {
+    "ssa": 6323,
+    "sem": 261,
+    "img": 6062,
+    "rand": 6323
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 8648,
+      "radius_mm": 10.781964977025739,
+      "diameter_mm": 21.563929954051478,
+      "cnr": 1.214276580314251,
+      "iou": 0.5434465747281085,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": false,
+      "covered_rand": true
+    },
+    {
+      "lesion": 2,
+      "voxels": 2148,
+      "radius_mm": 6.7775195991235275,
+      "diameter_mm": 13.555039198247055,
+      "cnr": 1.0158519725239201,
+      "iou": 0.3225806451612903,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    }
+  ]
+}

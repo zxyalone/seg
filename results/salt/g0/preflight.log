@@ -1,0 +1,75 @@
+Pretrained weights: none (trained from scratch)
+   SALT eval: fused tumour fraction 0.0000
+
+[Q1] 165 PhASER tensors, loss 1.335 -> 0.431
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (165, 0.002, 3e-05)]
+   encoder max|grad|=4.18e-01; code paths: {'augmentation_calls': 0, 'augmented_samples': 0, 'changed_batches': 0, 'band_calls': 0, 'component_loss_calls': 0, 'positive_component_losses': 0, 'consistency_calls': 0, 'positive_consistency_losses': 0, 'lqd_calls': 50, 'positive_lqd_losses': 50}
+   AMP=True; peak CUDA allocated=8.76 GiB; reserved=10.46 GiB
+   PASS (165 ok, 0 weak, 0 dead)
+Pretrained weights: none (trained from scratch)
+   SALT eval: fused tumour fraction 0.0000
+
+[Q2] 174 PhASER tensors, loss 1.316 -> 0.405
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (174, 0.002, 3e-05)]
+   encoder max|grad|=2.73e-01; code paths: {'augmentation_calls': 0, 'augmented_samples': 0, 'changed_batches': 0, 'band_calls': 0, 'component_loss_calls': 0, 'positive_component_losses': 0, 'consistency_calls': 0, 'positive_consistency_losses': 0, 'lqd_calls': 50, 'positive_lqd_losses': 50}
+   AMP=True; peak CUDA allocated=9.04 GiB; reserved=10.65 GiB
+   PASS (174 ok, 0 weak, 0 dead)
+Pretrained weights: none (trained from scratch)
+   SALT eval: fused tumour fraction 0.0000
+
+[Q3] 178 PhASER tensors, loss 1.317 -> 0.297
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (178, 0.002, 3e-05)]
+   encoder max|grad|=2.82e-01; code paths: {'augmentation_calls': 0, 'augmented_samples': 0, 'changed_batches': 0, 'band_calls': 0, 'component_loss_calls': 0, 'positive_component_losses': 0, 'consistency_calls': 0, 'positive_consistency_losses': 0, 'lqd_calls': 50, 'positive_lqd_losses': 50}
+   AMP=True; peak CUDA allocated=9.05 GiB; reserved=11.11 GiB
+   PASS (178 ok, 0 weak, 0 dead)
+Pretrained weights: none (trained from scratch)
+   SALT eval: fused tumour fraction 0.0000
+
+[Q4] 208 PhASER tensors, loss 1.326 -> 0.445
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (24, 0.005, 3e-05), (6, 0.005, 0.0), (178, 0.002, 3e-05)]
+   encoder max|grad|=3.05e-01; code paths: {'augmentation_calls': 0, 'augmented_samples': 0, 'changed_batches': 0, 'band_calls': 0, 'component_loss_calls': 0, 'positive_component_losses': 0, 'consistency_calls': 0, 'positive_consistency_losses': 0, 'lqd_calls': 50, 'positive_lqd_losses': 50}
+   AMP=True; peak CUDA allocated=9.74 GiB; reserved=10.69 GiB
+   WARN faf.1.compress_up.weight: max|grad|=1.3e-08 moved=yes
+   WARN faf.1.compress_up.bias: max|grad|=4.6e-08 moved=yes
+   WARN faf.1.compress_skip.weight: max|grad|=9.1e-08 moved=yes
+   WARN faf.1.compress_skip.bias: max|grad|=4.6e-08 moved=yes
+   WARN faf.1.low_gen.weight: max|grad|=2.1e-08 moved=yes
+   WARN faf.1.low_gen.bias: max|grad|=1.1e-08 moved=yes
+   WARN faf.2.compress_up.weight: max|grad|=3.2e-08 moved=yes
+   WARN faf.2.compress_up.bias: max|grad|=6.6e-08 moved=yes
+   WARN faf.2.compress_skip.weight: max|grad|=1.7e-07 moved=yes
+   WARN faf.2.compress_skip.bias: max|grad|=6.6e-08 moved=yes
+   WARN faf.2.low_gen.weight: max|grad|=3.5e-08 moved=yes
+   WARN faf.2.low_gen.bias: max|grad|=1.3e-08 moved=yes
+   WARN faf.3.compress_up.weight: max|grad|=4.0e-08 moved=yes
+   WARN faf.3.compress_up.bias: max|grad|=2.7e-07 moved=yes
+   WARN faf.3.compress_skip.weight: max|grad|=6.7e-07 moved=yes
+   WARN faf.3.compress_skip.bias: max|grad|=2.7e-07 moved=yes
+   PASS (192 ok, 16 weak, 0 dead)
+Pretrained weights: none (trained from scratch)
+
+[F1] 30 PhASER tensors, loss 0.942 -> -0.364
+   optimizer groups (n, lr, wd): [(48, 0.0015, 3e-05), (60, 0.0025, 3e-05), (24, 0.005, 3e-05), (6, 0.005, 0.0)]
+   encoder max|grad|=7.81e-02; code paths: {'augmentation_calls': 0, 'augmented_samples': 0, 'changed_batches': 0, 'band_calls': 0, 'component_loss_calls': 0, 'positive_component_losses': 0, 'consistency_calls': 0, 'positive_consistency_losses': 0}
+   AMP=True; peak CUDA allocated=5.41 GiB; reserved=8.40 GiB
+   WARN faf.1.compress_up.weight: max|grad|=1.0e-08 moved=yes
+   WARN faf.1.compress_up.bias: max|grad|=6.1e-08 moved=yes
+   WARN faf.1.compress_skip.weight: max|grad|=8.8e-08 moved=yes
+   WARN faf.1.compress_skip.bias: max|grad|=6.1e-08 moved=yes
+   WARN faf.1.low_gen.weight: max|grad|=2.2e-09 moved=yes
+   WARN faf.1.low_gen.bias: max|grad|=1.5e-09 moved=yes
+   WARN faf.2.compress_up.weight: max|grad|=1.6e-08 moved=yes
+   WARN faf.2.compress_up.bias: max|grad|=6.3e-08 moved=yes
+   WARN faf.2.compress_skip.weight: max|grad|=1.3e-07 moved=yes
+   WARN faf.2.compress_skip.bias: max|grad|=6.3e-08 moved=yes
+   WARN faf.2.low_gen.weight: max|grad|=3.0e-08 moved=yes
+   WARN faf.2.low_gen.bias: max|grad|=1.1e-08 moved=yes
+   WARN faf.3.compress_up.weight: max|grad|=9.1e-09 moved=yes
+   WARN faf.3.compress_up.bias: max|grad|=3.0e-08 moved=yes
+   WARN faf.3.compress_skip.weight: max|grad|=1.2e-07 moved=yes
+   WARN faf.3.compress_skip.bias: max|grad|=3.0e-08 moved=yes
+   WARN faf.3.low_gen.weight: max|grad|=3.3e-07 moved=yes
+   WARN faf.3.low_gen.bias: max|grad|=1.2e-07 moved=yes
+   PASS (12 ok, 18 weak, 0 dead)
+
+SUMMARY: Q1=PASS, Q2=PASS, Q3=PASS, Q4=PASS, F1=PASS

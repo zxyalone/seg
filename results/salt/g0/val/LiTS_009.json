@@ -1,0 +1,95 @@
+{
+  "case": "LiTS_009",
+  "n_anchors": {
+    "ssa": 8191,
+    "sem": 229,
+    "img": 7962,
+    "rand": 8191
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 14800,
+      "radius_mm": 12.896739518111032,
+      "diameter_mm": 25.793479036222063,
+      "cnr": 1.561669588120871,
+      "iou": 0.770627370515451,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 2,
+      "voxels": 6304,
+      "radius_mm": 9.703567352019803,
+      "diameter_mm": 19.407134704039606,
+      "cnr": 1.614449144666289,
+      "iou": 0.8125646711012565,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 3,
+      "voxels": 549,
+      "radius_mm": 4.301138934598137,
+      "diameter_mm": 8.602277869196273,
+      "cnr": 1.6058024425226725,
+      "iou": 0.5816091954022988,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    },
+    {
+      "lesion": 4,
+      "voxels": 949,
+      "radius_mm": 5.161961494426325,
+      "diameter_mm": 10.32392298885265,
+      "cnr": 1.0184629489383343,
+      "iou": 0.6130403968816442,
+      "pmax": 0.9999995231628418,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    },
+    {
+      "lesion": 5,
+      "voxels": 1062,
+      "radius_mm": 5.359211072251387,
+      "diameter_mm": 10.718422144502775,
+      "cnr": 1.5958373710229492,
+      "iou": 0.0,
+      "pmax": 4.842803718929645e-06,
+      "status": "unlit",
+      "covered_ssa": true,
+      "covered_sem": false,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 6,
+      "voxels": 980,
+      "radius_mm": 5.217567164727442,
+      "diameter_mm": 10.435134329454884,
+      "cnr": 1.0140089705284343,
+      "iou": 0.6219104876419506,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    }
+  ]
+}

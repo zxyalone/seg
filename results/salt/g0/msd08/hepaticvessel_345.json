@@ -1,0 +1,81 @@
+{
+  "case": "hepaticvessel_345",
+  "n_anchors": {
+    "ssa": 4402,
+    "sem": 589,
+    "img": 3813,
+    "rand": 4402
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 7995,
+      "radius_mm": 10.503455000705669,
+      "diameter_mm": 21.006910001411338,
+      "cnr": 1.2884197903788674,
+      "iou": 0.6035231360873341,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 2,
+      "voxels": 585517,
+      "radius_mm": 43.944634781501115,
+      "diameter_mm": 87.88926956300223,
+      "cnr": 3.10236786718992,
+      "iou": 0.6419407785407857,
+      "pmax": 0.9992465972900391,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 3,
+      "voxels": 53045,
+      "radius_mm": 19.736683391359534,
+      "diameter_mm": 39.47336678271907,
+      "cnr": 4.064510632052424,
+      "iou": 0.0,
+      "pmax": 0.013515391387045383,
+      "status": "unlit",
+      "covered_ssa": false,
+      "covered_sem": false,
+      "covered_img": false,
+      "covered_rand": true
+    },
+    {
+      "lesion": 4,
+      "voxels": 6278,
+      "radius_mm": 9.6902086169703,
+      "diameter_mm": 19.3804172339406,
+      "cnr": 1.0847303850187369,
+      "iou": 0.649144634525661,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 5,
+      "voxels": 348,
+      "radius_mm": 3.6947560684409986,
+      "diameter_mm": 7.389512136881997,
+      "cnr": 1.7720544664169156,
+      "iou": 0.40229885057471265,
+      "pmax": 0.9999953508377075,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    }
+  ]
+}

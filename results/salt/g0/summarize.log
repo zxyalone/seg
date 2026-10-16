@@ -1,0 +1,62 @@
+# SALT G0：谱尺度空间锚点能否覆盖 A0 漏检的病灶（docs/SALT模型设计.md §3.2）
+
+## msd08
+
+540 个病灶，A0_s0 漏检 103 个（部分点亮 54，未点亮 49）。
+
+覆盖率（%）：
+
+```
+          covered_ssa  covered_sem  covered_img  covered_rand
+status                                                       
+detected         97.7         97.7         62.9          86.3
+partial          57.4         51.9         20.4          83.3
+unlit            24.5          0.0         24.5          65.3
+```
+
+漏检病灶按大小 / CNR 的 SSA 覆盖率（%）：
+
+```
+                 mean  size
+size  cnr_tier             
+10-20 high      100.0     1
+      low        52.0    25
+      mid       100.0     3
+<10   high       66.7     3
+      low        29.2    24
+      mid       100.0     5
+>20   high       25.0     4
+      low        29.7    37
+      mid         0.0     1
+```
+
+G0（漏检覆盖 ≥ 50%、≥ 2 × 随机锚点、已检出覆盖 ≥ 90%）：漏检 41.7%，随机 74.8%，已检出 97.7% → **NO-GO**
+
+## val
+
+90 个病灶，A0_s0 漏检 21 个（部分点亮 13，未点亮 8）。
+
+覆盖率（%）：
+
+```
+          covered_ssa  covered_sem  covered_img  covered_rand
+status                                                       
+detected        100.0        100.0         66.7          82.6
+partial          76.9         69.2         38.5          69.2
+unlit            37.5          0.0         37.5          25.0
+```
+
+漏检病灶按大小 / CNR 的 SSA 覆盖率（%）：
+
+```
+                 mean  size
+size  cnr_tier             
+10-20 high      100.0     1
+      low        25.0     4
+      mid       100.0     1
+<10   high        0.0     1
+      low        71.4     7
+      mid        80.0     5
+>20   low        50.0     2
+```
+

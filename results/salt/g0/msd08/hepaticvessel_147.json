@@ -1,0 +1,25 @@
+{
+  "case": "hepaticvessel_147",
+  "n_anchors": {
+    "ssa": 5317,
+    "sem": 602,
+    "img": 4715,
+    "rand": 5317
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 517655,
+      "radius_mm": 42.17672243118284,
+      "diameter_mm": 84.35344486236568,
+      "cnr": 2.780026333533499,
+      "iou": 0.8247154633909352,
+      "pmax": 0.999991774559021,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    }
+  ]
+}

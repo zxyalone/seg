@@ -1,0 +1,25 @@
+{
+  "case": "LiTS_102",
+  "n_anchors": {
+    "ssa": 5642,
+    "sem": 193,
+    "img": 5449,
+    "rand": 5642
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 28509,
+      "radius_mm": 16.04673514182896,
+      "diameter_mm": 32.09347028365792,
+      "cnr": 0.498154566329451,
+      "iou": 0.6294692350332595,
+      "pmax": 0.9999992847442627,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": false,
+      "covered_rand": true
+    }
+  ]
+}

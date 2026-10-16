@@ -1,0 +1,18 @@
+{
+  "msd08": {
+    "n": 540,
+    "n_missed": 103,
+    "cov_missed": 41.74757281553398,
+    "cov_missed_random": 74.75728155339806,
+    "cov_detected": 97.7116704805492,
+    "GO": false
+  },
+  "val": {
+    "n": 90,
+    "n_missed": 21,
+    "cov_missed": 61.904761904761905,
+    "cov_missed_random": 52.38095238095239,
+    "cov_detected": 100.0,
+    "GO": null
+  }
+}

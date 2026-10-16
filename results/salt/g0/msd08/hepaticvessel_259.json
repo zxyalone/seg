@@ -1,0 +1,25 @@
+{
+  "case": "hepaticvessel_259",
+  "n_anchors": {
+    "ssa": 2038,
+    "sem": 470,
+    "img": 1568,
+    "rand": 2038
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 175244,
+      "radius_mm": 29.395018801554716,
+      "diameter_mm": 58.79003760310943,
+      "cnr": 0.6181327334160172,
+      "iou": 0.7063898732164068,
+      "pmax": 0.9999959468841553,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": false,
+      "covered_rand": true
+    }
+  ]
+}

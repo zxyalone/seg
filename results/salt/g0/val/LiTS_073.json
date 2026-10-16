@@ -1,0 +1,25 @@
+{
+  "case": "LiTS_073",
+  "n_anchors": {
+    "ssa": 8834,
+    "sem": 24,
+    "img": 8810,
+    "rand": 8834
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 3540,
+      "radius_mm": 8.00559797899636,
+      "diameter_mm": 16.01119595799272,
+      "cnr": 0.8836194353270688,
+      "iou": 0.0,
+      "pmax": 0.9346736073493958,
+      "status": "partial",
+      "covered_ssa": false,
+      "covered_sem": false,
+      "covered_img": false,
+      "covered_rand": true
+    }
+  ]
+}

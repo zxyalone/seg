@@ -1,0 +1,39 @@
+{
+  "case": "hepaticvessel_266",
+  "n_anchors": {
+    "ssa": 3008,
+    "sem": 117,
+    "img": 2891,
+    "rand": 3008
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 1875,
+      "radius_mm": 6.477286602170442,
+      "diameter_mm": 12.954573204340884,
+      "cnr": 2.8631323482943043,
+      "iou": 0.5740570377184913,
+      "pmax": 0.9999926090240479,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 2,
+      "voxels": 490,
+      "radius_mm": 4.141185803001539,
+      "diameter_mm": 8.282371606003078,
+      "cnr": 1.1000477168167677,
+      "iou": 0.3585185185185185,
+      "pmax": 0.9999996423721313,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    }
+  ]
+}

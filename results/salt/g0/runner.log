@@ -1,0 +1,20 @@
+[2026-10-16 10:14:20] G0 start, HEAD 22a9689
+[Q1] 165 PhASER tensors, loss 1.335 -> 0.431
+   AMP=True; peak CUDA allocated=8.76 GiB; reserved=10.46 GiB
+   PASS (165 ok, 0 weak, 0 dead)
+[Q2] 174 PhASER tensors, loss 1.316 -> 0.405
+   AMP=True; peak CUDA allocated=9.04 GiB; reserved=10.65 GiB
+   PASS (174 ok, 0 weak, 0 dead)
+[Q3] 178 PhASER tensors, loss 1.317 -> 0.297
+   AMP=True; peak CUDA allocated=9.05 GiB; reserved=11.11 GiB
+   PASS (178 ok, 0 weak, 0 dead)
+[Q4] 208 PhASER tensors, loss 1.326 -> 0.445
+   AMP=True; peak CUDA allocated=9.74 GiB; reserved=10.69 GiB
+   PASS (192 ok, 16 weak, 0 dead)
+[F1] 30 PhASER tensors, loss 0.942 -> -0.364
+   AMP=True; peak CUDA allocated=5.41 GiB; reserved=8.40 GiB
+   PASS (12 ok, 18 weak, 0 dead)
+SUMMARY: Q1=PASS, Q2=PASS, Q3=PASS, Q4=PASS, F1=PASS
+[2026-10-16 10:20:05] preflight passed; largest peak allocated 9.74 GiB (limit 11.0 on 12 GB cards)
+[2026-10-16 12:11:26] G0 done: G0（漏检覆盖 ≥ 50%、≥ 2 × 随机锚点、已检出覆盖 ≥ 90%）：漏检 41.7%，随机 74.8%，已检出 97.7% → **NO-GO**
+[2026-10-16 12:11:26] next: commit results/salt/g0, then start the pilots of §4 by hand

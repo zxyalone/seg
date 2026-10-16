@@ -1,0 +1,81 @@
+{
+  "case": "hepaticvessel_160",
+  "n_anchors": {
+    "ssa": 3196,
+    "sem": 844,
+    "img": 2352,
+    "rand": 3196
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 775,
+      "radius_mm": 4.824954889498518,
+      "diameter_mm": 9.649909778997037,
+      "cnr": 1.6611070828471228,
+      "iou": 0.39483870967741935,
+      "pmax": 0.9999464750289917,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": false,
+      "covered_rand": true
+    },
+    {
+      "lesion": 2,
+      "voxels": 78775,
+      "radius_mm": 22.517603126681134,
+      "diameter_mm": 45.03520625336227,
+      "cnr": 2.234464836629361,
+      "iou": 0.24713139723801786,
+      "pmax": 0.9999997615814209,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 3,
+      "voxels": 1855,
+      "radius_mm": 6.454173875383427,
+      "diameter_mm": 12.908347750766854,
+      "cnr": 1.786188009247582,
+      "iou": 0.19191374663072777,
+      "pmax": 0.9983964562416077,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 4,
+      "voxels": 1100,
+      "radius_mm": 5.4223837691231065,
+      "diameter_mm": 10.844767538246213,
+      "cnr": 1.6318382533706521,
+      "iou": 0.24,
+      "pmax": 0.9998773336410522,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": false
+    },
+    {
+      "lesion": 5,
+      "voxels": 475,
+      "radius_mm": 4.098490124826406,
+      "diameter_mm": 8.196980249652812,
+      "cnr": 0.7077550580474382,
+      "iou": 0.0,
+      "pmax": 1.1756222193071153e-05,
+      "status": "unlit",
+      "covered_ssa": false,
+      "covered_sem": false,
+      "covered_img": false,
+      "covered_rand": false
+    }
+  ]
+}

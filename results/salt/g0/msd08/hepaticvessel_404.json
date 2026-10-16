@@ -1,0 +1,39 @@
+{
+  "case": "hepaticvessel_404",
+  "n_anchors": {
+    "ssa": 2470,
+    "sem": 118,
+    "img": 2352,
+    "rand": 2470
+  },
+  "rows": [
+    {
+      "lesion": 1,
+      "voxels": 10409,
+      "radius_mm": 11.469091722839837,
+      "diameter_mm": 22.938183445679673,
+      "cnr": 1.2190511712416272,
+      "iou": 0.762915204439729,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    },
+    {
+      "lesion": 2,
+      "voxels": 1330,
+      "radius_mm": 5.776656852013922,
+      "diameter_mm": 11.553313704027843,
+      "cnr": 1.8078949931587198,
+      "iou": 0.6033441709242917,
+      "pmax": 1.0,
+      "status": "detected",
+      "covered_ssa": true,
+      "covered_sem": true,
+      "covered_img": true,
+      "covered_rand": true
+    }
+  ]
+}

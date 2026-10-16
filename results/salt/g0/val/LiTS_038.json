@@ -1,0 +1,10 @@
+{
+  "case": "LiTS_038",
+  "n_anchors": {
+    "ssa": 3042,
+    "sem": 0,
+    "img": 3042,
+    "rand": 3042
+  },
+  "rows": []
+}

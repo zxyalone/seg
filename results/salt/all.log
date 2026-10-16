@@ -1,0 +1,3 @@
+[2026-10-16 10:14:20] start, HEAD 22a9689; GPUs 0 1 2; 30 CPUs, 251 GB RAM; DA workers/run 9
+[2026-10-16 12:11:26] G0: G0（漏检覆盖 ≥ 50%、≥ 2 × 随机锚点、已检出覆盖 ≥ 90%）：漏检 41.7%，随机 74.8%，已检出 97.7% → **NO-GO**
+[2026-10-16 12:11:26] G0 NO-GO: per §3.2 the anchors are dropped for Q2-Q4; record this in §11 and edit the configs, then rerun
