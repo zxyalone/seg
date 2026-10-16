@@ -96,6 +96,7 @@ from dynamic_network_architectures.building_blocks.helper import convert_dim_to_
 
 from .phaser.unet import PhaserUNet, load_pretrained_weights
 from .phaser.segresnet import SegResNetWithFeatures
+from .phaser.lesion_query import lesion_instances, lesion_query_loss
 from .phaser.lowcnr import lesion_contrast_augment, component_dicece_loss, contrast_consistency_loss, \
     relative_mse_consistency_loss
 from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
@@ -109,6 +110,19 @@ from .phaser.losses import boundary_dice_loss, spectral_consistency_loss, \
 # the fix/p0-mechanism-defects branch did not show it to be better (the 2x
 # average denoises), so the historical value is kept and 2^22 is an ablation.
 PC_MAX_VOXELS_DEFAULT = 1 << 20
+
+
+def _lqd_kwargs_from_env() -> dict:
+    """SALT lesion query decoder settings (docs/SALT模型设计.md §2.2)."""
+    return dict(
+        n_sem=int(os.environ.get('PHASER_LQD_SEM', '16')),
+        n_img=int(os.environ.get('PHASER_LQD_IMG', '16')),
+        n_free=int(os.environ.get('PHASER_LQD_FREE', '8')),
+        layers=int(os.environ.get('PHASER_LQD_LAYERS', '6')),
+        hidden=int(os.environ.get('PHASER_LQD_HIDDEN', '128')),
+        heads=int(os.environ.get('PHASER_LQD_HEADS', '4')),
+        shape_descriptor=os.environ.get('PHASER_LQD_SHAPE', '0') == '1',
+    )
 
 
 def resolve_pc_spacing(configuration_manager, dims: int):
@@ -170,7 +184,10 @@ class GroupPolyLRScheduler(_LRScheduler):
             self.ctr += 1
         factor = (1 - current_step / self.max_steps) ** self.exponent
         for g, base in zip(self.optimizer.param_groups, self.base_lrs_per_group):
-            g['lr'] = base * factor
+            # Optional linear warmup of one group (SALT query decoder), in epochs.
+            warm = g.get('warmup_epochs', 0)
+            w = min(1.0, (current_step + 1) / warm) if warm else 1.0
+            g['lr'] = base * factor * w
 
 
 class CombinedDiceCEFocalTverskyLoss(nn.Module):
@@ -293,6 +310,18 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             raise ValueError(f"PHASER_LCA_TARGET must be 'uniform' or 'cnr', got {self.lca_target!r}")
         if self.lca_cons_weight > 0 and not self.enable_lca:
             raise ValueError('PHASER_LCA_CONS_WEIGHT > 0 requires PHASER_LCA=1')
+        # SALT (docs/SALT模型设计.md): lesion query decoder (LQD) with spectral scale-space anchors and the
+        # frequency-aware decoder fusion (FAF-3D). Architecture switches are read again in
+        # build_network_architecture; the loss and optimiser settings live here.
+        self.enable_lqd = os.environ.get('PHASER_LQD', '0') == '1'
+        self.lqd_weight = float(os.environ.get('PHASER_LQD_WEIGHT', '0.2'))
+        self.lqd_lr_mult = float(os.environ.get('PHASER_LQD_LR_MULT', '4.0'))
+        self.lqd_warmup = int(os.environ.get('PHASER_LQD_WARMUP', '10'))
+        self.lqd_min_voxels = int(os.environ.get('PHASER_LQD_MIN_VOXELS', '20'))
+        self.enable_faf = os.environ.get('PHASER_FAF', '0') == '1'
+        self._lqd_rng = np.random.default_rng(self.seed)
+        if (self.enable_lqd or self.enable_faf) and os.environ.get('PHASER_ARCH', 'plainunet') != 'plainunet':
+            raise ValueError('SALT (PHASER_LQD / PHASER_FAF) is implemented for the PlainConvUNet only')
         self.enable_cc_loss = os.environ.get('PHASER_CC_LOSS', '0') == '1'
         self.cc_weight = float(os.environ.get('PHASER_CC_WEIGHT', '1.0'))
         # A14 (plan §11, 2026-10-14): Pixel2Cancer synthetic tumours, generated
@@ -395,6 +424,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             f"target={self.lca_target}, consistency w={self.lca_cons_weight}, stages={self.lca_cons_stages}, "
             f"band sigma={self.lca_band_sigma_mm} mm, consistency mode={self.lca_cons_mode}, "
             f"EMA m={self.lca_ema_m})\n"
+            f"  SALT: lesion queries={self.enable_lqd} ({_lqd_kwargs_from_env()}, loss w={self.lqd_weight}, "
+            f"lr x{self.lqd_lr_mult}, warmup {self.lqd_warmup} ep, fuse w={os.environ.get('PHASER_LQD_FUSE_W', '0.5')}), "
+            f"FAF-3D={self.enable_faf} (stages {os.environ.get('PHASER_FAF_STAGES', 'default')})\n"
             f"  Component DiceCE: {self.enable_cc_loss} (w={self.cc_weight})\n"
             f"  Pixel2Cancer variants: {self.p2c_dir or 'off'} (p={self.p2c_p})\n"
             f"  CFF Fusion: {self.fusion_mode}\n"
@@ -516,6 +548,7 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                 "Enable only one of --acg / --la_acg."
             )
 
+        faf_env = os.environ.get('PHASER_FAF_STAGES', '').strip()
         model = PhaserUNet(
             base_model=base_model,
             feature_channels=features_per_stage,
@@ -545,6 +578,12 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             lmc_spacing=[float(v) for v in configuration_manager.spacing],
             lmc_shuffle=lmc_shuffle,
             lmc_intervene=lmc_intervene,
+            enable_faf=os.environ.get('PHASER_FAF', '0') == '1',
+            faf_stages=[int(v) for v in faf_env.split(',')] if faf_env else None,
+            enable_lqd=os.environ.get('PHASER_LQD', '0') == '1',
+            lqd_kwargs=_lqd_kwargs_from_env(),
+            lqd_fuse_w=float(os.environ.get('PHASER_LQD_FUSE_W', '0.5')),
+            spacing=[float(v) for v in configuration_manager.spacing],
         )
 
         return model
@@ -620,11 +659,16 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
             phaser_param_ids = set(id(p) for p in self.network.get_phaser_params())
         else:
             phaser_param_ids = set()
+        lqd_param_ids = set(id(p) for p in self.network.lqd.parameters()) \
+            if getattr(self.network, 'enable_lqd', False) else set()
+        lqd_params = []
 
         for name, param in self.network.named_parameters():
             if not param.requires_grad:
                 continue
-            if id(param) in phaser_param_ids:
+            if id(param) in lqd_param_ids:
+                lqd_params.append(param)
+            elif id(param) in phaser_param_ids:
                 if name.split('.')[-1] in NO_DECAY_PARAM_NAMES:
                     phaser_no_decay.append(param)
                 else:
@@ -639,7 +683,8 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
         param_groups = []
         if self.lr_recipe == 'nnunet':
             encoder_params, decoder_params = [], []
-            other_params = [p for p in self.network.parameters() if p.requires_grad]
+            other_params = [p for p in self.network.parameters()
+                            if p.requires_grad and id(p) not in lqd_param_ids]
             phaser_params, phaser_no_decay = [], []
         if encoder_params:
             param_groups.append({'params': encoder_params, 'lr': self.initial_lr * 0.3})
@@ -652,6 +697,9 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                                  'weight_decay': 0.0})
         if other_params:
             param_groups.append({'params': other_params, 'lr': self.initial_lr})
+        if lqd_params:
+            param_groups.append({'params': lqd_params, 'lr': self.initial_lr * self.lqd_lr_mult,
+                                 'warmup_epochs': self.lqd_warmup})
 
         if not param_groups:
             param_groups = [{'params': self.network.parameters(), 'lr': self.initial_lr}]
@@ -865,6 +913,18 @@ class nnUNetTrainer_phaser(nnUNetTrainer):
                     else contrast_consistency_loss
                 aux_loss = aux_loss + self.lca_cons_weight * self._v2_ramp() * \
                     cons_fn(student, cons_teacher, cons_region, self.lca_cons_stages)
+
+            # SALT lesion queries: Hungarian set loss on lesion instances (float32 inside).
+            if self.enable_lqd and self.lqd_weight > 0:
+                net_q = self.network.module if self.is_ddp else self.network
+                lqd_out = getattr(net_q, '_last_lqd', None)
+                if lqd_out is None:
+                    raise RuntimeError('SALT: the lesion query decoder produced no output in training')
+                inst, counts = lesion_instances(main_target, self.lqd_min_voxels)
+                with autocast(self.device.type, enabled=False) if self.device.type == 'cuda' else dummy_context():
+                    lqd_l = lesion_query_loss(lqd_out, inst, counts, rng=self._lqd_rng)
+                net_q._last_lqd = None
+                aux_loss = aux_loss + self.lqd_weight * self._v2_ramp() * lqd_l
 
             # LMC liver head: BCE against liver (label > 0), from epoch 0.
             if self.enable_lmc and self.lmc_liver_weight > 0:

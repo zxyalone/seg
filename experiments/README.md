@@ -3,6 +3,8 @@
 对应 `manuscript/实验清单.md` 的 E0（代码修复 + 梯度检查）、E1（评测脚本）、E15（一次性测试）、E16（成本）。
 所有新实验都用 **V2** 代码；旧 checkpoint（Copy2 等）只能用 `PHASER_LEGACY=1` 推理。
 
+> **2026-10-16**：新模型 SALT（谱尺度空间锚定的病灶 Transformer，不使用 DCA / CFC）见 [`docs/SALT模型设计.md`](../docs/SALT模型设计.md)；单元测试 `PYTHONPATH=nnUNet python experiments/test_salt.py`，门控 `experiments/server_salt_g0.sh`，pilot `experiments/server_salt_pilot.sh Q4 0`。
+
 ## 1. V2 代码改动（相对 Copy2 时期）
 
 | # | 问题（来源） | V2 处理 | 位置 |

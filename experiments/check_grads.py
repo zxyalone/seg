@@ -139,6 +139,7 @@ def make_trainer(patch: int, device: torch.device, n_stages: int, amp: bool = Fa
 def check_group(group: str, args) -> bool:
     from nnunetv2.training.nnUNetTrainer import nnUNetTrainer_phaser as trainer_mod
     original_aug = trainer_mod.lesion_contrast_augment
+    original_lqd = trainer_mod.lesion_query_loss
     original_cc = trainer_mod.component_dicece_loss
     original_cons = trainer_mod.contrast_consistency_loss
     original_rel = trainer_mod.relative_mse_consistency_loss
@@ -180,6 +181,15 @@ def check_group(group: str, args) -> bool:
         paths['positive_consistency_losses'] += int(loss.detach() > 0)
         return loss
 
+    def checked_lqd(*a, **kw):
+        loss = original_lqd(*a, **kw)
+        if not torch.isfinite(loss) or not loss.requires_grad:
+            raise RuntimeError('SALT: lesion query loss must be finite and retain its gradient path')
+        paths['lqd_calls'] = paths.get('lqd_calls', 0) + 1
+        paths['positive_lqd_losses'] = paths.get('positive_lqd_losses', 0) + int(loss.detach() > 0)
+        return loss
+
+    trainer_mod.lesion_query_loss = checked_lqd
     trainer_mod.contrast_consistency_loss = checked_cons
     trainer_mod.relative_mse_consistency_loss = checked_rel
     env = read_env(group)
@@ -211,6 +221,7 @@ def check_group(group: str, args) -> bool:
         rng = np.random.default_rng(0)
         scales = tr._get_deep_supervision_scales()
 
+        batch_eval = synthetic_batch(1, args.patch, np.random.default_rng(123), scales)
         losses = []
         for step in range(args.steps):
             tr.current_epoch = step * args.epochs_per_step
@@ -254,6 +265,19 @@ def check_group(group: str, args) -> bool:
             bad.append('A13b: consistency loss path not exercised')
         if float(env.get('PHASER_LCA_BAND_SIGMA_MM', '0')) > 0 and paths['band_calls'] != args.steps:
             bad.append('B13: band-limited augmentation not used')
+        if env.get('PHASER_LQD') == '1' and not (paths.get('lqd_calls', 0) == args.steps
+                                                and paths.get('positive_lqd_losses', 0) == args.steps):
+            bad.append('SALT: lesion query loss path not exercised')
+        if env.get('PHASER_LQD') == '1':
+            net.eval()
+            with torch.no_grad():
+                out = net(batch_eval['data'].to(device))
+            net.train()
+            o = out[0] if isinstance(out, (list, tuple)) else out
+            pr = torch.softmax(o.float(), 1)
+            if not (torch.isfinite(o).all() and torch.allclose(pr.sum(1), torch.ones_like(pr[:, 0]), atol=1e-3)):
+                bad.append('SALT: fused inference output is not a valid distribution')
+            print(f"   SALT eval: fused tumour fraction {float((o.argmax(1) == 2).float().mean()):.4f}")
         if env.get('PHASER_LCA_CONS_MODE') == 'ema_rmse':
             teacher = tr._ema_teacher
             if teacher is None:
@@ -298,6 +322,7 @@ def check_group(group: str, args) -> bool:
         return not bad
     finally:
         trainer_mod.lesion_contrast_augment = original_aug
+        trainer_mod.lesion_query_loss = original_lqd
         trainer_mod.component_dicece_loss = original_cc
         trainer_mod.contrast_consistency_loss = original_cons
         trainer_mod.relative_mse_consistency_loss = original_rel

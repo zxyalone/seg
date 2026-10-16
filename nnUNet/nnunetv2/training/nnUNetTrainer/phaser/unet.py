@@ -36,6 +36,8 @@ from .modules import (
     ContrastSkipGate,
 )
 from .dim_utils import spatial_mean, interpolate_nd, interp_mode
+from .freq_fusion3d import FreqAwareFusion3D
+from .lesion_query import LesionQueryDecoder, fuse_tumour, lesion_map, spectral_anchors
 
 
 class PhaserUNet(nn.Module):
@@ -95,6 +97,12 @@ class PhaserUNet(nn.Module):
         lmc_spacing=None,
         lmc_shuffle: bool = False,
         lmc_intervene: str = 'none',
+        enable_faf: bool = False,
+        faf_stages=None,
+        enable_lqd: bool = False,
+        lqd_kwargs: Optional[dict] = None,
+        lqd_fuse_w: float = 0.5,
+        spacing=None,
     ):
         super().__init__()
         self.base_model = base_model
@@ -253,6 +261,33 @@ class PhaserUNet(nn.Module):
         if enable_small_head:
             self.small_head = SmallTumorDetailHead(feature_channels, num_classes, dims=self.dims)
 
+        # --- SALT (docs/SALT模型设计.md) ---
+        # Decoder stage s outputs feature_channels[-(s + 2)] channels; stage n_skips - 1 is full resolution.
+        self.enable_faf = enable_faf
+        if enable_faf:
+            if spatial_dims != 3:
+                raise ValueError("FAF-3D needs 3D data")
+            stages = list(range(1, n_skips - 1)) if faf_stages is None else list(faf_stages)
+            if not stages or min(stages) < 0 or max(stages) >= n_skips:
+                raise ValueError(f"invalid FAF stages {stages} for {n_skips} decoder stages")
+            self.faf_stages = stages
+            self.faf = nn.ModuleDict({
+                str(st): FreqAwareFusion3D(feature_channels[-(st + 2)], feature_channels[-(st + 2)],
+                                           k_low=5 if st <= n_skips - 3 else 3, k_high=3)
+                for st in stages})
+        self.enable_lqd = enable_lqd
+        self.lqd_fuse_w = float(lqd_fuse_w)
+        self._last_lqd = None
+        if enable_lqd:
+            if spatial_dims != 3 or spacing is None:
+                raise ValueError("the lesion query decoder needs 3D data and the voxel spacing")
+            self.lqd_stages = list(range(max(0, n_skips - 4), n_skips - 1))
+            if not self.lqd_stages:
+                raise ValueError("the lesion query decoder needs at least two decoder stages")
+            self.spacing = tuple(float(v) for v in spacing)
+            self.lqd = LesionQueryDecoder([feature_channels[-(st + 2)] for st in self.lqd_stages],
+                                          feature_channels[0], self.spacing, **(lqd_kwargs or {}))
+
     # ------------------------------------------------------------------
     # Property forwarding for nnUNet compatibility
     # ------------------------------------------------------------------
@@ -371,10 +406,12 @@ class PhaserUNet(nn.Module):
 
         # 8. Decoder forward
         if self.enable_acg and not self.enable_la_acg:
+            if self.enable_faf or self.enable_lqd:
+                raise ValueError("ACG cannot be combined with FAF / the lesion query decoder")
             acg_vectors = self.acg(skips[-1])
             return self._decoder_forward_with_acg(skips, acg_vectors)
         else:
-            return self._decoder_forward(skips)
+            return self._decoder_forward(skips, image=x)
 
     # ------------------------------------------------------------------
     # Decoder forward (with optional LA-ACG modulation)
@@ -382,16 +419,22 @@ class PhaserUNet(nn.Module):
     # ------------------------------------------------------------------
     # Decoder forward (with optional LA-ACG modulation)
     # ------------------------------------------------------------------
-    def _decoder_forward(self, skips: list):
+    def _decoder_forward(self, skips: list, image: Optional[torch.Tensor] = None):
         dec = self._decoder
         lres_input = skips[-1]
         seg_outputs = []
         dec_features = []
+        stage_out = {}
 
         for s in range(len(dec.stages)):
             x = dec.transpconvs[s](lres_input)
-            x = torch.cat((x, skips[-(s + 2)]), 1)
+            skip = skips[-(s + 2)]
+            if self.enable_faf and s in self.faf_stages:
+                x, skip = self.faf[str(s)](x, skip)
+            x = torch.cat((x, skip), 1)
             x = dec.stages[s](x)
+            if self.enable_lqd:
+                stage_out[s] = x
 
             # LA-ACG: liver-aware spatial modulation at each decoder stage
             if self.enable_la_acg:
@@ -415,9 +458,30 @@ class PhaserUNet(nn.Module):
         self._last_dec_features = dec_features[::-1]
         seg_outputs = seg_outputs[::-1]
 
+        if self.enable_lqd:
+            seg_outputs[0] = self._lesion_queries(seg_outputs[0], stage_out, image)
+
         if not dec.deep_supervision:
             return seg_outputs[0]
         return seg_outputs
+
+    def _lesion_queries(self, final_logits, stage_out, image):
+        """SALT: spectral anchors from the semantic output and the input CT, lesion query decoder; in
+        training the outputs are cached for the trainer's set loss, in eval the tumour channel is fused."""
+        lqd = self.lqd
+        anchors = None
+        if lqd.n_anchor:
+            with torch.no_grad():
+                p = torch.softmax(final_logits.detach().float(), 1)
+                fg = (p[:, 1:].sum(1) > 0.5)
+                anchors = spectral_anchors(p[:, -1], image[:, 0], fg, self.spacing, lqd.n_sem, lqd.n_img,
+                                           lqd.radii_mm)
+        out = lqd([stage_out[st] for st in self.lqd_stages], stage_out[len(self._decoder.stages) - 1], anchors)
+        if self.training:
+            self._last_lqd = out
+            return final_logits
+        self._last_lqd = None
+        return fuse_tumour(final_logits, lesion_map(out), self.lqd_fuse_w)
 
     # ------------------------------------------------------------------
     # Decoder forward with ACG modulation injected
@@ -487,6 +551,10 @@ class PhaserUNet(nn.Module):
         if self.enable_lmc:
             params.extend(self.lmc_liver_branch.parameters())
             params.extend(self.lmc_gates.parameters())
+        if self.enable_faf:
+            params.extend(self.faf.parameters())
+        if self.enable_lqd:
+            params.extend(self.lqd.parameters())
         return params
 
 
